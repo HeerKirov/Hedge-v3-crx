@@ -6,7 +6,7 @@
     "icons": {
         "128": "public/favicon.png"
     },
-    "permissions": ["downloads", "contextMenus", "activeTab"],
+    "permissions": ["downloads", "contextMenus", "notifications", "tabs", "storage"],
     "action": {
         "default_icons": {
             "128": "public/favicon.png"
@@ -17,5 +17,32 @@
         "service_worker": "src/background.tsx",
         "type": "module"
     },
+    "content_scripts": [
+        {
+			"matches": ["https://chan.sankakucomplex.com/*"],
+			"js": ["src/scripts/sankakucomplex/global.ts"],
+			"run_at": "document_start"
+		},
+		{
+			"matches": ["https://chan.sankakucomplex.com/post/show/*"],
+			"js": ["src/scripts/sankakucomplex/post.ts"],
+			"run_at": "document_start"
+		},
+		{
+			"matches": ["https://e-hentai.org/g/*"],
+			"js": ["src/scripts/ehentai/gallery.ts"],
+			"run_at": "document_start"
+		},
+		{
+			"matches": ["https://e-hentai.org/s/*"],
+			"js": ["src/scripts/ehentai/image.ts"],
+			"run_at": "document_start"
+		},
+        {
+			"matches": ["https://www.fanbox.cc/*/posts/*"],
+			"js": ["src/scripts/fanbox/post.ts"],
+			"run_at": "document_start"
+		}
+    ],
     "options_page": "options.html"
 }
