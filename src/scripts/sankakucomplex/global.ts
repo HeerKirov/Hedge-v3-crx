@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     enableShortcutForbidden()
     enablePaginationEnhancement()
     enableTagListEnhancement()
-    //enableImageThumbnailReplacement()
+    enableImageThumbnailReplacement()
 })
 
 /**
