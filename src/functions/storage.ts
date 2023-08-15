@@ -11,11 +11,21 @@ export const session = {
         /**
          * E-Hentai: gallery id + page映射到image hash。
          */
-        ehentaiGalleryImageHash: createPathEndpoint<{gid: string, page: string}, {imageHash: string}>("session", p => `ehentai/gallery-page/hash/${p.gid}-${p.page}`),
+        ehentaiGalleryImageHash: createPathEndpoint<{gid: string, page: string}, {imageHash: string}>("session", p => `reflect/ehentai/gallery/image-hash/${p.gid}-${p.page}`),
         /**
          * Sankaku: post MD5映射到post id。
          */
-        sankakuPostId: createPathEndpoint<{md5: string}, {pid: string}>("session", p => `sankaku/post/id-mapping/${p.md5}`)
+        sankakuPostId: createPathEndpoint<{md5: string}, {pid: string}>("session", p => `reflect/sankaku/post-id/${p.md5}`)
+    },
+    /**
+     * 临时存储。
+     */
+    cache: {
+        /**
+         * 最近收集的source data identity。
+         * 在downloaded created时被用于节流，避免重复下载同一个identity的来源数据。
+         */
+        sourceDataCollected: createSetEndpoint<{site: string, sourceId: string}>("session", "cache/source-data/collected", p => `${p.site}-${p.sourceId}`)
     }
 }
 
@@ -33,15 +43,68 @@ function createEndpoint<T>(type: "local" | "session", key: string) {
 }
 
 function createPathEndpoint<P, T>(type: "local" | "session", keyOf: (path: P) => string) {
-    return async function(path: P, newValue?: T): Promise<T | undefined> {
-        const key = keyOf(path)
-        const f = type === "local" ? chrome.storage.local : chrome.storage.session
-        if(newValue !== undefined) {
-            await f.set({ [key]: newValue })
-            return newValue
-        }else{
+    const f = type === "local" ? chrome.storage.local : chrome.storage.session
+    return {
+        async get(path: P): Promise<T | undefined> {
+            const key = keyOf(path)
             const res = await f.get([key])
             return res[key]
+        },
+        async set(path: P, newValue: T): Promise<void> {
+            const key = keyOf(path)
+            await f.set({ [key]: newValue })
+        }
+    }
+}
+
+function createDictEndpoint<P, T>(type: "local" | "session", key: string, subKeyOf: (path: P) => string) {
+    const f = type === "local" ? chrome.storage.local : chrome.storage.session
+    return {
+        async get(path: P): Promise<T | undefined> {
+            const subKey = subKeyOf(path)
+            const res = await f.get([key])
+            return res[key] ? res[key][subKey] : undefined
+        },
+        async set(path: P, newValue: T): Promise<void> {
+            const subKey = subKeyOf(path)
+            const res = await f.get([key])
+            if(res !== undefined) {
+                res[subKey] = newValue
+                await f.set({ [key]: res })
+            }else{
+                const newRes = { [subKey]: newValue }
+                await f.set({ [key]: newRes })
+            }
+        }
+    }
+}
+
+function createSetEndpoint<P>(type: "local" | "session", key: string, subKeyOf: (path: P) => string) {
+    const f = type === "local" ? chrome.storage.local : chrome.storage.session
+    return {
+        async get(path: P): Promise<boolean> {
+            const subKey = subKeyOf(path)
+            const res = await f.get([key])
+            return res[key] ? !!res[key][subKey] : false
+        },
+        async set(path: P, newValue: boolean): Promise<void> {
+            const subKey = subKeyOf(path)
+            const res = await f.get([key])
+            const resValue = res[key]
+            if(resValue !== undefined) {
+                if(newValue) {
+                    if(subKey !in resValue) {
+                        resValue[subKey] = 1
+                        await f.set({ [key]: resValue })
+                    }
+                }else if(subKey in resValue) {
+                    delete resValue[subKey]
+                    await f.set({ [key]: resValue })
+                }
+            }else if(newValue) {
+                const newRes = { [subKey]: 1 }
+                await f.set({ [key]: newRes })
+            }
         }
     }
 }

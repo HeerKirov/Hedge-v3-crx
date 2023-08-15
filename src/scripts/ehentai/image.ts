@@ -14,6 +14,6 @@ function loadGalleryPageHash() {
         const imageHash = res.groups["PHASH"]
         const gid = res.groups["GID"]
         const page = res.groups["PAGE"]
-        session.reflect.ehentaiGalleryImageHash({gid, page}, {imageHash})
+        session.reflect.ehentaiGalleryImageHash.set({gid, page}, {imageHash})
     }
 }
