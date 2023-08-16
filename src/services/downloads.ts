@@ -1,6 +1,6 @@
-import { server } from "../functions/server"
-import { session } from "../functions/storage"
-import { sendMessageToTab } from "./messages"
+import { server } from "@/functions/server"
+import { session } from "@/functions/storage"
+import { sendMessageToTab } from "@/services/messages"
 
 /**
  * 功能：文件下载重命名建议模块。

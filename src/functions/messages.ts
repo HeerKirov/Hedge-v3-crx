@@ -1,5 +1,5 @@
-import { Result } from "../utils/primitives"
-import { SourceDataUpdateForm } from "./server/api-source-data"
+import { Result } from "@/utils/primitives"
+import { SourceDataUpdateForm } from "@/functions/server/api-source-data"
 
 //== 类型定义与导出的消息列表
 

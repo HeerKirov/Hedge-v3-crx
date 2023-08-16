@@ -1,4 +1,4 @@
-import { session } from "../../functions/storage"
+import { session } from "@/functions/storage"
 
 document.addEventListener("DOMContentLoaded", () => {
     loadGalleryPageHash()

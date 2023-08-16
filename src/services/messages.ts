@@ -1,4 +1,4 @@
-import { CallbackTypes, ServiceSenderMessages } from "../functions/messages"
+import { CallbackTypes, ServiceSenderMessages } from "@/functions/messages"
 
 export function receiveMessage(msg: any, sender: chrome.runtime.MessageSender, callback: (response?: any) => void): boolean | void {
     

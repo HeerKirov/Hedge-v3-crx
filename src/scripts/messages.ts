@@ -1,4 +1,4 @@
-import { ServiceSenderMessagesList } from "../functions/messages"
+import { ServiceSenderMessagesList } from "@/functions/messages"
 
 type OnMessage = <T extends ServiceSenderMessagesList>(msg: T, sender: chrome.runtime.MessageSender) => boolean | void
 

@@ -1,7 +1,7 @@
 import { SourceAdditionalInfoForm, SourceDataUpdateForm, SourceTagForm } from "../../functions/server/api-source-data"
-import { session } from "../../functions/storage"
-import { Result } from "../../utils/primitives"
-import { receiveMessage } from "../messages"
+import { session } from "@/functions/storage"
+import { Result } from "@/utils/primitives"
+import { receiveMessage } from "@/scripts/messages"
 
 document.addEventListener("DOMContentLoaded", () => {
     loadPostMD5()

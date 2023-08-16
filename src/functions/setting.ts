@@ -139,6 +139,9 @@ export const setting = {
             await chrome.storage.local.set({ "setting": defaultSetting() })
         }
     },
+    async reset(): Promise<void> {
+        await chrome.storage.local.set({ "setting": defaultSetting() })
+    },
     async get(): Promise<Setting> {
         const r = (await chrome.storage.local.get(["setting"]))["setting"] as Setting | undefined
         if(r !== undefined) {

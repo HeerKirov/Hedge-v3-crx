@@ -1,6 +1,6 @@
-import { setting } from "./functions/setting"
-import { determiningFilename } from "./services/downloads"
-import { receiveMessage } from "./services/messages"
+import { setting } from "@/functions/setting"
+import { determiningFilename } from "@/services/downloads"
+import { receiveMessage } from "@/services/messages"
 
 chrome.storage.session.setAccessLevel({accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS"})
 
