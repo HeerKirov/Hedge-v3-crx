@@ -1,5 +1,6 @@
-import { version } from "../../package.json"
-import { Migrate, migrate } from "../utils/migrations"
+import { version } from "@/../package.json"
+import { Migrate, migrate } from "@/utils/migrations"
+import { useEffect, useRef, useState } from "react"
 
 /**
  * 所有的设置项。
@@ -27,64 +28,125 @@ interface Server {
 }
 
 /**
- * 与优化工具相关的设置项。
+ * 与优化工具相关的设置项。所有功能默认开启。
  */
 interface Tool {
+    /**
+     * sankakucomplex的扩展工具。
+     */
     sankakucomplex: {
+        /**
+         * 屏蔽部分快捷键。
+         */
         enableShortcutForbidden: boolean
+        /**
+         * 增强翻页。
+         */
         enablePaginationEnhancement: boolean
+        /**
+         * 增强标签列表。
+         */
         enableTagListEnhancement: boolean
+        /**
+         * 增强pool列表。
+         */
         enableBookEnhancement: boolean
+        /**
+         * 替换图像链接。
+         */
         enableImageLinkReplacement: boolean
+        /**
+         * 在URL添加PID标识。
+         */
         enableAddPostId: boolean
     }
-
+    /**
+     * ehentai的扩展工具。
+     */
+    ehentai: {
+        /**
+         * 启用评论区智能屏蔽机制。
+         */
+        enableCommentForbidden: boolean
+        /**
+         * 启用评论区关键字屏蔽。
+         */
+        enableCommentBanned: boolean
+        /**
+         * 评论区屏蔽关键字列表。
+         */
+        commentBannedList: string[]
+    }
 }
 
 /**
  * 与文件下载重命名相关的设置项。
  */
 interface Download {
-    sankakucomplex: {
-        enable: boolean
-        rename: string
+    /**
+     * 覆盖固有规则。默认情况下，启用全部固有规则，在这里可以覆盖一部分设置。
+     */
+    overrideRules: {
+        [ruleName: string]: {
+            /**
+             * 是否启用此规则。
+             */
+            enable: boolean
+            /**
+             * 覆盖：新的rename模板。
+             */
+            rename: string | null
+        }
     }
-    idolcomplex: {
-        enable: boolean
+    /**
+     * 追加的自定义规则。
+     */
+    customRules: {
+        /**
+         * 重命名模板。
+         */
         rename: string
-    }
-    pixiv: {
-        enable: boolean
-        rename: string
-    }
-    ehentai: {
-        enable: boolean
-        rename: string
-    }
-    gelbooru: {
-        enable: boolean
-        rename: string
-    }
+        /**
+         * 匹配referrer并获取字段。
+         */
+        referrer: string | null
+        /**
+         * 匹配url并获取字段。
+         */
+        url: string | null
+        /**
+         * 匹配filename并获取字段。
+         */
+        filename: string | null
+    }[]
+    /**
+     * 覆盖扩展名支持。默认情况下，使用内置的扩展名列表，在这里可以追加新扩展名。
+     */
+    customExtensions: string[]
 }
 
 /**
  * 与来源数据收集相关的设置项。
  */
 interface SourceData {
-    sankakucomplex: {
-        enable: boolean
-        sourceSite: string
-        additionalInfo: {key: string, additionalField: string}[]
-    }
-    ehentai: {
-        enable: boolean
-        sourceSite: string
-        additionalInfo: {key: string, additionalField: string}[]
-    }
-    pixiv: {
-        enable: boolean
-        sourceSite: string
-        additionalInfo: {key: string, additionalField: string}[]
+    /**
+     * 覆盖固有规则。默认情况下，启用全部固有规则，在这里可以覆盖一部分设置。
+     */
+    overrideRules: {
+        [ruleName: string]: {
+            /**
+             * 是否启用此规则。
+             */
+            enable: boolean
+            /**
+             * 映射到Hedge server中的site name。
+             */
+            sourceSite: string
+            /**
+             * 映射到Hedge server中的附加信息定义。key为固有信息键名，additionalField为site中的附加信息字段名。
+             */
+            additionalInfo: {key: string, additionalField: string}[]
+        }
     }
 }
 
@@ -97,30 +159,31 @@ function defaultSetting(): Setting {
         },
         tool: {
             sankakucomplex: {
-                enableAddPostId: true,
+                enableShortcutForbidden: true,
+                enableTagListEnhancement: true,
+                enablePaginationEnhancement: true,
                 enableBookEnhancement: true,
                 enableImageLinkReplacement: true,
-                enablePaginationEnhancement: true,
-                enableShortcutForbidden: true,
-                enableTagListEnhancement: true
+                enableAddPostId: true
+            },
+            ehentai: {
+                enableCommentForbidden: true,
+                enableCommentBanned: true,
+                commentBannedList: []
             }
         },
         download: {
-            sankakucomplex: { enable: true, rename: "sankakucomplex_$<PID>" },
-            idolcomplex: { enable: true, rename: "idolcomplex_$<PID>" },
-            pixiv: { enable: true, rename: "pixiv_$<PID>_$<PAGE>" },
-            ehentai: { enable: true, rename: "ehentai_$<GID>_$<PAGE>_$<PHASH>" },
-            gelbooru: { enable: true, rename: "gelbooru_$<PID>" },
+            overrideRules: {},
+            customRules: [],
+            customExtensions: []
         },
         sourceData: {
-            sankakucomplex: { enable: true, sourceSite: "sankakucomplex", additionalInfo: [] },
-            ehentai: { enable: true, sourceSite: "ehentai", additionalInfo: [] },
-            pixiv: { enable: true, sourceSite: "pixiv", additionalInfo: [] },
+            overrideRules: {}
         }
     }
 }
 
-export const setting = {
+export const settings = {
     async load(reload: boolean = false): Promise<void> {
         const r = (await chrome.storage.local.get(["setting"]))["setting"] as Setting | undefined
         if(r !== undefined && !reload) {
@@ -144,15 +207,34 @@ export const setting = {
     },
     async get(): Promise<Setting> {
         const r = (await chrome.storage.local.get(["setting"]))["setting"] as Setting | undefined
-        if(r !== undefined) {
-            return r
-        }else{
-            return defaultSetting()
-        }
+        return r ?? defaultSetting()
     },
     async set(setting: Setting) {
         await chrome.storage.local.set({ "setting": setting })
     }
+}
+
+export function useSetting() {
+    const [setting, setSetting] = useState<Setting | null>(null)
+
+    const loading = useRef(false)
+
+    const saveSetting = async (newSetting: Setting) => {
+        setSetting(newSetting)
+        await settings.set(newSetting)
+    }
+
+    useEffect(() => {
+        if(!loading.current) {
+            loading.current = true
+            settings.get().then(res => {
+                setSetting(res)
+                loading.current = false
+            })
+        }
+    }, [])
+    
+    return { setting, saveSetting }
 }
 
 const migrations: {[version: string]: Migrate<MigrateContext>} = {

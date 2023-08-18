@@ -1,9 +1,11 @@
+import { settings } from "@/functions/setting"
 
-document.addEventListener("DOMContentLoaded", () => {
-    enableShortcutForbidden()
-    enablePaginationEnhancement()
-    enableTagListEnhancement()
-    enableImageThumbnailReplacement()
+document.addEventListener("DOMContentLoaded", async () => {
+    const setting = await settings.get()
+    if(setting.tool.sankakucomplex.enableShortcutForbidden) enableShortcutForbidden()
+    if(setting.tool.sankakucomplex.enablePaginationEnhancement) enablePaginationEnhancement()
+    if(setting.tool.sankakucomplex.enableTagListEnhancement) enableTagListEnhancement()
+    if(setting.tool.sankakucomplex.enableImageLinkReplacement) enableImageThumbnailReplacement()
 })
 
 /**

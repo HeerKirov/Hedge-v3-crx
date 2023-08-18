@@ -1,13 +1,15 @@
 import { SourceAdditionalInfoForm, SourceDataUpdateForm, SourceTagForm } from "../../functions/server/api-source-data"
-import { session } from "@/functions/storage"
+import { sessions } from "@/functions/storage"
 import { Result } from "@/utils/primitives"
 import { receiveMessage } from "@/scripts/messages"
+import { settings } from "@/functions/setting"
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     loadPostMD5()
-    enableAddPostId()
-    enableBookEnhancement()
-    enableImageLinkReplacement()
+    const setting = await settings.get()
+    if(setting.tool.sankakucomplex.enableAddPostId) enableAddPostId()
+    if(setting.tool.sankakucomplex.enableBookEnhancement) enableBookEnhancement()
+    if(setting.tool.sankakucomplex.enableImageLinkReplacement) enableImageLinkReplacement()
 })
 
 chrome.runtime.onMessage.addListener(receiveMessage(({ type, msg, callback }) => {
@@ -27,7 +29,7 @@ function loadPostMD5() {
         const res = /\/post\/show\/(?<MD5>\S+)/.exec(document.location.pathname)
         if(res && res.groups) {
             const md5 = res.groups["MD5"]
-            session.reflect.sankakuPostId.set({md5}, {pid: pid.toString()})
+            sessions.reflect.sankakuPostId.set({md5}, {pid: pid.toString()})
         }
     }
 }

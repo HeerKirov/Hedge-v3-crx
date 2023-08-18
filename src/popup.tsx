@@ -1,8 +1,7 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { createGlobalStyle } from "styled-components"
-import { server } from "@/functions/server"
-import { useEndpoint } from "@/utils/reactivity"
+import { server, useEndpoint } from "@/functions/server"
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>)
 

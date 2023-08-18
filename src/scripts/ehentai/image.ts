@@ -1,4 +1,4 @@
-import { session } from "@/functions/storage"
+import { sessions } from "@/functions/storage"
 
 document.addEventListener("DOMContentLoaded", () => {
     loadGalleryPageHash()
@@ -14,6 +14,6 @@ function loadGalleryPageHash() {
         const imageHash = res.groups["PHASH"]
         const gid = res.groups["GID"]
         const page = res.groups["PAGE"]
-        session.reflect.ehentaiGalleryImageHash.set({gid, page}, {imageHash})
+        sessions.reflect.ehentaiGalleryImageHash.set({gid, page}, {imageHash})
     }
 }

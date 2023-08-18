@@ -1,3 +1,4 @@
+import { settings } from "../setting"
 import { AllException, BasicException } from "./exceptions"
 
 export type Response<T, E extends BasicException = never> = ResponseOk<T> | ResponseError<E>
@@ -55,16 +56,17 @@ export function createPathDataRequest<P, D, R, E extends BasicException>(url: UR
     return (path: P, data: D) => request<R, E>({url: url(path), method, data: parser?.parseData ? parser.parseData(data) : data, parseResponse: parser?.parseResponse})
 }
 
-function request<R, E extends BasicException>(requestConfig: RequestConfig<R>): Promise<Response<R, E>> {
-    return new Promise((resolve, reject) => {
-        const url = new URL(requestConfig.url, "http://localhost:9000")
+function request<R, E extends BasicException>(requestConfig: RequestConfig<R>): Promise<Response<R, E>> {    
+    return new Promise(async (resolve, reject) => {
+        const setting = await settings.get()
+        const url = new URL(requestConfig.url, `http://localhost:${setting.server.port}`)
         if(requestConfig.query) {
             url.search = new URLSearchParams(requestConfig.query).toString()
         }
         fetch(url, {
             method: requestConfig.method,
             headers: {
-                "Authorization": `Bearer dev`,
+                "Authorization": `Bearer ${setting.server.token}`,
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(requestConfig.data),

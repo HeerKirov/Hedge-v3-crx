@@ -1,4 +1,4 @@
-import { setting } from "@/functions/setting"
+import { settings } from "@/functions/setting"
 import { determiningFilename } from "@/services/downloads"
 import { receiveMessage } from "@/services/messages"
 
@@ -8,7 +8,7 @@ chrome.runtime.onMessage.addListener(receiveMessage)
 
 chrome.downloads.onDeterminingFilename.addListener(determiningFilename)
 
-setting.load()
+settings.load()
 
 // chrome.contextMenus.create({
 

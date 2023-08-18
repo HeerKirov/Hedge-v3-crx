@@ -5,7 +5,6 @@
 export async function migrate<C>(context: C, migrations: {[version: string]: Migrate<C>}, version: Property<C>): Promise<C & {changed: boolean}> {
     const currentVersion = tupleOfVersion(version.get(context))
 
-    
     const steps = Object.entries(migrations)
         .map(([k, v]) => [tupleOfVersion(k), v] as const)
         .filter(([v]) => compareVersionTuple(v, currentVersion) > 0)

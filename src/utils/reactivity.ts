@@ -1,45 +1,40 @@
-import { useEffect, useRef, useState } from "react"
-import { BasicException } from "@/functions/server/exceptions"
-import { Response } from "@/functions/server/impl"
-import { Setting, setting } from "@/functions/setting"
+import { useEffect, useState } from "react"
 
-export function useEndpoint<T, E extends BasicException>(endpoint: () => Promise<Response<T, E>>): { data: T | null, error: E | null } {
-    const [data, setData] = useState<T | null>(null)
-    const [error, setError] = useState<E | null>(null)
-
-    const loading = useRef(false)
-
-    useEffect(() => {
-        if(!loading.current) {
-            loading.current = true
-            endpoint().then(res => {
-                if(res.ok) {
-                    setData(res.data)
-                }else{
-                    setError(res.exception)
-                }
-                loading.current = false
-            })
+export function usePartialSet<T extends object>(value: T | null | undefined, setValue?: (v: T) => void) {
+    return function<K extends keyof T>(key: K, newValue: T[K]) {
+        if(value !== null && value !== undefined && setValue) {
+            setValue({...value, [key]: newValue})
         }
-    }, [])
-    
-    return {data, error}
+    }
 }
 
-export function useSetting(): Setting | null {
-    const [data, setData] = useState<Setting | null>(null)
+interface UseEditorProps<T, F> {
+    value: T | null | undefined,
+    updateValue?(v: T): void
+    from(v: T): F
+    to(v: F): T
+    default(): F
+    effect?(v: T | null | undefined): void
+}
 
-    const loading = useRef(false)
+export function useEditor<T, F extends object>(props: UseEditorProps<T, F>) {
+    const [editor, setEditor] = useState(props.default())
+    const [changed, setChanged] = useState(false)
 
     useEffect(() => {
-        if(!loading.current) {
-            loading.current = true
-            setting.get().then(res => {
-                setData(res)
-                loading.current = false
-            })
-        }
-    }, [])
-    
-    return data
+        setEditor(props.value ? props.from(props.value) : props.default())
+        props.effect?.(props.value)
+    }, [props.value])
+
+    const setProperty = usePartialSet(editor, v => {
+        setEditor(v)
+        if(!changed) setChanged(true)
+    })
+
+    const save = () => {
+        setChanged(false)
+        props.updateValue?.(props.to(editor))
+    }
+
+    return {editor, changed, setProperty, save}
 }

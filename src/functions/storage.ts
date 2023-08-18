@@ -2,7 +2,7 @@
 /**
  * session会话存储。在这里的通常是各类临时缓存。
  */
-export const session = {
+export const sessions = {
     /**
      * 反射信息。根据一个固定ID，反射至该固定ID的某个固定值。
      * 这类反射信息通常在document loaded时在页面被保存，并在download suggest等处被使用。
@@ -25,7 +25,7 @@ export const session = {
          * 最近收集的source data identity。
          * 在downloaded created时被用于节流，避免重复下载同一个identity的来源数据。
          */
-        sourceDataCollected: createSetEndpoint<{site: string, sourceId: string}>("session", "cache/source-data/collected", p => `${p.site}-${p.sourceId}`)
+        sourceDataCollected: createSetEndpoint<{site: string, sourceId: number}>("session", "cache/source-data/collected", p => `${p.site}-${p.sourceId}`)
     }
 }
 

@@ -4,6 +4,6 @@ export const app = {
     health: createRequest<AppHealth, never>("/app/health")
 }
 
-interface AppHealth {
+export interface AppHealth {
     status: "NOT_INITIALIZED" | "INITIALIZING" | "LOADING" | "READY"
 }
