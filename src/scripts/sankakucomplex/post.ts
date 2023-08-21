@@ -1,8 +1,8 @@
-import { SourceAdditionalInfoForm, SourceDataUpdateForm, SourceTagForm } from "../../functions/server/api-source-data"
+import { SourceAdditionalInfoForm, SourceBookForm, SourceDataUpdateForm, SourceTagForm } from "../../functions/server/api-source-data"
 import { sessions } from "@/functions/storage"
 import { Result } from "@/utils/primitives"
 import { receiveMessage } from "@/scripts/messages"
-import { settings } from "@/functions/setting"
+import { Setting, settings } from "@/functions/setting"
 
 document.addEventListener("DOMContentLoaded", async () => {
     loadPostMD5()
@@ -12,10 +12,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     if(setting.tool.sankakucomplex.enableImageLinkReplacement) enableImageLinkReplacement()
 })
 
-chrome.runtime.onMessage.addListener(receiveMessage(({ type, msg, callback }) => {
-    console.log(type, msg, callback)
+chrome.runtime.onMessage.addListener(receiveMessage(({ type, msg: _, callback }) => {
     if(type === "REPORT_SOURCE_DATA") {
-        callback(collectSourceData())
+        settings.get().then(setting => {
+            callback(collectSourceData(setting))
+        })
+        return true
+    }else{
+        return false
     }
 }))
 
@@ -91,7 +95,9 @@ function enableImageLinkReplacement() {
 /**
  * 功能：收集来源数据。
  */
-function collectSourceData(): Result<SourceDataUpdateForm, Error> {
+function collectSourceData(setting: Setting): Result<SourceDataUpdateForm, Error> {
+    const overrideRule = setting.sourceData.overrideRules["sankakucomplex"]
+
     const tags: SourceTagForm[] = []
     const tagLiList = document.querySelectorAll("#tag-sidebar li")
     for(let i = 0; i < tagLiList.length; ++i) {
@@ -112,27 +118,61 @@ function collectSourceData(): Result<SourceDataUpdateForm, Error> {
         const childNodes = tagLi.querySelector("div > .tooltip > span")?.childNodes ?? []
         for(const childNode of childNodes) {
             if(childNode.textContent !== null && childNode.nodeName === "#text" && childNode.textContent.startsWith("日本語:")) {
-                tag.otherName = childNode.textContent.substring("日本語:".length).trim()
+                const otherName = childNode.textContent.substring("日本語:".length).trim()
+                //TODO 有关N/A的处理方式不确定是不是正确的。需要再验证。
+                if(otherName !== "N/A") {
+                    tag.otherName = otherName
+                }
                 break
             }
         }
         tags.push(tag)
     }
 
+    const books: SourceBookForm[] = []
+    //此处依然使用了legacy模式。好处是节省请求；坏处是book的jp name无法获得。
+    const statusNotice = document.querySelectorAll(".content .status-notice")
+    if(statusNotice.length) {
+        for(const sn of statusNotice) {
+            if(sn.id.startsWith("pool")) {
+                const bookId = sn.id.slice("pool".length)
+                const anchor = sn.querySelector("a")
+                //TODO anchor的获取方式不确定是不是正确的。需要再验证。
+                const title = anchor && anchor.textContent ? anchor.textContent : undefined
+                books.push({code: bookId, title})
+            }
+        }
+    }
+
+    const relations: number[] = []
+    //此处依然使用了legacy模式。好处是节省请求；坏处是能获得的children数量有限，只有5个。
+    const parentPreviewDiv = document.querySelector("div#parent-preview")
+    if(parentPreviewDiv) {
+        const spanList = parentPreviewDiv.getElementsByTagName("span")
+        for(const span of spanList) {
+            const id = parseInt(span.id.slice(1))
+            relations.push(id)
+        }
+    }
+    const childPreviewDiv = document.querySelector("div#child-preview")
+    if(childPreviewDiv) {
+        const spanList = childPreviewDiv.getElementsByTagName("span")
+        for(const span of spanList) {
+            const id = parseInt(span.id.slice(1))
+            relations.push(id)
+        }
+    }
+
     const additionalInfo: SourceAdditionalInfoForm[] = []
     const res = /\/post\/show\/(?<MD5>\S+)/.exec(document.location.pathname)
     if(res && res.groups) {
         const md5 = res.groups["MD5"]
-        additionalInfo.push({field: "md5", value: md5})
+        const field = overrideRule?.additionalInfo.find(i => i.key === "md5")?.additionalField ?? "md5"
+        additionalInfo.push({field, value: md5})
     }
-    
-    //TODO collect books & relations
 
     return {
         ok: true,
-        value: {
-            tags,
-            additionalInfo
-        }
+        value: {tags, books, relations, additionalInfo}
     }
 }

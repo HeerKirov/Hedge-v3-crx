@@ -146,7 +146,7 @@ interface SourceData {
              * 映射到Hedge server中的附加信息定义。key为固有信息键名，additionalField为site中的附加信息字段名。
              */
             additionalInfo: {key: string, additionalField: string}[]
-        }
+        } | undefined
     }
 }
 
