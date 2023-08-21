@@ -1,8 +1,9 @@
-import { Button, CheckBox, Input } from "@/components/universal"
-import { Setting } from "@/functions/setting"
-import { DOWNLOAD_RENAME_RULES } from "@/services/downloads"
-import { useEditor } from "@/utils/reactivity"
 import { useState } from "react"
+import styled from "styled-components"
+import { Button, CheckBox, Group, Input, Label, SecondaryText } from "@/components/universal"
+import { DOWNLOAD_RENAME_RULES, INCLUDE_EXTENSIONS } from "@/services/downloads"
+import { Setting } from "@/functions/setting"
+import { useEditor } from "@/utils/reactivity"
 
 interface OptionsDownloadPanelProps {
     download: Setting["download"] | null | undefined
@@ -63,16 +64,22 @@ export function OptionsDownloadPanel(props: OptionsDownloadPanelProps) {
     }
 
     return <>
-        <label>自定义扩展名</label>
         <p>
+            文件下载功能提供在图源网站下载图像时的重命名建议功能，在建议名称中包含图源网站的类型、图像ID等信息，方便保存后的溯源操作。
+        </p>
+        <Label>自定义扩展名</Label>
+        <p>
+            <SecondaryText>何种扩展名可以触发建议。以逗号(,)分隔多个扩展名。默认的扩展名包括{INCLUDE_EXTENSIONS.join(", ")}。</SecondaryText>
             <Input value={editor.customExtensions} onUpdateValue={v => setProperty("customExtensions", v)}/>
         </p>
-        <label>重命名规则</label>
-        {editor.rules.map((rule, i) => <StandardRuleItem {...rule} onUpdate={v => updateStandardRuleAt(i, v)}/>)}
-        <label>自定义重命名规则</label>
-        {editor.customRules.map((customRule, i) => <CustomRuleItem {...customRule} onUpdate={v => updateCustomRuleAt(i, v)} onRemove={() => removeCustomRuleAt(i)}/>)}
+        <Label>重命名规则</Label>
+        <SecondaryText>内置的重命名规则。可以调整规则的启用与否，以及重命名模板。</SecondaryText>
+        {editor.rules.map((rule, i) => <StandardRuleItem key={rule.ruleName} {...rule} onUpdate={v => updateStandardRuleAt(i, v)}/>)}
+        <Label>自定义重命名规则</Label>
+        <SecondaryText>自行添加的重命名规则。referrer、url、filename全部正则匹配成功时，应用规则。</SecondaryText>
+        {editor.customRules.map((customRule, i) => <CustomRuleItem key={i} {...customRule} onUpdate={v => updateCustomRuleAt(i, v)} onRemove={() => removeCustomRuleAt(i)}/>)}
         <CustomRuleAddItem onAdd={addCustomRule}/>
-        <Button disabled={!changed} onClick={save}>保存</Button>
+        <StyledSaveButton mode="filled" type="primary" disabled={!changed} onClick={save}>保存</StyledSaveButton>
     </>
 }
 
@@ -100,19 +107,20 @@ interface StandardRuleProps extends StandardRule {
 
 function StandardRuleItem({ onUpdate, ...rule }: StandardRuleProps) {
     return <p>
-        <CheckBox checked={rule.enable} onUpdateChecked={v => onUpdate({...rule, enable: v})}>{rule.ruleName}</CheckBox>
-        <Input placeholder="重命名模板" disabled={!rule.enable} value={rule.rename} onUpdateValue={v => onUpdate({...rule, rename: v})}/>
+        <CheckBox checked={rule.enable} onUpdateChecked={v => onUpdate({...rule, enable: v})}/>
+        <StyledFixedRuleName>{rule.ruleName}</StyledFixedRuleName>
+        <Input width="300px" placeholder="重命名模板" disabled={!rule.enable} value={rule.rename} onUpdateValue={v => onUpdate({...rule, rename: v})}/>
     </p>
 }
 
 function CustomRuleItem({ onUpdate, onRemove, ...rule }: CustomRuleItemProps) {
-    return <p>
+    return <Group>
         <Input placeholder="referrer" value={rule.referrer} onUpdateValue={v => onUpdate({...rule, referrer: v})}/>
-        <Input placeholder="url"  value={rule.url} onUpdateValue={v => onUpdate({...rule, url: v})}/>
-        <Input placeholder="filename"  value={rule.filename} onUpdateValue={v => onUpdate({...rule, filename: v})}/>
-        <Input placeholder="重命名模板"  value={rule.rename} onUpdateValue={v => onUpdate({...rule, rename: v})}/>
+        <Input placeholder="url" value={rule.url} onUpdateValue={v => onUpdate({...rule, url: v})}/>
+        <Input placeholder="filename" value={rule.filename} onUpdateValue={v => onUpdate({...rule, filename: v})}/>
+        <Input placeholder="重命名模板" value={rule.rename} onUpdateValue={v => onUpdate({...rule, rename: v})}/>
         <Button onClick={onRemove}>删除</Button>
-    </p>
+    </Group>
 }
 
 function CustomRuleAddItem({ onAdd }: {onAdd(item: CustomRule): void}) {
@@ -131,11 +139,21 @@ function CustomRuleAddItem({ onAdd }: {onAdd(item: CustomRule): void}) {
         setRename("")
     }
 
-    return <p>
+    return <Group>
         <Input placeholder="referrer" value={referrer} onUpdateValue={setReferrer}/>
         <Input placeholder="url"  value={url} onUpdateValue={setUrl}/>
         <Input placeholder="filename"  value={filename} onUpdateValue={setFilename}/>
         <Input placeholder="重命名模板"  value={rename} onUpdateValue={setRename}/>
         <Button disabled={disabled} onClick={add}>添加</Button>
-    </p>
+    </Group>
 }
+
+const StyledSaveButton = styled(Button)`
+    margin-top: var(--spacing-2);
+    padding: 0 var(--spacing-5);
+`
+
+const StyledFixedRuleName = styled.span`
+    display: inline-block;
+    width: 150px;
+`

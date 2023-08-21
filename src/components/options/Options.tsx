@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { styled } from "styled-components"
+import { Button } from "@/components/universal"
 import { useSetting } from "@/functions/setting"
 import { usePartialSet } from "@/utils/reactivity"
 import { OptionsServerPanel } from "./OptionsServer"
@@ -17,10 +18,10 @@ export function Options() {
     return <RootDiv>
         <RootLeftDiv>
             <Header>Hedge v3 Helper</Header>
-            <SideButtonDiv><SideButton onClick={() => setPanel("server")}>后台服务</SideButton></SideButtonDiv>
-            <SideButtonDiv><SideButton onClick={() => setPanel("tool")}>扩展工具</SideButton></SideButtonDiv>
-            <SideButtonDiv><SideButton onClick={() => setPanel("download")}>文件下载</SideButton></SideButtonDiv>
-            <SideButtonDiv><SideButton onClick={() => setPanel("sourceData")}>来源收集</SideButton></SideButtonDiv>
+            <SideButtonDiv><SideButton type={panel === "server" ? "primary" : undefined} onClick={() => setPanel("server")}>后台服务</SideButton></SideButtonDiv>
+            <SideButtonDiv><SideButton type={panel === "tool" ? "primary" : undefined} onClick={() => setPanel("tool")}>扩展工具</SideButton></SideButtonDiv>
+            <SideButtonDiv><SideButton type={panel === "download" ? "primary" : undefined} onClick={() => setPanel("download")}>文件下载</SideButton></SideButtonDiv>
+            <SideButtonDiv><SideButton type={panel === "sourceData" ? "primary" : undefined}onClick={() => setPanel("sourceData")}>来源收集</SideButton></SideButtonDiv>
         </RootLeftDiv>
         <RootRightDiv>
             { panel === "server" ? <OptionsServerPanel server={setting?.server} onUpdateServer={v => setSettingPartial("server", v)}/> 
@@ -41,6 +42,9 @@ const RootLeftDiv = styled.div`
     position: absolute;
     left: 0; top: 0; bottom: 0; width: 300px;
     padding: 1rem;
+    box-sizing: border-box;
+    background-color: var(--block-color);
+    border-right: 1px solid var(--border-color);
 `
 
 const RootRightDiv = styled.div`
@@ -48,16 +52,19 @@ const RootRightDiv = styled.div`
     right: 0; top: 0; bottom: 0; width: calc(100% - 300px);
     padding: 1rem;
     overflow-y: auto;
+    box-sizing: border-box;
 `
 
-const Header = styled.h1`
-    
+const Header = styled.h3`
+    text-align: center;
+    margin-bottom: var(--spacing-6);
 `
 
 const SideButtonDiv = styled.div`
-    
+    margin-bottom: var(--spacing-1);
+    text-align: center;
 `
 
-const SideButton = styled.button`
-    
+const SideButton = styled(Button)`
+    width: 100%;
 `

@@ -1,4 +1,6 @@
-import { Button, CheckBox, Input } from "@/components/universal"
+import React from "react"
+import styled from "styled-components"
+import { Button, CheckBox, Input, Label, SecondaryText } from "@/components/universal"
 import { Setting } from "@/functions/setting"
 import { SOURCE_DATA_COLLECT_RULES } from "@/services/downloads"
 import { objects } from "@/utils/primitives"
@@ -46,9 +48,11 @@ export function OptionsSourceDataPanel(props: OptionsSourceDataPanelProps) {
     }
 
     return <>
-        <label>来源数据收集规则</label>
-        {editor.rules.map((rule, i) => <CollectRuleItem {...rule} onUpdate={v => updateCollectRuleAt(i ,v)}/>)}
-        <Button disabled={!changed} onClick={save}>保存</Button>
+        <p>来源数据收集功能在提供文件重命名建议的同时收集该项目的来源数据，并保存到Hedge。</p>
+        <Label>来源数据收集规则</Label>
+        <SecondaryText>为每一类来源数据收集指定其在Hedge中对应的site名称，以及每一种附加数据在Hedge中对应的附加数据字段名。</SecondaryText>
+        {editor.rules.map((rule, i) => <CollectRuleItem key={rule.ruleName} {...rule} onUpdate={v => updateCollectRuleAt(i ,v)}/>)}
+        <StyledSaveButton mode="filled" type="primary" disabled={!changed} onClick={save}>保存</StyledSaveButton>
     </>
 }
 
@@ -65,11 +69,28 @@ interface CollectRuleItemProps extends CollectRule {
 
 function CollectRuleItem({ onUpdate, ...rule }: CollectRuleItemProps) {
     return <p>
-        <CheckBox checked={rule.enable} onUpdateChecked={v => onUpdate({...rule, enable: v})}>{rule.ruleName}</CheckBox>
-        <Input disabled={!rule.enable} value={rule.sourceSite} onUpdateValue={v => onUpdate({...rule, sourceSite: v})}/>
-        {rule.additionalInfo.map((additionalInfo, i) => <>
-            {additionalInfo.key}
-            <Input disabled={!rule.enable} value={additionalInfo.additionalField} onUpdateValue={v => onUpdate({...rule, additionalInfo: [...rule.additionalInfo.slice(0, i), {key: additionalInfo.key, additionalField: v}, ...rule.additionalInfo.slice(i + 1)]})}/>
-        </>)}
+        <CheckBox checked={rule.enable} onUpdateChecked={v => onUpdate({...rule, enable: v})}/>
+        <StyledFixedRuleName>{rule.ruleName}</StyledFixedRuleName>
+        <Input disabled={!rule.enable} value={rule.sourceSite} placeholder="对应site名称" onUpdateValue={v => onUpdate({...rule, sourceSite: v})}/>
+        {rule.additionalInfo.map((additionalInfo, i) => <React.Fragment key={additionalInfo.key}>
+            <StyledFixedAdditionalKey>{additionalInfo.key}</StyledFixedAdditionalKey>
+            <Input width="100px" disabled={!rule.enable} placeholder="对应附加数据字段名" value={additionalInfo.additionalField} onUpdateValue={v => onUpdate({...rule, additionalInfo: [...rule.additionalInfo.slice(0, i), {key: additionalInfo.key, additionalField: v}, ...rule.additionalInfo.slice(i + 1)]})}/>
+        </React.Fragment>)}
     </p>
 }
+
+const StyledSaveButton = styled(Button)`
+    margin-top: var(--spacing-2);
+    padding: 0 var(--spacing-5);
+`
+
+const StyledFixedRuleName = styled.span`
+    display: inline-block;
+    width: 150px;
+`
+
+const StyledFixedAdditionalKey = styled.span`
+    display: inline-block;
+    text-align: center;
+    width: 50px;
+`
