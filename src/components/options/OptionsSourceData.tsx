@@ -2,8 +2,8 @@ import React from "react"
 import styled from "styled-components"
 import { Button, CheckBox, Input, Label, SecondaryText } from "@/components/universal"
 import { Setting } from "@/functions/setting"
-import { SOURCE_DATA_COLLECT_RULES } from "@/services/downloads"
-import { objects } from "@/utils/primitives"
+import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
+import { maps, objects } from "@/utils/primitives"
 import { useEditor } from "@/utils/reactivity"
 
 interface OptionsSourceDataPanelProps {
@@ -16,23 +16,28 @@ export function OptionsSourceDataPanel(props: OptionsSourceDataPanelProps) {
         value: props.sourceData,
         updateValue: props.onUpdateSourceData,
         from: v => ({
-            rules: SOURCE_DATA_COLLECT_RULES.map(rule => {
-                const overrideRule = v.overrideRules[rule.ruleName]
+            rules: Object.entries(SOURCE_DATA_COLLECT_SITES).map(([siteName, rule]) => {
+                const overrideRule = v.overrideRules[siteName]
                 return {
-                    ruleName: rule.ruleName,
+                    siteName,
                     enable: overrideRule?.enable ?? true,
                     sourceSite: overrideRule?.sourceSite ?? rule.sourceSite,
-                    additionalInfo: overrideRule?.additionalInfo ?? rule.additionalInfo
+                    additionalInfo: Object.entries(overrideRule?.additionalInfo ?? rule.additionalInfo).map(([key, additionalField]) => ({key, additionalField}))
                 }
             })
         }),
         to: f => ({
             overrideRules: (() => {
-                const overrideRules: Record<string, {enable: boolean, sourceSite: string, additionalInfo: {key: string, additionalField: string}[]}> = {}
+                const overrideRules: Record<string, {enable: boolean, sourceSite: string, additionalInfo: Record<string, string>}> = {}
                 for(let i = 0; i < f.rules.length; ++i) {
-                    const rule = f.rules[i], stdRule = SOURCE_DATA_COLLECT_RULES[i]
-                    if(!rule.enable || rule.sourceSite !== stdRule.sourceSite || !objects.deepEquals(rule.additionalInfo, stdRule.additionalInfo)) {
-                        overrideRules[rule.ruleName] = {enable: rule.enable, sourceSite: rule.sourceSite, additionalInfo: rule.additionalInfo}
+                    const rule = f.rules[i], stdRule = SOURCE_DATA_COLLECT_SITES[rule.siteName]
+                    const additionalInfo = maps.parse(rule.additionalInfo.map(i => [i.key, i.additionalField]))
+                    if(!rule.enable || rule.sourceSite !== stdRule.sourceSite || !objects.deepEquals(additionalInfo, stdRule.additionalInfo)) {
+                        overrideRules[rule.siteName] = {
+                            enable: rule.enable, 
+                            sourceSite: rule.sourceSite, 
+                            additionalInfo
+                        }
                     }
                 }
                 return overrideRules
@@ -51,14 +56,14 @@ export function OptionsSourceDataPanel(props: OptionsSourceDataPanelProps) {
         <p>来源数据收集功能在提供文件重命名建议的同时收集该项目的来源数据，并保存到Hedge。</p>
         <Label>来源数据收集规则</Label>
         <SecondaryText>为每一类来源数据收集指定其在Hedge中对应的site名称，以及每一种附加数据在Hedge中对应的附加数据字段名。</SecondaryText>
-        {editor.rules.map((rule, i) => <CollectRuleItem key={rule.ruleName} {...rule} onUpdate={v => updateCollectRuleAt(i ,v)}/>)}
+        {editor.rules.map((rule, i) => <CollectRuleItem key={rule.siteName} {...rule} onUpdate={v => updateCollectRuleAt(i ,v)}/>)}
         <StyledSaveButton mode="filled" type="primary" disabled={!changed} onClick={save}>保存</StyledSaveButton>
     </>
 }
 
 interface CollectRule {
     enable: boolean
-    ruleName: string
+    siteName: string
     sourceSite: string
     additionalInfo: {key: string, additionalField: string}[]
 }
@@ -70,7 +75,7 @@ interface CollectRuleItemProps extends CollectRule {
 function CollectRuleItem({ onUpdate, ...rule }: CollectRuleItemProps) {
     return <p>
         <CheckBox checked={rule.enable} onUpdateChecked={v => onUpdate({...rule, enable: v})}/>
-        <StyledFixedRuleName>{rule.ruleName}</StyledFixedRuleName>
+        <StyledFixedRuleName>{rule.siteName}</StyledFixedRuleName>
         <Input disabled={!rule.enable} value={rule.sourceSite} placeholder="对应site名称" onUpdateValue={v => onUpdate({...rule, sourceSite: v})}/>
         {rule.additionalInfo.map((additionalInfo, i) => <React.Fragment key={additionalInfo.key}>
             <StyledFixedAdditionalKey>{additionalInfo.key}</StyledFixedAdditionalKey>

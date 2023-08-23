@@ -1,21 +1,30 @@
-import { SourceAdditionalInfoForm, SourceBookForm, SourceDataUpdateForm, SourceTagForm } from "../../functions/server/api-source-data"
-import { sessions } from "@/functions/storage"
-import { Result } from "@/utils/primitives"
-import { receiveMessage } from "@/scripts/messages"
+import { setActiveTabBadge } from "@/functions/active-tab"
+import { SourceDataPath } from "@/functions/server/api-all"
+import { SourceAdditionalInfoForm, SourceBookForm, SourceDataUpdateForm, SourceTagForm } from "@/functions/server/api-source-data"
 import { Setting, settings } from "@/functions/setting"
+import { sessions } from "@/functions/storage"
+import { receiveMessageForTab } from "@/functions/messages"
+import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
+import { Result } from "@/utils/primitives"
 
 document.addEventListener("DOMContentLoaded", async () => {
-    loadPostMD5()
     const setting = await settings.get()
-    if(setting.tool.sankakucomplex.enableAddPostId) enableAddPostId()
+    const pid = loadPostMD5()
+    loadActiveTabInfo(setting)
+    if(setting.tool.sankakucomplex.enableAddPostId) enableAddPostId(pid)
     if(setting.tool.sankakucomplex.enableBookEnhancement) enableBookEnhancement()
     if(setting.tool.sankakucomplex.enableImageLinkReplacement) enableImageLinkReplacement()
 })
 
-chrome.runtime.onMessage.addListener(receiveMessage(({ type, msg: _, callback }) => {
+chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callback }) => {
     if(type === "REPORT_SOURCE_DATA") {
         settings.get().then(setting => {
-            callback(collectSourceData(setting))
+            callback(reportSourceData(setting))
+        })
+        return true
+    }else if(type === "REPORT_SOURCE_DATA_PATH") {
+        settings.get().then(setting => {
+            callback(reportSourceDataPath(setting))
         })
         return true
     }else{
@@ -26,15 +35,24 @@ chrome.runtime.onMessage.addListener(receiveMessage(({ type, msg: _, callback })
 /**
  * 加载post image数据。将post MD5信息保存到session。
  */
-function loadPostMD5() {
-    const meta = document.querySelector("meta[property=\"og:title\"]")
-    if(meta && (meta as HTMLMetaElement).content.startsWith("Post")) {
-        const pid = parseInt((meta as HTMLMetaElement).content.substring("Post".length))
-        const res = /\/post\/show\/(?<MD5>\S+)/.exec(document.location.pathname)
-        if(res && res.groups) {
-            const md5 = res.groups["MD5"]
-            sessions.reflect.sankakuPostId.set({md5}, {pid: pid.toString()})
-        }
+function loadPostMD5(): number {
+    const pid = getPID()
+    const res = /\/post\/show\/(?<MD5>\S+)/.exec(document.location.pathname)
+    if(res && res.groups) {
+        const md5 = res.groups["MD5"]
+        sessions.reflect.sankakuPostId.set({md5}, {pid: pid.toString()})
+    }
+    return pid
+}
+
+/**
+ * 加载active tab在action badge上的标示信息。
+ */
+async function loadActiveTabInfo(setting: Setting) {
+    const currentTab = await chrome.tabs.getCurrent()
+    if(currentTab && currentTab.id) {
+        const sourceDataPath = reportSourceDataPath(setting)
+        setActiveTabBadge(currentTab.id, sourceDataPath)
     }
 }
 
@@ -42,12 +60,8 @@ function loadPostMD5() {
  * 在URL添加PID，并将PID信息保存到session。
  * legacy的post页面的PID已经被换成了MD5。这真的很难用。把PID添加回去能方便一点，尽管是添加到hash。
  */
-function enableAddPostId() {
-    const meta = document.querySelector("meta[property=\"og:title\"]")
-    if(meta && (meta as HTMLMetaElement).content.startsWith("Post")) {
-        const pid = parseInt((meta as HTMLMetaElement).content.substring("Post".length))
-        document.location.hash = `PID=${pid}`
-    }
+function enableAddPostId(pid: number) {
+    document.location.hash = `PID=${pid}`
 }
 
 /**
@@ -93,10 +107,10 @@ function enableImageLinkReplacement() {
 }
 
 /**
- * 功能：收集来源数据。
+ * 事件：收集来源数据。
  */
-function collectSourceData(setting: Setting): Result<SourceDataUpdateForm, Error> {
-    const overrideRule = setting.sourceData.overrideRules["sankakucomplex"]
+function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, Error> {
+    const rule = setting.sourceData.overrideRules["sankakucomplex"] ?? SOURCE_DATA_COLLECT_SITES["sankakucomplex"]
 
     const tags: SourceTagForm[] = []
     const tagLiList = document.querySelectorAll("#tag-sidebar li")
@@ -166,13 +180,35 @@ function collectSourceData(setting: Setting): Result<SourceDataUpdateForm, Error
     const additionalInfo: SourceAdditionalInfoForm[] = []
     const res = /\/post\/show\/(?<MD5>\S+)/.exec(document.location.pathname)
     if(res && res.groups) {
-        const md5 = res.groups["MD5"]
-        const field = overrideRule?.additionalInfo.find(i => i.key === "md5")?.additionalField ?? "md5"
-        additionalInfo.push({field, value: md5})
+        const value = res.groups["MD5"]
+        const field = rule.additionalInfo["md5"]
+        additionalInfo.push({field, value})
     }
 
     return {
         ok: true,
         value: {tags, books, relations, additionalInfo}
+    }
+}
+
+/**
+ * 事件：获得当前页面的SourceDataPath。
+ */
+function reportSourceDataPath(setting: Setting): SourceDataPath {
+    const overrideRule = setting.sourceData.overrideRules["sankakucomplex"]
+    const pid = getPID()
+    const sourceSite = overrideRule?.sourceSite ?? "sankakucomplex"
+    return {sourceSite, sourceId: pid, sourcePart: null, sourcePartName: null}
+}
+
+/**
+ * 获得PID。
+ */
+function getPID(): number {
+    const meta = document.querySelector("meta[property=\"og:title\"]")
+    if(meta && (meta as HTMLMetaElement).content.startsWith("Post")) {
+        return parseInt((meta as HTMLMetaElement).content.substring("Post".length))
+    }else{
+        throw new Error("Cannot find meta[property=\"og:title\"].")
     }
 }

@@ -26,6 +26,13 @@ export const arrays = {
 }
 
 export const maps = {
+    parse<K extends number | string | symbol, V>(arr: [K, V][]): Record<K, V> {
+        const ret: Record<K, V> = {} as Record<K, V>
+        for(const [k, v] of arr) {
+            ret[k] = v
+        }
+        return ret
+    },
     equals<T>(a: {[key: string]: T}, b: {[key: string]: T}, eq: (a: T, b: T) => boolean = (a, b) => a === b): boolean {
         const entriesA = Object.entries(a)
         if(entriesA.length !== Object.keys(b).length) {

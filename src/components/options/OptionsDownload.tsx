@@ -1,7 +1,7 @@
 import { useState } from "react"
 import styled from "styled-components"
 import { Button, CheckBox, Group, Input, Label, SecondaryText } from "@/components/universal"
-import { DOWNLOAD_RENAME_RULES, INCLUDE_EXTENSIONS } from "@/services/downloads"
+import { DOWNLOAD_RENAME_SITES, DOWNLOAD_EXTENSIONS } from "@/functions/sites"
 import { Setting } from "@/functions/setting"
 import { useEditor } from "@/utils/reactivity"
 
@@ -17,11 +17,11 @@ export function OptionsDownloadPanel(props: OptionsDownloadPanelProps) {
         from: v => ({
             customExtensions: v.customExtensions.join(", "),
             customRules: v.customRules,
-            rules: DOWNLOAD_RENAME_RULES.map(rule => {
-                const overrideRule = v.overrideRules[rule.ruleName]
+            rules: Object.entries(DOWNLOAD_RENAME_SITES).map(([siteName, site]) => {
+                const overrideRule = v.overrideRules[siteName]
                 return {
-                    ruleName: rule.ruleName,
-                    rename: overrideRule?.rename ?? rule.rename,
+                    siteName,
+                    rename: overrideRule?.rename ?? site.rename,
                     enable: overrideRule?.enable ?? true
                 }
             })
@@ -32,9 +32,9 @@ export function OptionsDownloadPanel(props: OptionsDownloadPanelProps) {
             overrideRules: (() => {
                 const overrideRules: Record<string, {enable: boolean, rename: string}> = {}
                 for(let i = 0; i < f.rules.length; ++i) {
-                    const rule = f.rules[i], stdRule = DOWNLOAD_RENAME_RULES[i]
+                    const rule = f.rules[i], stdRule = DOWNLOAD_RENAME_SITES[rule.siteName]
                     if(!rule.enable || rule.rename !== stdRule.rename) {
-                        overrideRules[rule.ruleName] = {enable: rule.enable, rename: rule.rename}
+                        overrideRules[rule.siteName] = {enable: rule.enable, rename: rule.rename}
                     }
                 }
                 return overrideRules
@@ -69,12 +69,12 @@ export function OptionsDownloadPanel(props: OptionsDownloadPanelProps) {
         </p>
         <Label>自定义扩展名</Label>
         <p>
-            <SecondaryText>何种扩展名可以触发建议。以逗号(,)分隔多个扩展名。默认的扩展名包括{INCLUDE_EXTENSIONS.join(", ")}。</SecondaryText>
+            <SecondaryText>何种扩展名可以触发建议。以逗号(,)分隔多个扩展名。默认的扩展名包括{DOWNLOAD_EXTENSIONS.join(", ")}。</SecondaryText>
             <Input value={editor.customExtensions} onUpdateValue={v => setProperty("customExtensions", v)}/>
         </p>
         <Label>重命名规则</Label>
         <SecondaryText>内置的重命名规则。可以调整规则的启用与否，以及重命名模板。</SecondaryText>
-        {editor.rules.map((rule, i) => <StandardRuleItem key={rule.ruleName} {...rule} onUpdate={v => updateStandardRuleAt(i, v)}/>)}
+        {editor.rules.map((rule, i) => <StandardRuleItem key={rule.siteName} {...rule} onUpdate={v => updateStandardRuleAt(i, v)}/>)}
         <Label>自定义重命名规则</Label>
         <SecondaryText>自行添加的重命名规则。referrer、url、filename全部正则匹配成功时，应用规则。</SecondaryText>
         {editor.customRules.map((customRule, i) => <CustomRuleItem key={i} {...customRule} onUpdate={v => updateCustomRuleAt(i, v)} onRemove={() => removeCustomRuleAt(i)}/>)}
@@ -91,7 +91,7 @@ interface CustomRule {
 }
 
 interface StandardRule {
-    ruleName: string
+    siteName: string
     rename: string
     enable: boolean
 }
@@ -108,7 +108,7 @@ interface StandardRuleProps extends StandardRule {
 function StandardRuleItem({ onUpdate, ...rule }: StandardRuleProps) {
     return <p>
         <CheckBox checked={rule.enable} onUpdateChecked={v => onUpdate({...rule, enable: v})}/>
-        <StyledFixedRuleName>{rule.ruleName}</StyledFixedRuleName>
+        <StyledFixedRuleName>{rule.siteName}</StyledFixedRuleName>
         <Input width="300px" placeholder="重命名模板" disabled={!rule.enable} value={rule.rename} onUpdateValue={v => onUpdate({...rule, rename: v})}/>
     </p>
 }

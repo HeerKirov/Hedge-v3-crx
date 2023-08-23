@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 export function usePartialSet<T extends object>(value: T | null | undefined, setValue?: (v: T) => void) {
     return function<K extends keyof T>(key: K, newValue: T[K]) {
@@ -37,4 +37,63 @@ export function useEditor<T, F extends object>(props: UseEditorProps<T, F>) {
     }
 
     return {editor, changed, setProperty, save}
+}
+
+interface AsyncLoadingProps<T> {
+    default: T
+    loading?: T
+    failed?: T
+    call(): Promise<T>
+}
+
+export function useAsyncLoading<T>(props: AsyncLoadingProps<T>): [T, () => void]
+export function useAsyncLoading<T>(call: () => Promise<T>): [T | null, () => void]
+export function useAsyncLoading<T>(props: AsyncLoadingProps<T> | (() => Promise<T>)): [T | null, () => void] {
+    const loading = useRef(false)
+    const initialized = useRef(false)
+    if(typeof props === "function") {
+        const [data, setData] = useState<T | null>(null)
+    
+        const refresh = () => {
+            if(!loading.current) {
+                loading.current = true
+                props().then(res => setData(res)).finally(() => {
+                    loading.current = false
+                })
+            }
+        }
+
+        useEffect(() => {
+            if(!initialized.current) {
+                initialized.current = true
+                refresh()
+            }
+        }, [])
+    
+        return [data, refresh]
+    }else{
+        const [data, setData] = useState<T>(props.default)
+
+        const refresh = () => {
+            if(!loading.current) {
+                loading.current = true
+                if(props.loading !== undefined) setData(props.loading)
+                props.call()
+                    .then(res => setData(res))
+                    .catch(() => { if(props.failed !== undefined) setData(props.failed)})
+                    .finally(() => { 
+                        loading.current = false
+                     })
+            }
+        }
+    
+        useEffect(() => {
+            if(!initialized.current) {
+                initialized.current = true
+                refresh()
+            }
+        }, [])
+    
+        return [data, refresh]
+    }
 }

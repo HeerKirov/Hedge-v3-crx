@@ -1,9 +1,43 @@
-import { settings } from "@/functions/setting"
+import { setActiveTabBadge } from "@/functions/active-tab"
+import { SourceDataPath } from "@/functions/server/api-all"
+import { SourceAdditionalInfoForm, SourceDataUpdateForm, SourceTagForm } from "@/functions/server/api-source-data"
+import { Setting, settings } from "@/functions/setting"
+import { receiveMessageForTab } from "@/functions/messages"
+import { Result } from "@/utils/primitives"
+import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 
 document.addEventListener("DOMContentLoaded", async () => {
     const setting = await settings.get()
+    loadActiveTabInfo(setting)
     if(setting.tool.ehentai.enableCommentForbidden || setting.tool.ehentai.enableCommentBanned) enableCommentFilter(setting.tool.ehentai.enableCommentForbidden, setting.tool.ehentai.enableCommentBanned ? setting.tool.ehentai.commentBannedList : []) 
 })
+
+receiveMessageForTab(({ type, msg: _, callback }) => {
+    if(type === "REPORT_SOURCE_DATA") {
+        settings.get().then(setting => {
+            callback(reportSourceData(setting))
+        })
+        return true
+    }else if(type === "REPORT_SOURCE_DATA_PATH") {
+        settings.get().then(setting => {
+            callback(reportSourceDataPath(setting))
+        })
+        return true
+    }else{
+        return false
+    }
+})
+
+/**
+ * 加载active tab在action badge上的标示信息。
+ */
+async function loadActiveTabInfo(setting: Setting) {
+    const currentTab = await chrome.tabs.getCurrent()
+    if(currentTab && currentTab.id) {
+        const sourceDataPath = reportSourceDataPath(setting)
+        setActiveTabBadge(currentTab.id, sourceDataPath)
+    }
+}
 
 /**
  * 功能：评论区屏蔽机制。
@@ -42,10 +76,9 @@ function enableCommentFilter(forbidden: boolean, banList: string[]) {
             }
         }
         //当: 评论区出现任意一条屏蔽词时；
-        //  或评论区出现至少一条低分评论，且CN评论多于2时；
-        //  或CN评论多于20时，
+        //  或评论区出现至少一条低分评论，且CN评论多于2时,
         //  都会对所有的评论展开屏蔽。
-        if(chineseUser.length >= 20 || (chineseUser.length >= 2 && lowScore.length >= 1) || banned.length >= 1) {
+        if((chineseUser.length >= 2 && lowScore.length >= 1) || banned.length >= 1) {
             const list = [...new Set([...chineseUser, ...lowScore, ...banned]).values()]
             for(const idx of list) {
                 const div = divs[idx]
@@ -61,5 +94,45 @@ function enableCommentFilter(forbidden: boolean, banList: string[]) {
                 c6.textContent = "<BANNED>"
             }
         }
+    }
+}
+
+/**
+ * 事件：收集来源数据。
+ */
+function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, Error> {
+    const rule = setting.sourceData.overrideRules["ehentai"] ?? SOURCE_DATA_COLLECT_SITES["ehentai"]
+
+    const tags: SourceTagForm[] = []
+
+    const additionalInfo: SourceAdditionalInfoForm[] = []
+    
+    //TODO 收集ehentai来源数据
+
+    return {
+        ok: true,
+        value: {tags, additionalInfo}
+    }
+}
+
+/**
+ * 事件：获得当前页面的SourceDataPath。需要注意的是，当前页面为gallery页，没有page参数。
+ */
+function reportSourceDataPath(setting: Setting): SourceDataPath {
+    const overrideRule = setting.sourceData.overrideRules["ehentai"]
+    const sourceSite = overrideRule?.sourceSite ?? "ehentai"
+    const gid = getGalleryId()
+    return {sourceSite, sourceId: gid, sourcePart: null, sourcePartName: null}
+}
+
+/**
+ * 获得GalleryId。
+ */
+function getGalleryId(): number {
+    const match = document.location.pathname.match(/\/g\/(?<GID>\d+)\/[a-zA-Z0-9]+/)
+    if(match && match.groups) {
+        return parseInt(match.groups["GID"])
+    }else{
+        throw new Error("Cannot analyse pathname.")
     }
 }

@@ -87,9 +87,9 @@ interface Download {
      * 覆盖固有规则。默认情况下，启用全部固有规则，在这里可以覆盖一部分设置。
      */
     overrideRules: {
-        [ruleName: string]: {
+        [siteName: string]: {
             /**
-             * 是否启用此规则。
+             * 是否启用此规则。禁用后，此规则在文件下载提供建议时不再生效。
              */
             enable: boolean
             /**
@@ -133,9 +133,9 @@ interface SourceData {
      * 覆盖固有规则。默认情况下，启用全部固有规则，在这里可以覆盖一部分设置。
      */
     overrideRules: {
-        [ruleName: string]: {
+        [siteName: string]: {
             /**
-             * 是否启用此规则。
+             * 是否启用此规则。禁用后，此规则在文件下载后不再自动触发，且禁用此站点的来源数据解析、显示和匹配功能。
              */
             enable: boolean
             /**
@@ -145,7 +145,7 @@ interface SourceData {
             /**
              * 映射到Hedge server中的附加信息定义。key为固有信息键名，additionalField为site中的附加信息字段名。
              */
-            additionalInfo: {key: string, additionalField: string}[]
+            additionalInfo: Record<string, string>
         } | undefined
     }
 }

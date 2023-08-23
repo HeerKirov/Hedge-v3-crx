@@ -12,15 +12,13 @@
     ],
     "optional_host_permissions": [
         "https://chan.sankakucomplex.com/*",
+        "https://beta.sankakucomplex.com/*",
         "https://idol.sankakucomplex.com/*",
         "https://e-hentai.org/*",
         "https://pixiv.net/*",
         "https://www.fanbox.cc/*"
     ],
     "action": {
-        "default_icons": {
-            "128": "public/favicon.png"
-        },
         "default_popup": "popup.html"
     },
     "background": {

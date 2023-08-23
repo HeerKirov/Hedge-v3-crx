@@ -1,8 +1,8 @@
 import { server } from "@/functions/server"
-import { settings } from "@/functions/setting"
+import { Setting, settings } from "@/functions/setting"
 import { sessions } from "@/functions/storage"
-import { sendMessageToTab } from "@/services/messages"
-import { arrays, objects } from "@/utils/primitives"
+import { sendMessageToTab } from "@/functions/messages"
+import { DOWNLOAD_EXTENSIONS, DOWNLOAD_RENAME_SITES, SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 
 /**
  * 功能：文件下载重命名建议模块。
@@ -12,30 +12,28 @@ export function determiningFilename(downloadItem: chrome.downloads.DownloadItem,
     const { filename, url, referrer } = downloadItem
     const [ filenameWithoutExt, extension ] = splitNameAndExtension(filename)
 
-    getSettingRules().then(async setting => {
-        if(!extension || !setting.extensions.includes(extension)) {
+    settings.get().then(async setting => {
+        if(!extension || !getFinalExtensions(setting).includes(extension)) {
             suggest()
             return
         }
     
-        const result = matchRulesAndArgs(referrer, url, filenameWithoutExt, setting.matchRules)
+        const result = matchRulesAndArgs(referrer, url, filenameWithoutExt, setting)
         if(result === null) {
             suggest()
             return
         }
-    
-        const { rule, args } = result
-        if(rule.processor) {
-            const finalArgs = await MATCH_PROCESSORS[rule.processor](args)
+        if(result.processor) {
+            const finalArgs = await MATCH_PROCESSORS[result.processor](result.args)
             if(finalArgs === null) {
                 suggest()
                 return
             }
-            suggest({filename: replaceWithArgs(rule.rename, finalArgs) + (extension ? "." + extension : "")})
-            collectSourceData(rule.ruleName, finalArgs, setting.sourceDataRules)
+            suggest({filename: replaceWithArgs(result.rename, finalArgs) + (extension ? "." + extension : "")})
+            collectSourceData(result.siteName, finalArgs, setting)
         }else{
-            suggest({filename: replaceWithArgs(rule.rename, args) + (extension ? "." + extension : "")})
-            collectSourceData(rule.ruleName, args, setting.sourceDataRules)
+            suggest({filename: replaceWithArgs(result.rename, result.args) + (extension ? "." + extension : "")})
+            collectSourceData(result.siteName, result.args, setting)
         }
     })
 
@@ -43,135 +41,102 @@ export function determiningFilename(downloadItem: chrome.downloads.DownloadItem,
 }
 
 /**
- * 加载规则。
- */
-async function getSettingRules() {
-    const setting = await settings.get()
-
-    function mergeDownloadRule(): MatchRule[] {
-        const ret: MatchRule[] = []
-        for(const rule of MATCH_RULES) {
-            const overrideRule = setting.download.overrideRules[rule.ruleName]
-            if(overrideRule) {
-                if(!overrideRule.enable) continue
-                ret.push({
-                    ruleName: rule.ruleName,
-                    referrer: rule.referrer,
-                    url: rule.url,
-                    filename: rule.filename,
-                    rename: overrideRule.rename || rule.rename,
-                    processor: rule.processor
-                })
-            }else{
-                ret.push(rule)
-            }
-        }
-        for(const rule of setting.download.customRules) {
-            ret.push({
-                ruleName: "<custom rule>",
-                referrer: rule.referrer ? new RegExp(rule.referrer) : undefined,
-                url: rule.url ? new RegExp(rule.url) : undefined,
-                filename: rule.filename ? new RegExp(rule.filename) : undefined,
-                rename: rule.rename
-            })
-        }
-        return ret
-    }
-    function mergeSourceDataRule(): SourceDataRule[] {
-        const ret: SourceDataRule[] = []
-        for(const rule of SOURCE_DATA_RULES) {
-            const overrideRule = setting.sourceData.overrideRules[rule.ruleName]
-            if(overrideRule) {
-                if(!overrideRule.enable) continue
-                ret.push({
-                    ruleName: rule.ruleName,
-                    sourceSite: overrideRule.sourceSite || rule.sourceSite,
-                    sourceId: rule.sourceId,
-                    pattern: rule.pattern,
-                    additionalInfo: overrideRule.additionalInfo.length ? overrideRule.additionalInfo : rule.additionalInfo
-                })
-            }else{
-                ret.push(rule)
-            }
-        }
-
-        return ret
-    }
-    function mergeExtensions(): string[] {
-        return setting.download.customExtensions.length ? [...INCLUDE_EXTENSIONS, ...setting.download.customExtensions] : INCLUDE_EXTENSIONS
-    }
-
-    return {extensions: mergeExtensions(), matchRules: mergeDownloadRule(), sourceDataRules: mergeSourceDataRule()}
-}
-
-/**
  * 功能：文件下载附带功能启动模块。
  * 文件开始下载时，启动其来源数据的下载机制。
  */
-async function collectSourceData(ruleName: string, args: Record<string, string>, sourceDataRules: SourceDataRule[]) {
-    const rule = sourceDataRules.find(r => r.ruleName === ruleName)
+async function collectSourceData(siteName: string, args: Record<string, string>, setting: Setting) {
+    const rule = SOURCE_DATA_COLLECT_SITES[siteName]
     if(rule === undefined) {
-        console.log(`[collectSourceData] '${ruleName}' no this rule, skip.`)
+        console.log(`[collectSourceData] '${siteName}' no this rule, skip.`)
         //没有对应名称的规则，因此跳过
         return
     }
-    const sourceId = parseInt(args[rule.sourceId])
-    if(isNaN(sourceId)) {
-        console.error(`[collectSourceData] ${rule.sourceSite}-${args[rule.sourceId]} source id analyse failed.`)
+    const overrideRule = setting.sourceData.overrideRules[siteName]
+    if(overrideRule && !overrideRule.enable) {
+        console.log(`[collectSourceData] '${siteName}' is disabled, skip.`)
+        //该规则已被禁用，因此跳过
         return
     }
-    if(await sessions.cache.sourceDataCollected.get({site: rule.sourceSite, sourceId})) {
-        console.log(`[collectSourceData] ${rule.sourceSite}-${sourceId} cached, skip.`)
+    const { pattern, sourceId: sourceIdPattern } = SOURCE_DATA_RULES[siteName]
+
+    const sourceSite = (overrideRule ?? rule).sourceSite
+    const sourceId = parseInt(args[sourceIdPattern])
+    if(isNaN(sourceId)) {
+        console.error(`[collectSourceData] ${sourceSite}-${args[sourceIdPattern]} source id analyse failed.`)
+        return
+    }
+    if(await sessions.cache.sourceDataCollected.get({site: sourceSite, sourceId})) {
+        console.log(`[collectSourceData] ${sourceSite}-${sourceId} cached, skip.`)
         //该条数据近期被保存过，因此跳过
         return 
     }
-    const retrieve = await server.sourceData.get({sourceSite: rule.sourceSite, sourceId})
+
+    const retrieve = await server.sourceData.get({sourceSite: sourceSite, sourceId})
     if(retrieve.ok) {
         if(retrieve.data.status === "IGNORED") {
             //已忽略的数据，不收集
-            sessions.cache.sourceDataCollected.set({site: rule.sourceSite, sourceId}, true)
-            console.log(`[collectSourceData] Source data ${rule.sourceSite}-${sourceId} is IGNORED, skip collecting.`)
+            sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
+            console.log(`[collectSourceData] Source data ${sourceSite}-${sourceId} is IGNORED, skip collecting.`)
             return
         }else if(retrieve.data.status === "EDITED") {
             const lastUpdateTime = Date.parse(retrieve.data.updateTime)
             if(Date.now() - lastUpdateTime < 1000 * 60 * 60 * 24 * 7) {
                 //EDITED状态，依据上次更新时间，在7天以内的不收集
-                sessions.cache.sourceDataCollected.set({site: rule.sourceSite, sourceId}, true)
-                console.log(`[collectSourceData] Source data ${rule.sourceSite}-${sourceId} is edited in 7 days, skip collecting.`)
+                sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
+                console.log(`[collectSourceData] Source data ${sourceSite}-${sourceId} is edited in 7 days, skip collecting.`)
                 return
             }
         }
-    }else if(retrieve.exception.code == "NOT_FOUND") {
-        //TODO 这是一项应该在UI报告的警告，告知用户可能存在未收集的数据
-        console.warn(`[collectSourceData] Source data ${rule.sourceSite}-${sourceId} retrieve failed: ${retrieve.exception.message}`)
+    }else if(retrieve.exception.code !== "NOT_FOUND") {
+        chrome.notifications.create({
+            type: "basic",
+            iconUrl: "/public/favicon.png",
+            title: "来源数据收集异常",
+            message: `${sourceSite}-${sourceId}: 在访问数据时报告了一项错误。请查看扩展或核心服务日志。`
+        })
+        console.warn(`[collectSourceData] Source data ${sourceSite}-${sourceId} retrieve failed: ${retrieve.exception.message}`)
         return
     }
 
-    const pageURL = replaceWithArgs(rule.pattern, args)
+    const pageURL = replaceWithArgs(pattern, args)
     const tabs = await chrome.tabs.query({currentWindow: true, url: pageURL})
     if(tabs.length <= 0 || tabs[0].id === undefined) {
-        //TODO 这是一项应该在UI报告的警告，告知用户可能存在未收集的数据
+        chrome.notifications.create({
+            type: "basic",
+            iconUrl: "/public/favicon.png",
+            title: "来源数据收集异常",
+            message: `${sourceSite}-${sourceId}: 未找到用于提取数据的页面。`
+        })
         console.warn(`[collectSourceData] Page '${pageURL}' not found.`)
         return
     }
 
     const reportResult = await sendMessageToTab(tabs[0].id, "REPORT_SOURCE_DATA", undefined)
     if(!reportResult.ok) {
-        //TODO 这是一项应该在UI报告的警告，告知用户可能存在未收集的数据
-        console.warn(`[collectSourceData] Page '${pageURL}' failed to collect source data.`)
+        chrome.notifications.create({
+            type: "basic",
+            iconUrl: "/public/favicon.png",
+            title: "来源数据收集异常",
+            message: `${sourceSite}-${sourceId}: 在提取页面收集数据时发生错误。请查看扩展日志。`
+        })
+        console.error(`[collectSourceData] Page '${pageURL}' failed to collect source data.`, reportResult.err)
         return
     }
-    const res = await server.sourceData.bulk([{...reportResult.value, sourceSite: rule.sourceSite, sourceId}])
+    const res = await server.sourceData.bulk([{...reportResult.value, sourceSite, sourceId}])
     if(!res.ok) {
-        //TODO 这是一项应该在UI报告的警告，告知用户可能存在未收集的数据
-        console.error(`[collectSourceData] Source data ${rule.sourceSite}-${sourceId} upload failed: ${res.exception.message}`)
+        chrome.notifications.create({
+            type: "basic",
+            iconUrl: "/public/favicon.png",
+            title: "来源数据收集异常",
+            message: `${sourceSite}-${sourceId}: 数据未能成功写入。请查看扩展或核心服务日志。`
+        })
+        console.error(`[collectSourceData] Source data ${sourceSite}-${sourceId} upload failed: ${res.exception.message}`)
         return
     }
 
-    sessions.cache.sourceDataCollected.set({site: rule.sourceSite, sourceId}, true)
-    
-    //TODO 数据收集已完成。在active Tab提示用户收集成功
-    console.log(`[collectSourceData] Source data ${rule.sourceSite}-${sourceId} collected.`)
+    sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
+
+    console.log(`[collectSourceData] Source data ${sourceSite}-${sourceId} collected.`)
 }
 
 /**
@@ -185,7 +150,7 @@ function splitNameAndExtension(filename: string): [string, string | null] {
 /**
  * 对给出的项，逐规则进行匹配，发现完成匹配的规则，返回此规则与匹配获得的参数。
  */
-function matchRulesAndArgs(referrer: string, url: string, filename: string, rules: MatchRule[]): {rule: MatchRule, args: Record<string, string>} | null {
+function matchRulesAndArgs(referrer: string, url: string, filename: string, setting: Setting): {siteName: string, rename: string, processor: string | undefined, args: Record<string, string>} | null {
     function match(re: RegExp, goal: string, args: Record<string, string>): boolean {
         const matches = re.exec(goal)
         if(matches && matches.groups) {
@@ -196,14 +161,28 @@ function matchRulesAndArgs(referrer: string, url: string, filename: string, rule
         }
     }
 
-    for(const rule of rules) {
+    for(const rule of DOWNLOAD_RENAME_RULES) {
+        const site = DOWNLOAD_RENAME_SITES[rule.siteName]
+        const overrideRule = setting.download.overrideRules[rule.siteName]
+        if(overrideRule && !overrideRule.enable) {
+            //跳过被禁用的规则
+            continue
+        }
+
         const args: Record<string, string> = {}
-        //对rules做匹配。当某条rule的所有列出条件都得到满足时，认为这条rule符合匹配。
         if(rule.referrer && !match(rule.referrer, referrer, args)) continue
         if(rule.url && !match(rule.url, url, args)) continue
         if(rule.filename && !match(rule.filename, filename, args)) continue
 
-        return {rule, args}
+        return {siteName: rule.siteName, rename: overrideRule?.rename ?? site.rename, processor: rule.processor, args}
+    }
+    for(const rule of setting.download.customRules) {
+        const args: Record<string, string> = {}
+        if(rule.referrer && !match(new RegExp(rule.referrer), referrer, args)) continue
+        if(rule.url && !match(new RegExp(rule.url), url, args)) continue
+        if(rule.filename && !match(new RegExp(rule.filename), filename, args)) continue
+
+        return {siteName: "<custom>", rename: rule.rename, processor: undefined, args}
     }
     
     return null
@@ -214,6 +193,13 @@ function matchRulesAndArgs(referrer: string, url: string, filename: string, rule
  */
 function replaceWithArgs(template: string, args: Record<string, string>): string {
     return Object.entries(args).reduce((name, [key, value]) => name.replace(`$<${key}>`, value), template)
+}
+
+/**
+ * 获得最终扩展名列表。
+ */
+function getFinalExtensions(setting: Setting): string[] {
+    return setting.download.customExtensions.length ? [...DOWNLOAD_EXTENSIONS, ...setting.download.customExtensions] : DOWNLOAD_EXTENSIONS
 }
 
 const MATCH_PROCESSORS: Readonly<Record<string, (args: Record<string, string>) => Promise<Record<string, string> | null>>> = {
@@ -317,86 +303,61 @@ const MATCH_PROCESSORS: Readonly<Record<string, (args: Record<string, string>) =
     }
 }
 
-const MATCH_RULES: Readonly<MatchRule[]> = [
+const DOWNLOAD_RENAME_RULES: Readonly<MatchRule[]> = [
     {
-        ruleName: "sankakucomplex",
+        siteName: "sankakucomplex",
         referrer: /https:\/\/chan.sankakucomplex.com\/post\/show\/(?<MD5>\S+)/,
-        rename: "sankakucomplex_$<PID>",
         processor: "sankakucomplex"
     },
     {
-        ruleName: "ehentai",
+        siteName: "ehentai",
         url: /https:\/\/e-hentai.org\/fullimg.php\?gid=(?<GID>\d+)&page=(?<PAGE>\d+)/,
-        rename: "ehentai_$<GID>_$<PAGE>_$<PHASH>",
         processor: "ehentai-original"
     },
     {
-        ruleName: "ehentai",
+        siteName: "ehentai",
         referrer: /https:\/\/e-hentai.org\/$/,
-        rename: "ehentai_$<GID>_$<PAGE>_$<PHASH>",
         processor: "ehentai-save-image"
     },
     {
-        ruleName: "pixiv",
+        siteName: "pixiv",
         referrer: /https:\/\/pixiv.net\/$/,
-        filename: /(?<PID>\d+)_p(?<PAGE>\d+)/,
-        rename: "pixiv_$<PID>_$<PAGE>"
+        filename: /(?<PID>\d+)_p(?<PAGE>\d+)/
     },
     {
-        ruleName: "gelbooru",
-        referrer: /https:\/\/gelbooru.com\/index.php\?.*id=(?<PID>\d+)/,
-        rename: "gelbooru_$<PID>"
+        siteName: "gelbooru",
+        referrer: /https:\/\/gelbooru.com\/index.php\?.*id=(?<PID>\d+)/
     },
     {
-        ruleName: "idolcomplex",
-        referrer: /https:\/\/idol.sankakucomplex.com\/post\/show\/(?<PID>\d+)/,
-        rename: "idolcomplex_$<PID>"
+        siteName: "idolcomplex",
+        referrer: /https:\/\/idol.sankakucomplex.com\/post\/show\/(?<PID>\d+)/
     },
 ]
 
-const SOURCE_DATA_RULES: Readonly<SourceDataRule[]> = [
-    {
-        ruleName: "sankakucomplex",
-        sourceSite: "sankakucomplex",
+const SOURCE_DATA_RULES: Record<string, SourceDataRule> = {
+    "sankakucomplex": {
         sourceId: "PID",
         pattern: "https://chan.sankakucomplex.com/post/show/$<MD5>",
-        additionalInfo: [{key: "md5", additionalField: "md5"}]
     },
-    {
-        ruleName: "ehentai",
-        sourceSite: "ehentai",
+    "ehentai": {
         sourceId: "GID",
         pattern: "https://e-hentai.org/g/*/$<GID>",
-        additionalInfo: [{key: "token", additionalField: "token"}]
     },
-    {
-        ruleName: "pixiv",
-        sourceSite: "pixiv",
+    "pixiv": {
         sourceId: "PID",
         pattern: "https://pixiv.net/artworks/$<PID>",
-        additionalInfo: []
     }
-]
-
-export const INCLUDE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "webm", "mp4", "ogv"]
-
-export const DOWNLOAD_RENAME_RULES = arrays.distinctBy(MATCH_RULES.map(r => ({ruleName: r.ruleName, rename: r.rename})), objects.deepEquals)
-
-export const SOURCE_DATA_COLLECT_RULES = SOURCE_DATA_RULES.map(r => ({ruleName: r.ruleName, sourceSite: r.sourceSite, additionalInfo: r.additionalInfo}))
+}
 
 interface MatchRule {
-    ruleName: string
+    siteName: string
     referrer?: RegExp
     url?: RegExp
     filename?: RegExp
-    rename: string
     processor?: string
 }
 
 interface SourceDataRule {
-    ruleName: string
-    sourceSite: string
     sourceId: string
     pattern: string
-    additionalInfo: {key: string, additionalField: string}[]
 }

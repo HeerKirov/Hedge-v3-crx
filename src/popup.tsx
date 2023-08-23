@@ -1,25 +1,11 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
-import { createGlobalStyle } from "styled-components"
-import { server, useEndpoint } from "@/functions/server"
+import { Popup } from "@/components/popup/Popup"
+import { GlobalStyle } from "./styles"
 
-ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>)
-
-const GlobalStyle = createGlobalStyle`
-    html { 
-        min-width: 400px
-    }
-    p {
-        color: red;
-    }
-`
-
-function App() {
-    const { data } = useEndpoint(server.app.health)
-    
-    return (<>
+ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
         <GlobalStyle/>
-        <h1>Hedge v3 Helper</h1>
-        <p>Server is {data?.status}</p>
-    </>)
-}
+        <Popup/>
+    </React.StrictMode>
+)
