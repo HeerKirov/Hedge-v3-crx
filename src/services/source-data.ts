@@ -48,7 +48,7 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
             //该条数据近期被保存过，因此跳过
             return false
         }
-    
+
         const retrieve = await server.sourceData.get({sourceSite: sourceSite, sourceId})
         if(retrieve.ok) {
             if(retrieve.data.status === "IGNORED") {
@@ -65,15 +65,26 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
                     return false
                 }
             }
-        }else if(retrieve.exception.code !== "NOT_FOUND") {
+        }else if(retrieve.exception) {
+            if(retrieve.exception.code !== "NOT_FOUND") {
+                chrome.notifications.create({
+                    type: "basic",
+                    iconUrl: "/public/favicon.png",
+                    title: "来源数据收集异常",
+                    message: `${sourceSite}-${sourceId}: 在访问数据时报告了一项错误。请查看扩展或核心服务日志。`
+                })
+                console.warn(`[collectSourceData] Source data ${sourceSite}-${sourceId} retrieve failed: ${retrieve.exception.message}`)
+                return false
+            }
+        }else{
             chrome.notifications.create({
                 type: "basic",
                 iconUrl: "/public/favicon.png",
-                title: "来源数据收集异常",
-                message: `${sourceSite}-${sourceId}: 在访问数据时报告了一项错误。请查看扩展或核心服务日志。`
+                title: "来源数据未收集",
+                message: "未能成功连接到核心服务。"
             })
-            console.warn(`[collectSourceData] Source data ${sourceSite}-${sourceId} retrieve failed: ${retrieve.exception.message}`)
-            return false
+            console.warn(`[collectSourceData] Source data ${sourceSite}-${sourceId} retrieve failed: ${retrieve.reason}`)
+            false
         }
     }
 
@@ -120,7 +131,7 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
             title: "来源数据收集异常",
             message: `${sourceSite}-${sourceId}: 数据未能成功写入。请查看扩展或核心服务日志。`
         })
-        console.error(`[collectSourceData] Source data ${sourceSite}-${sourceId} upload failed: ${res.exception.message}`)
+        console.error(`[collectSourceData] Source data ${sourceSite}-${sourceId} upload failed: ${res.exception ? res.exception.message : res.reason}`)
         return false
     }
 
@@ -140,7 +151,7 @@ const SOURCE_DATA_RULES: Record<string, SourceDataRule> = {
     },
     "ehentai": {
         sourceId: "GID",
-        pattern: sourceId => `https://e-hentai.org/g/*/${sourceId}`
+        pattern: sourceId => `https://e-hentai.org/g/${sourceId}/*`
     },
     "pixiv": {
         sourceId: "PID",

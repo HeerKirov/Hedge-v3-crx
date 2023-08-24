@@ -13,7 +13,7 @@ export const DOWNLOAD_RENAME_SITES: {[siteName: string]: DownloadRenameRule} = {
     },
     "pixiv": {
         args: ["PID", "PAGE"],
-        rename: "pixiv_$<PID>_$<PAGE>"
+        rename: "pixiv_$<PID>_p$<PAGE>"
     },
     "gelbooru": {
         args: ["PID"],
@@ -34,16 +34,16 @@ export const SOURCE_DATA_COLLECT_SITES: {[siteName: string]: SourceDataCollectRu
         additionalInfo: {"md5": "md5"},
         host: "chan.sankakucomplex.com",
         sourcePages: [
-            /^\/post\/show\/(?<MD5>\S+)$/
+            /^\/post\/show\/(?<MD5>\S+)/
         ]
     },
     "ehentai": {
         sourceSite: "ehentai",
         additionalInfo: {"token": "token"},
-        host: ["e-hentai.org"],
+        host: "e-hentai.org",
         sourcePages: [
-            /^\/g\/(?<GID>\d+)\/[a-zA-Z0-9]+$/,
-            /^\/s\/(?<PHASH>[a-zA-Z0-9]+)\/(?<GID>\d+)-(?<PAGE>\d+)$/
+            /^\/g\/(?<GID>\d+)\/(?<TOKEN>[a-zA-Z0-9]+)/,
+            /^\/s\/(?<PHASH>[a-zA-Z0-9]+)\/(?<GID>\d+)-(?<PAGE>\d+)/
         ]
     },
     "pixiv": {
@@ -51,7 +51,7 @@ export const SOURCE_DATA_COLLECT_SITES: {[siteName: string]: SourceDataCollectRu
         additionalInfo: {},
         host: "www.pixiv.net",
         sourcePages: [
-            /^\/artworks\/(?<PID>\d+)$/
+            /^\/artworks\/(?<PID>\d+)/
         ]
     }
 }

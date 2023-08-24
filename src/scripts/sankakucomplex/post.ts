@@ -6,10 +6,13 @@ import { receiveMessageForTab, sendMessage } from "@/functions/messages"
 import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { Result } from "@/utils/primitives"
 
-document.addEventListener("DOMContentLoaded", async () => {
-    const setting = await settings.get()
-    const pid = loadPostMD5()
+settings.get().then(setting => {
     loadActiveTabInfo(setting)
+})
+document.addEventListener("DOMContentLoaded", async () => {
+    console.log("[Hedge v3 Helper] sankakucomplex/post script loaded.")
+    const pid = loadPostMD5()
+    const setting = await settings.get()
     if(setting.tool.sankakucomplex.enableAddPostId) enableAddPostId(pid)
     if(setting.tool.sankakucomplex.enableBookEnhancement) enableBookEnhancement()
     if(setting.tool.sankakucomplex.enableImageLinkReplacement) enableImageLinkReplacement()
@@ -106,7 +109,7 @@ function enableImageLinkReplacement() {
 /**
  * 事件：收集来源数据。
  */
-function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, Error> {
+function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, string> {
     const rule = setting.sourceData.overrideRules["sankakucomplex"] ?? SOURCE_DATA_COLLECT_SITES["sankakucomplex"]
 
     const tags: SourceTagForm[] = []
@@ -117,18 +120,18 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, Error>
         if(tagLi.className.startsWith("tag-type-")) {
             tag.type = tagLi.className.substring("tag-type-".length)
         }else{
-            return {ok: false, err: new Error(`Tag[${i}]: cannot infer tag type from its class '${tagLi.className}'.`) }
+            return {ok: false, err: `Tag[${i}]: cannot infer tag type from its class '${tagLi.className}'.`}
         }
         const tagAnchor = tagLi.querySelector("div > a[itemprop=\"keywords\"]")
-        if(tagAnchor !== null && tagAnchor.textContent !== null) {
+        if(tagAnchor !== null && tagAnchor.textContent) {
             tag.name = tagAnchor.textContent.replace("_", " ")
             tag.code = tag.name
         }else{
-            return {ok: false, err: new Error(`Tag[${i}]: Cannot find its anchor.`) }
+            return {ok: false, err: `Tag[${i}]: Cannot find its anchor.`}
         }
         const childNodes = tagLi.querySelector("div > .tooltip > span")?.childNodes ?? []
         for(const childNode of childNodes) {
-            if(childNode.textContent !== null && childNode.nodeName === "#text" && childNode.textContent.startsWith("日本語:")) {
+            if(childNode.textContent && childNode.nodeName === "#text" && childNode.textContent.startsWith("日本語:")) {
                 const otherName = childNode.textContent.substring("日本語:".length).trim()
                 if(otherName !== "N/A") {
                     tag.otherName = otherName
@@ -147,7 +150,6 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, Error>
             if(sn.id.startsWith("pool")) {
                 const bookId = sn.id.slice("pool".length)
                 const anchor = sn.querySelector("a")
-                //TODO anchor的获取方式不确定是不是正确的。需要再验证。
                 const title = anchor && anchor.textContent ? anchor.textContent : undefined
                 books.push({code: bookId, title})
             }

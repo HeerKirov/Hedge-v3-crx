@@ -1,6 +1,7 @@
 import { settings } from "@/functions/setting"
 
 document.addEventListener("DOMContentLoaded", async () => {
+    console.log("[Hedge v3 Helper] sankakucomplex/global script loaded.")
     const setting = await settings.get()
     if(setting.tool.sankakucomplex.enableShortcutForbidden) enableShortcutForbidden()
     if(setting.tool.sankakucomplex.enablePaginationEnhancement) enablePaginationEnhancement()
@@ -91,7 +92,7 @@ function enableTagListEnhancement() {
             const childNodes = tagDiv.querySelector(".tooltip > span")?.childNodes ?? []
             for(let i = 0; i < childNodes.length; i++) {
                 const childNode = childNodes[i]
-                if(childNode.textContent !== null) {
+                if(childNode.textContent) {
                     if(childNode.nodeName === "#text" && childNode.textContent.startsWith("Posts:")) {
                         postCount = childNode.textContent.substring("Posts:".length + 1).trim()
                     }else if(childNode.nodeName === "#text" && childNode.textContent.startsWith("Books:")) {

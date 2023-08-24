@@ -3,10 +3,13 @@ import { Setting, settings } from "@/functions/setting"
 import { sessions } from "@/functions/storage"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
 
-document.addEventListener("DOMContentLoaded", async () => {
-    const setting = await settings.get()
-    loadGalleryPageHash()
+settings.get().then(setting => {
     loadActiveTabInfo(setting)
+})
+
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("[Hedge v3 Helper] ehentai/image script loaded.")
+    loadGalleryPageHash()
 })
 
 chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callback }) => {

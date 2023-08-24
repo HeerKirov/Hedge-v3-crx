@@ -10,11 +10,6 @@
     "host_permissions": [
         "http://localhost/*"
     ],
-    "commands": {
-        "_execute_action": {
-            "suggested_key": "Ctrl+D"
-        }
-    },
     "action": {
         "default_popup": "popup.html"
     },

@@ -1,7 +1,7 @@
 import { settings } from "../setting"
 import { AllException, BasicException } from "./exceptions"
 
-export type Response<T, E extends BasicException = never> = ResponseOk<T> | ResponseError<E>
+export type Response<T, E extends BasicException = never> = ResponseOk<T> | ResponseError<E> | ResponseConnectionError
 
 export interface ResponseOk<T> {
     ok: true
@@ -17,7 +17,7 @@ export interface ResponseError<E extends BasicException = never> {
 export interface ResponseConnectionError {
     ok: false
     exception: undefined
-    message: string
+    reason: any
 }
 
 interface RequestConfig<R> {
@@ -57,7 +57,7 @@ export function createPathDataRequest<P, D, R, E extends BasicException>(url: UR
 }
 
 function request<R, E extends BasicException>(requestConfig: RequestConfig<R>): Promise<Response<R, E>> {    
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async resolve => {
         const setting = await settings.get()
         const url = new URL(requestConfig.url, `http://localhost:${setting.server.port}`)
         if(requestConfig.query) {
@@ -80,8 +80,8 @@ function request<R, E extends BasicException>(requestConfig: RequestConfig<R>): 
             }else{
                 let error: ResponseError<AllException>
                 const response = await res.json()
-                if(typeof response.data === "object") {
-                    const data = <{code: string, message: string, info: unknown}>response.data
+                if(typeof response === "object") {
+                    const data = <{code: string, message: string, info: unknown}>response
                     error = {
                         ok: false,
                         exception: <AllException>{
@@ -97,7 +97,7 @@ function request<R, E extends BasicException>(requestConfig: RequestConfig<R>): 
                         exception: {
                             status: res.status,
                             code: "UNKNOWN_ERROR",
-                            message: `${response.data}`,
+                            message: `${response}`,
                             info: null
                         }
                     }
@@ -107,7 +107,11 @@ function request<R, E extends BasicException>(requestConfig: RequestConfig<R>): 
         })
         .catch((reason) => {
             console.error(`Http connect error: ${reason}`)
-            reject(reason)
+            resolve({
+                ok: false,
+                exception: undefined,
+                reason
+            })
         })
     })
 }

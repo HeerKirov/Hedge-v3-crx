@@ -53,8 +53,8 @@ function splitNameAndExtension(filename: string): [string, string | null] {
 function matchRulesAndArgs(referrer: string, url: string, filename: string, setting: Setting): {siteName: string, rename: string, processor: string | undefined, args: Record<string, string>} | null {
     function match(re: RegExp, goal: string, args: Record<string, string>): boolean {
         const matches = re.exec(goal)
-        if(matches && matches.groups) {
-            Object.entries(matches.groups).forEach(([k, v]) => args[k] = v)
+        if(matches) {
+            if(matches.groups) Object.entries(matches.groups).forEach(([k, v]) => args[k] = v)
             return true
         }else{
             return false
@@ -172,7 +172,7 @@ const MATCH_PROCESSORS: Readonly<Record<string, (args: Record<string, string>) =
                 }
             }
 
-            console.log(`[ehentaiOriginalProcessor] Cannot find e-hentai.org/s/${gid}-${page} tab.`)
+            console.log(`[ehentaiOriginalProcessor] Cannot find e-hentai.org/s/*/${gid}-${page} tab.`)
             return null
         }
     },

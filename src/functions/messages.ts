@@ -45,7 +45,7 @@ export type ContentScriptMessagesList = SetActiveTabBadge
 
 type Test = MsgTemplate<"TEST", {test: number}>
 
-type ReportSourceData = MsgTemplateWithCallback<"REPORT_SOURCE_DATA", undefined, Result<SourceDataUpdateForm, Error>>
+type ReportSourceData = MsgTemplateWithCallback<"REPORT_SOURCE_DATA", undefined, Result<SourceDataUpdateForm, string>>
 
 type ReportSourceDataPath = MsgTemplateWithCallback<"REPORT_SOURCE_DATA_PATH", undefined, SourceDataPath>
 
