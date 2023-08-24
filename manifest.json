@@ -10,14 +10,11 @@
     "host_permissions": [
         "http://localhost/*"
     ],
-    "optional_host_permissions": [
-        "https://chan.sankakucomplex.com/*",
-        "https://beta.sankakucomplex.com/*",
-        "https://idol.sankakucomplex.com/*",
-        "https://e-hentai.org/*",
-        "https://pixiv.net/*",
-        "https://www.fanbox.cc/*"
-    ],
+    "commands": {
+        "_execute_action": {
+            "suggested_key": "Ctrl+D"
+        }
+    },
     "action": {
         "default_popup": "popup.html"
     },
@@ -44,6 +41,11 @@
 		{
 			"matches": ["https://e-hentai.org/s/*"],
 			"js": ["src/scripts/ehentai/image.ts"],
+			"run_at": "document_start"
+		},
+        {
+			"matches": ["https://www.pixiv.net/artworks/*"],
+			"js": ["src/scripts/pixiv/artworks.ts"],
 			"run_at": "document_start"
 		},
         {

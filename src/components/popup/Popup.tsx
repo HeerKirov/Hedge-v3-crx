@@ -47,13 +47,13 @@ function CollectStatusNotice(props: SourceDataCollectStatus) {
 
     const collectTimeText = props.collectTime !== null ? new Date(props.collectTime).toLocaleDateString() : null
 
-    return <div>
+    return <CollectStatusDiv>
         图像:
         <ImageCountSpan $count={props.imageCount}>{props.imageCount > 1 ? `已收集(${props.imageCount}项)` : props.imageCount === 1 ? "已收集" : "未收集"}</ImageCountSpan>
         /来源数据:
         <CollectStatusSpan $status={props.collectStatus}>{collectStatusText}</CollectStatusSpan>
-        <SecondaryText>收集时间: {collectTimeText}</SecondaryText>
-    </div>
+        {collectTimeText && <SecondaryText>收集时间: {collectTimeText}</SecondaryText>}
+    </CollectStatusDiv>
 }
 
 const COLLECT_STATUS_DESCRIBE: {[status in SourceEditStatus]: string} = {
@@ -75,7 +75,7 @@ const HealthDiv = styled.div<{ $status: "NOT_INITIALIZED" | "INITIALIZING" | "LO
     font-size: var(--font-size-small);
     > span {
         margin-left: var(--spacing-1);
-        color: var(--${p => p.$status === "READY" ? "success" : p.$status === "DISCONNECTED" ? "danger" : "warning"});
+        color: var(--${p => p.$status === "READY" ? "text-color" : p.$status === "DISCONNECTED" ? "danger" : "warning"});
     }
 `
 
@@ -105,6 +105,10 @@ const SourcePartSpan = styled.span`
 
 const SourcePartNameSpan = styled.span`
     color: var(--secondary-text-color);
+`
+
+const CollectStatusDiv = styled.div`
+    margin-bottom: var(--spacing-1);
 `
 
 const ImageCountSpan = styled.span<{ $count: number }>`

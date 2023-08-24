@@ -155,7 +155,7 @@ function defaultSetting(): Setting {
         version,
         server: {
             port: 9000,
-            token: "hedge-v3-crx-token"
+            token: "dev"
         },
         tool: {
             sankakucomplex: {

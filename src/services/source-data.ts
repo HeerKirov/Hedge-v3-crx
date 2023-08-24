@@ -144,7 +144,7 @@ const SOURCE_DATA_RULES: Record<string, SourceDataRule> = {
     },
     "pixiv": {
         sourceId: "PID",
-        pattern: sourceId => `https://pixiv.net/artworks/${sourceId}`
+        pattern: sourceId => `https://www.pixiv.net/artworks/${sourceId}`
     }
 }
 

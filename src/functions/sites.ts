@@ -49,7 +49,7 @@ export const SOURCE_DATA_COLLECT_SITES: {[siteName: string]: SourceDataCollectRu
     "pixiv": {
         sourceSite: "pixiv",
         additionalInfo: {},
-        host: "pixiv.net",
+        host: "www.pixiv.net",
         sourcePages: [
             /^\/artworks\/(?<PID>\d+)$/
         ]

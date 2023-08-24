@@ -221,7 +221,7 @@ const DOWNLOAD_RENAME_RULES: Readonly<MatchRule[]> = [
     },
     {
         siteName: "pixiv",
-        referrer: /https:\/\/pixiv.net\/$/,
+        referrer: /https:\/\/www.pixiv.net\/$/,
         filename: /(?<PID>\d+)_p(?<PAGE>\d+)/
     },
     {

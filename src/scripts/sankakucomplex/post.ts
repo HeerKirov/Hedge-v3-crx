@@ -130,7 +130,6 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, Error>
         for(const childNode of childNodes) {
             if(childNode.textContent !== null && childNode.nodeName === "#text" && childNode.textContent.startsWith("日本語:")) {
                 const otherName = childNode.textContent.substring("日本語:".length).trim()
-                //TODO 有关N/A的处理方式不确定是不是正确的。需要再验证。
                 if(otherName !== "N/A") {
                     tag.otherName = otherName
                 }
