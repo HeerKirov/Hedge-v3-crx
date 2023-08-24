@@ -42,8 +42,8 @@ export const SOURCE_DATA_COLLECT_SITES: {[siteName: string]: SourceDataCollectRu
         additionalInfo: {"token": "token"},
         host: ["e-hentai.org"],
         sourcePages: [
-            /^\/g\/\d+\/[a-zA-Z0-9]+$/,
-            /^\/s\/[a-zA-Z0-9]+\/\d+\d+$/
+            /^\/g\/(?<GID>\d+)\/[a-zA-Z0-9]+$/,
+            /^\/s\/(?<PHASH>[a-zA-Z0-9]+)\/(?<GID>\d+)-(?<PAGE>\d+)$/
         ]
     },
     "pixiv": {
@@ -70,5 +70,5 @@ interface SourceDataCollectRule {
     sourceSite: string
     additionalInfo: {[key: string]: string}
     host: string | string[]
-    sourcePages: (string | RegExp)[]
+    sourcePages: RegExp[]
 }

@@ -1,8 +1,7 @@
-import { setActiveTabBadge } from "@/functions/active-tab"
 import { SourceDataPath } from "@/functions/server/api-all"
 import { SourceDataUpdateForm, SourceTagForm } from "@/functions/server/api-source-data"
 import { Setting, settings } from "@/functions/setting"
-import { receiveMessageForTab } from "@/functions/messages"
+import { receiveMessageForTab, sendMessage } from "@/functions/messages"
 import { Result } from "@/utils/primitives"
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -29,12 +28,9 @@ chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callb
 /**
  * 加载active tab在action badge上的标示信息。
  */
-async function loadActiveTabInfo(setting: Setting) {
-    const currentTab = await chrome.tabs.getCurrent()
-    if(currentTab && currentTab.id) {
-        const sourceDataPath = reportSourceDataPath(setting)
-        setActiveTabBadge(currentTab.id, sourceDataPath)
-    }
+function loadActiveTabInfo(setting: Setting) {
+    const sourceDataPath = reportSourceDataPath(setting)
+    sendMessage("SET_ACTIVE_TAB_BADGE", {path: sourceDataPath})
 }
 
 /**

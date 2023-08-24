@@ -1,9 +1,8 @@
-import { setActiveTabBadge } from "@/functions/active-tab"
 import { SourceDataPath } from "@/functions/server/api-all"
 import { SourceAdditionalInfoForm, SourceBookForm, SourceDataUpdateForm, SourceTagForm } from "@/functions/server/api-source-data"
 import { Setting, settings } from "@/functions/setting"
 import { sessions } from "@/functions/storage"
-import { receiveMessageForTab } from "@/functions/messages"
+import { receiveMessageForTab, sendMessage } from "@/functions/messages"
 import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { Result } from "@/utils/primitives"
 
@@ -41,6 +40,7 @@ function loadPostMD5(): number {
     if(res && res.groups) {
         const md5 = res.groups["MD5"]
         sessions.reflect.sankakuPostId.set({md5}, {pid: pid.toString()})
+        sessions.reflect.sankakuPostMD5.set({pid: pid.toString()}, {md5})
     }
     return pid
 }
@@ -48,12 +48,9 @@ function loadPostMD5(): number {
 /**
  * 加载active tab在action badge上的标示信息。
  */
-async function loadActiveTabInfo(setting: Setting) {
-    const currentTab = await chrome.tabs.getCurrent()
-    if(currentTab && currentTab.id) {
-        const sourceDataPath = reportSourceDataPath(setting)
-        setActiveTabBadge(currentTab.id, sourceDataPath)
-    }
+function loadActiveTabInfo(setting: Setting) {
+    const sourceDataPath = reportSourceDataPath(setting)
+    sendMessage("SET_ACTIVE_TAB_BADGE", {path: sourceDataPath})
 }
 
 /**

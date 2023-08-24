@@ -15,7 +15,11 @@ export const sessions = {
         /**
          * Sankaku: post MD5映射到post id。
          */
-        sankakuPostId: createPathEndpoint<{md5: string}, {pid: string}>("session", p => `reflect/sankaku/post-id/${p.md5}`)
+        sankakuPostId: createPathEndpoint<{md5: string}, {pid: string}>("session", p => `reflect/sankaku/post-id/${p.md5}`),
+        /**
+         * Sankaku: post id映射到post MD5。
+         */
+        sankakuPostMD5: createPathEndpoint<{pid: string}, {md5: string}>("session", p => `reflect/sankaku/post-md5/${p.pid}`)
     },
     /**
      * 临时存储。

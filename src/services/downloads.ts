@@ -1,8 +1,7 @@
-import { server } from "@/functions/server"
 import { Setting, settings } from "@/functions/setting"
 import { sessions } from "@/functions/storage"
-import { sendMessageToTab } from "@/functions/messages"
-import { DOWNLOAD_EXTENSIONS, DOWNLOAD_RENAME_SITES, SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
+import { DOWNLOAD_EXTENSIONS, DOWNLOAD_RENAME_SITES } from "@/functions/sites"
+import { collectSourceData } from "@/services/source-data"
 
 /**
  * 功能：文件下载重命名建议模块。
@@ -30,113 +29,14 @@ export function determiningFilename(downloadItem: chrome.downloads.DownloadItem,
                 return
             }
             suggest({filename: replaceWithArgs(result.rename, finalArgs) + (extension ? "." + extension : "")})
-            collectSourceData(result.siteName, finalArgs, setting)
+            collectSourceData({siteName: result.siteName, args: finalArgs, setting})
         }else{
             suggest({filename: replaceWithArgs(result.rename, result.args) + (extension ? "." + extension : "")})
-            collectSourceData(result.siteName, result.args, setting)
+            collectSourceData({siteName: result.siteName, args: result.args, setting})
         }
     })
 
     return true
-}
-
-/**
- * 功能：文件下载附带功能启动模块。
- * 文件开始下载时，启动其来源数据的下载机制。
- */
-async function collectSourceData(siteName: string, args: Record<string, string>, setting: Setting) {
-    const rule = SOURCE_DATA_COLLECT_SITES[siteName]
-    if(rule === undefined) {
-        console.log(`[collectSourceData] '${siteName}' no this rule, skip.`)
-        //没有对应名称的规则，因此跳过
-        return
-    }
-    const overrideRule = setting.sourceData.overrideRules[siteName]
-    if(overrideRule && !overrideRule.enable) {
-        console.log(`[collectSourceData] '${siteName}' is disabled, skip.`)
-        //该规则已被禁用，因此跳过
-        return
-    }
-    const { pattern, sourceId: sourceIdPattern } = SOURCE_DATA_RULES[siteName]
-
-    const sourceSite = (overrideRule ?? rule).sourceSite
-    const sourceId = parseInt(args[sourceIdPattern])
-    if(isNaN(sourceId)) {
-        console.error(`[collectSourceData] ${sourceSite}-${args[sourceIdPattern]} source id analyse failed.`)
-        return
-    }
-    if(await sessions.cache.sourceDataCollected.get({site: sourceSite, sourceId})) {
-        console.log(`[collectSourceData] ${sourceSite}-${sourceId} cached, skip.`)
-        //该条数据近期被保存过，因此跳过
-        return 
-    }
-
-    const retrieve = await server.sourceData.get({sourceSite: sourceSite, sourceId})
-    if(retrieve.ok) {
-        if(retrieve.data.status === "IGNORED") {
-            //已忽略的数据，不收集
-            sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
-            console.log(`[collectSourceData] Source data ${sourceSite}-${sourceId} is IGNORED, skip collecting.`)
-            return
-        }else if(retrieve.data.status === "EDITED") {
-            const lastUpdateTime = Date.parse(retrieve.data.updateTime)
-            if(Date.now() - lastUpdateTime < 1000 * 60 * 60 * 24 * 7) {
-                //EDITED状态，依据上次更新时间，在7天以内的不收集
-                sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
-                console.log(`[collectSourceData] Source data ${sourceSite}-${sourceId} is edited in 7 days, skip collecting.`)
-                return
-            }
-        }
-    }else if(retrieve.exception.code !== "NOT_FOUND") {
-        chrome.notifications.create({
-            type: "basic",
-            iconUrl: "/public/favicon.png",
-            title: "来源数据收集异常",
-            message: `${sourceSite}-${sourceId}: 在访问数据时报告了一项错误。请查看扩展或核心服务日志。`
-        })
-        console.warn(`[collectSourceData] Source data ${sourceSite}-${sourceId} retrieve failed: ${retrieve.exception.message}`)
-        return
-    }
-
-    const pageURL = replaceWithArgs(pattern, args)
-    const tabs = await chrome.tabs.query({currentWindow: true, url: pageURL})
-    if(tabs.length <= 0 || tabs[0].id === undefined) {
-        chrome.notifications.create({
-            type: "basic",
-            iconUrl: "/public/favicon.png",
-            title: "来源数据收集异常",
-            message: `${sourceSite}-${sourceId}: 未找到用于提取数据的页面。`
-        })
-        console.warn(`[collectSourceData] Page '${pageURL}' not found.`)
-        return
-    }
-
-    const reportResult = await sendMessageToTab(tabs[0].id, "REPORT_SOURCE_DATA", undefined)
-    if(!reportResult.ok) {
-        chrome.notifications.create({
-            type: "basic",
-            iconUrl: "/public/favicon.png",
-            title: "来源数据收集异常",
-            message: `${sourceSite}-${sourceId}: 在提取页面收集数据时发生错误。请查看扩展日志。`
-        })
-        console.error(`[collectSourceData] Page '${pageURL}' failed to collect source data.`, reportResult.err)
-        return
-    }
-    const res = await server.sourceData.bulk([{...reportResult.value, sourceSite, sourceId}])
-    if(!res.ok) {
-        chrome.notifications.create({
-            type: "basic",
-            iconUrl: "/public/favicon.png",
-            title: "来源数据收集异常",
-            message: `${sourceSite}-${sourceId}: 数据未能成功写入。请查看扩展或核心服务日志。`
-        })
-        console.error(`[collectSourceData] Source data ${sourceSite}-${sourceId} upload failed: ${res.exception.message}`)
-        return
-    }
-
-    sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
-
-    console.log(`[collectSourceData] Source data ${sourceSite}-${sourceId} collected.`)
 }
 
 /**
@@ -334,30 +234,10 @@ const DOWNLOAD_RENAME_RULES: Readonly<MatchRule[]> = [
     },
 ]
 
-const SOURCE_DATA_RULES: Record<string, SourceDataRule> = {
-    "sankakucomplex": {
-        sourceId: "PID",
-        pattern: "https://chan.sankakucomplex.com/post/show/$<MD5>",
-    },
-    "ehentai": {
-        sourceId: "GID",
-        pattern: "https://e-hentai.org/g/*/$<GID>",
-    },
-    "pixiv": {
-        sourceId: "PID",
-        pattern: "https://pixiv.net/artworks/$<PID>",
-    }
-}
-
 interface MatchRule {
     siteName: string
     referrer?: RegExp
     url?: RegExp
     filename?: RegExp
     processor?: string
-}
-
-interface SourceDataRule {
-    sourceId: string
-    pattern: string
 }

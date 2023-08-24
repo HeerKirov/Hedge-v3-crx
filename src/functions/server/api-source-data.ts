@@ -1,4 +1,4 @@
-import { LimitAndOffsetFilter, ListResult, OrderList, SimpleIllust, mapFromOrderList } from "./api-all"
+import { LimitAndOffsetFilter, ListResult, OrderList, SimpleIllust, SourceDataPath, mapFromOrderList } from "./api-all"
 import { createDataRequest, createPathDataRequest, createPathRequest, createQueryRequest } from "./impl"
 import { AlreadyExists, NotFound, ResourceNotExist } from "./exceptions"
 
@@ -14,6 +14,7 @@ export const sourceData = {
     getRelatedImages: createPathRequest<SourceDataIdentity, SimpleIllust[], NotFound>(({ sourceSite, sourceId }) => `/api/source-data/${encodeURIComponent(sourceSite)}/${encodeURIComponent(sourceId)}/related-images`),
     getSourceMarks: createPathRequest<SourceDataIdentity, SourceMark[], NotFound>(({ sourceSite, sourceId }) => `/api/source-data/${encodeURIComponent(sourceSite)}/${encodeURIComponent(sourceId)}/source-marks`, "GET"),
     updateSourceMarks: createPathDataRequest<SourceDataIdentity, SourceMarkPartialForm, null, NotFound | ResourceNotExist<"related", number>>(({ sourceSite, sourceId }) => `/api/source-data/${encodeURIComponent(sourceSite)}/${encodeURIComponent(sourceId)}/source-marks`, "PATCH"),
+    getCollectStatus: createDataRequest<SourceDataPath[], SourceDataCollectStatus[], never>("/api/source-data/collect-status", "POST")
 }
 
 function mapFromSourceDataFilter(filter: SourceDataFilter): any {
@@ -79,6 +80,14 @@ export interface SourceMark {
     sourceSiteName: string
     sourceId: number
     markType: SourceMarkType
+}
+
+export interface SourceDataCollectStatus {
+    source: SourceDataPath
+    imageCount: number
+    collected: boolean
+    collectStatus: SourceEditStatus | null
+    collectTime: string | null
 }
 
 export interface SourceDataCreateForm extends SourceDataUpdateForm {
