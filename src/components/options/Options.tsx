@@ -7,6 +7,7 @@ import { OptionsServerPanel } from "./OptionsServer"
 import { OptionsToolPanel } from "./OptionsTool"
 import { OptionsDownloadPanel } from "./OptionsDownload"
 import { OptionsSourceDataPanel } from "./OptionsSourceData"
+import { SPACINGS, DARK_MODE_COLORS, LIGHT_MODE_COLORS } from "@/styles"
 
 export function Options() {
     const { setting, saveSetting } = useSetting()
@@ -43,8 +44,12 @@ const RootLeftDiv = styled.div`
     left: 0; top: 0; bottom: 0; width: 300px;
     padding: 1rem;
     box-sizing: border-box;
-    background-color: var(--block-color);
-    border-right: 1px solid var(--border-color);
+    background-color: ${LIGHT_MODE_COLORS["block"]};
+    border-right: 1px solid ${LIGHT_MODE_COLORS["border"]};
+    @media (prefers-color-scheme: dark) {
+        background-color: ${DARK_MODE_COLORS["block"]};
+        border-right-color: ${DARK_MODE_COLORS["border"]};
+    }
 `
 
 const RootRightDiv = styled.div`
@@ -57,11 +62,11 @@ const RootRightDiv = styled.div`
 
 const Header = styled.h3`
     text-align: center;
-    margin-bottom: var(--spacing-6);
+    margin-bottom: ${SPACINGS[6]};
 `
 
 const SideButtonDiv = styled.div`
-    margin-bottom: var(--spacing-1);
+    margin-bottom: ${SPACINGS[1]};
     text-align: center;
 `
 

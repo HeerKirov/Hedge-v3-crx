@@ -1,24 +1,25 @@
 import { createGlobalStyle } from "styled-components"
-import { ColorStyle, USEFUL_COLORS, THEME_COLORS, UsefulColors, ThemeColors, Colors } from "./color"
-import { SizeStyle } from "./size"
+import { LIGHT_MODE_COLORS, DARK_MODE_COLORS } from "./color"
+import { FONT_SIZES } from "./size"
 
-export { USEFUL_COLORS, THEME_COLORS }
-export type { UsefulColors, ThemeColors, Colors }
+export { BASIC_COLOR_NAMES, THEME_COLOR_NAMES, LIGHT_MODE_COLORS, DARK_MODE_COLORS } from "./color"
+export { FONT_SIZE_NAMES, RADIUS_SIZE_NAMES, ELEMENT_HEIGHT_NAMES, FONT_SIZES, RADIUS_SIZES, ELEMENT_HEIGHTS, SPACINGS } from "./size"
+export type { BasicColors, ThemeColors } from "./color"
+export type { FontSizes, RadiusSizes, ElementHeights } from "./size"
 
 export const GlobalStyle = createGlobalStyle`
-
-html {
-    ${ColorStyle}
-    ${SizeStyle}
-}
 
 body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    font-size: var(--font-size-std);
+    font-size: ${FONT_SIZES["std"]};
+    background-color: ${LIGHT_MODE_COLORS["background"]};
+    color: ${LIGHT_MODE_COLORS["text"]};
+    @media (prefers-color-scheme: dark) {
+        background-color: ${DARK_MODE_COLORS["background"]};
+        color: ${DARK_MODE_COLORS["text"]};
+    }
 }
 
 html::-webkit-scrollbar {
@@ -110,26 +111,29 @@ span {
 }
 
 h1 {
-    font-size: var(--font-size-h1);
+    font-size: ${FONT_SIZES["h1"]};
 }
 
 h2 {
-    font-size: var(--font-size-h2);
+    font-size: ${FONT_SIZES["h2"]};
 }
 
 h3 {
-    font-size: var(--font-size-h3);
+    font-size: ${FONT_SIZES["h3"]};
 }
 
 h4 {
-    font-size: var(--font-size-h4);
+    font-size: ${FONT_SIZES["h4"]};
 }
 
 code {
-    color: var(--red);
     font-weight: normal;
     padding-right: 0.25em;
     padding-left: 0.25em;
+    color: ${LIGHT_MODE_COLORS["danger"]};
+    @media (prefers-color-scheme: dark) {
+        color: ${DARK_MODE_COLORS["danger"]};
+    }
 }
 
 img,

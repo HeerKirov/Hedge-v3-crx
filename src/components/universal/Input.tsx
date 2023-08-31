@@ -1,3 +1,5 @@
+import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, FONT_SIZES, LIGHT_MODE_COLORS, RADIUS_SIZES } from "@/styles"
+import { mix } from "polished"
 import React from "react"
 import { styled, css } from "styled-components"
 
@@ -28,18 +30,25 @@ const StyledCss = css<{ $size: "small" | "std" | "large", $width?: string }>`
     align-items: center;
     display: inline-flex;
     line-height: 1.2;
-    border-radius: var(--radius-size-std);
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-    background-color: var(--block-color);
-    font-size: var(--font-size-${p => p.$size});
-    height: var(--element-height-${p => p.$size});
-    ${p => p.$width ? css`
-        width: ${() => p.$width};
-    ` : null}
+    border-radius: ${RADIUS_SIZES["std"]};
+    border: 1px solid ${LIGHT_MODE_COLORS["border"]};
+    color: ${LIGHT_MODE_COLORS["text"]};
+    background-color: ${LIGHT_MODE_COLORS["block"]};
+    font-size: ${p => FONT_SIZES[p.$size]};
+    height: ${p => ELEMENT_HEIGHTS[p.$size]};
+    ${p => p.$width ? css` width: ${() => p.$width}; ` : null}
     &[disabled] {
-        color: mix(var(--text-color), #ffffff, 20%);
-        background-color: mix(var(--block-color), #000000, 96%);
+        color: ${mix(0.2, LIGHT_MODE_COLORS["text"], "#ffffff")};
+        background-color: m${mix(0.96, LIGHT_MODE_COLORS["block"], "#000000")};
+    }
+    @media (prefers-color-scheme: dark) {
+        color: ${DARK_MODE_COLORS["text"]};
+        background-color: ${DARK_MODE_COLORS["block"]};
+        border-color: ${DARK_MODE_COLORS["border"]};
+        &[disabled] {
+            color: ${mix(0.2, DARK_MODE_COLORS["text"], "#ffffff")};
+        background-color: m${mix(0.96, DARK_MODE_COLORS["block"], "#000000")};
+        }
     }
 `
 

@@ -1,14 +1,17 @@
 import { styled } from "styled-components"
-import { Button, SecondaryText } from "@/components/universal"
+import { Button, FormattedText, SecondaryText } from "@/components/universal"
 import { useTabInfo } from "@/services/active-tab"
 import { useServerHealth } from "@/functions/server"
 import { SourceDataCollectStatus, SourceEditStatus } from "@/functions/server/api-source-data"
 import { SourceDataPath } from "@/functions/server/api-all"
+import { BookmarkNotice } from "./Bookmark"
+import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, FONT_SIZES, RADIUS_SIZES, SPACINGS } from "@/styles"
 
 export function Popup() {
     return <RootDiv>
         <ServerStatusNotice/>
         <SourceInfoNotice/>
+        <BookmarkNotice/>
     </RootDiv>
 }
 
@@ -24,7 +27,7 @@ function SourceInfoNotice() {
     const { sourceInfo, collectStatus, manualCollectSourceData } = useTabInfo()
 
     return sourceInfo && <TabInfoDiv>
-        <HostDiv>{sourceInfo.host}</HostDiv>
+        <FormattedText size="small">{sourceInfo.host}</FormattedText>
         {sourceInfo.sourceDataPath && <>
             <SourceDataPathNotice {...sourceInfo.sourceDataPath}/>
             {collectStatus !== null && <CollectStatusNotice {...collectStatus}/>}
@@ -38,7 +41,7 @@ function SourceDataPathNotice(path: SourceDataPath) {
         {path.sourceSite}
         <SourceIdBold>{path.sourceId}</SourceIdBold>
         {path.sourcePart !== null && <SourcePartSpan>p{path.sourcePart}</SourcePartSpan>}
-        {path.sourcePartName !== null && <SourcePartNameSpan>/{path.sourcePartName}</SourcePartNameSpan>}
+        {path.sourcePartName !== null && <FormattedText color="secondary">/{path.sourcePartName}</FormattedText>}
     </SourceDataPathDiv>
 }
 
@@ -49,9 +52,9 @@ function CollectStatusNotice(props: SourceDataCollectStatus) {
 
     return <CollectStatusDiv>
         图像:
-        <ImageCountSpan $count={props.imageCount}>{props.imageCount > 1 ? `已收集(${props.imageCount}项)` : props.imageCount === 1 ? "已收集" : "未收集"}</ImageCountSpan>
+        <FormattedText color={props.imageCount > 0 ? "success" : undefined}>{props.imageCount > 1 ? `已收集(${props.imageCount}项)` : props.imageCount === 1 ? "已收集" : "未收集"}</FormattedText>
         /来源数据:
-        <CollectStatusSpan $status={props.collectStatus}>{collectStatusText}</CollectStatusSpan>
+        <FormattedText color={props.collectStatus === "EDITED" ? "success" : props.collectStatus === "ERROR" ? "danger" : props.collectStatus === "IGNORED" ? "secondary" : undefined}>{collectStatusText}</FormattedText>
         {collectTimeText && <SecondaryText>收集时间: {collectTimeText}</SecondaryText>}
     </CollectStatusDiv>
 }
@@ -70,51 +73,44 @@ const RootDiv = styled.div`
 
 const HealthDiv = styled.div<{ $status: "NOT_INITIALIZED" | "INITIALIZING" | "LOADING" | "READY" | "DISCONNECTED" | "UNKNOWN" }>`
     text-align: center;
-    margin: var(--spacing-1) 0;
-    color: var(--secondary-text-color);
-    font-size: var(--font-size-small);
+    margin: ${SPACINGS[1]} 0;
+    color: ${LIGHT_MODE_COLORS["secondary-text"]};
+    font-size: ${FONT_SIZES["small"]};
     > span {
-        margin-left: var(--spacing-1);
-        color: var(--${p => p.$status === "READY" ? "text-color" : p.$status === "DISCONNECTED" ? "danger" : "warning"});
+        margin-left: ${SPACINGS[1]};
+        color: ${p => LIGHT_MODE_COLORS[p.$status === "READY" ? "text" : p.$status === "DISCONNECTED" ? "danger" : "warning"]};
+    }
+    @media (prefers-color-scheme: dark) {
+        color: ${DARK_MODE_COLORS["secondary-text"]};
+        > span {
+            color: ${p => DARK_MODE_COLORS[p.$status === "READY" ? "text" : p.$status === "DISCONNECTED" ? "danger" : "warning"]};
+        }
     }
 `
 
 const TabInfoDiv = styled.div`
-    margin: var(--spacing-1) var(--spacing-2);
-    padding: var(--spacing-1) 0;
+    margin: ${SPACINGS[1]} ${SPACINGS[2]};
+    padding: ${SPACINGS[1]} 0;
     text-align: center;
-    border: solid 1px var(--border-color);
-    border-radius: var(--radius-size-std);
-`
-
-const HostDiv = styled.div`
-    font-size: var(--font-size-small);
+    border: solid 1px ${LIGHT_MODE_COLORS["border"]};
+    border-radius: ${RADIUS_SIZES["std"]};
+    @media (prefers-color-scheme: dark) {
+        border-color: ${DARK_MODE_COLORS["border"]};
+    }
 `
 
 const SourceDataPathDiv = styled.div`
-    margin: var(--spacing-2) 0;
+    margin: ${SPACINGS[2]} 0;
 `
 
 const SourceIdBold = styled.b`
-    margin-left: var(--spacing-1);
+    margin-left: ${SPACINGS[1]};
 `
 
 const SourcePartSpan = styled.span`
-    margin-left: var(--spacing-1);
-`
-
-const SourcePartNameSpan = styled.span`
-    color: var(--secondary-text-color);
+    margin-left: ${SPACINGS[1]};
 `
 
 const CollectStatusDiv = styled.div`
-    margin-bottom: var(--spacing-1);
-`
-
-const ImageCountSpan = styled.span<{ $count: number }>`
-    color: var(--${p => p.$count > 0 ? "success" : "text-color"})
-`
-
-const CollectStatusSpan = styled.span<{ $status: SourceEditStatus | null }>`
-    color: var(--${p => p.$status === "EDITED" ? "success" : p.$status === "ERROR" ? "danger" : p.$status === "IGNORED" ? "secondary" : "text-color" })
+    margin-bottom: ${SPACINGS[1]};
 `

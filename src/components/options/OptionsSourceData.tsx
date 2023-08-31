@@ -5,6 +5,7 @@ import { Setting } from "@/functions/setting"
 import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { maps, objects } from "@/utils/primitives"
 import { useEditor } from "@/utils/reactivity"
+import { SPACINGS } from "@/styles"
 
 interface OptionsSourceDataPanelProps {
     sourceData: Setting["sourceData"] | null | undefined
@@ -85,8 +86,8 @@ function CollectRuleItem({ onUpdate, ...rule }: CollectRuleItemProps) {
 }
 
 const StyledSaveButton = styled(Button)`
-    margin-top: var(--spacing-2);
-    padding: 0 var(--spacing-5);
+    margin-top: ${SPACINGS[2]};
+    padding: 0 ${SPACINGS[5]};
 `
 
 const StyledFixedRuleName = styled.span`

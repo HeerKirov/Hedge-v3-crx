@@ -2,6 +2,7 @@ import styled from "styled-components"
 import { Button, CheckBox, Input, Label, SecondaryText } from "@/components/universal"
 import { Setting } from "@/functions/setting"
 import { useEditor } from "@/utils/reactivity"
+import { SPACINGS } from "@/styles"
 
 interface OptionsToolPanelProps {
     tool: Setting["tool"] | null | undefined
@@ -98,10 +99,10 @@ export function OptionsToolPanel(props: OptionsToolPanelProps) {
 }
 
 const StyledP = styled.p`
-    margin-top: var(--spacing-1);
+    margin-top: ${SPACINGS[1]};
 `
 
 const StyledSaveButton = styled(Button)`
-    margin-top: var(--spacing-2);
-    padding: 0 var(--spacing-5);
+    margin-top: ${SPACINGS[2]};
+    padding: 0 ${SPACINGS[5]};
 `

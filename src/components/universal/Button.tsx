@@ -1,9 +1,9 @@
 import { css, styled } from "styled-components"
-import { Colors } from "@/styles"
+import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, FONT_SIZES, LIGHT_MODE_COLORS, RADIUS_SIZES, ThemeColors } from "@/styles"
 
 interface ButtonProps {
     mode?: "transparent" | "filled"
-    type?: Colors
+    type?: ThemeColors
     size?: "std" | "small" | "large"
     square?: boolean
     round?: boolean
@@ -13,13 +13,13 @@ export const Button = styled.button<ButtonProps>`
     box-sizing: border-box;
     vertical-align: middle;
     padding: 0 ${p => p.square ? "0" : "1em"};
-    border-radius: var(--radius-size-${p => p.round ? "round" : "std"});
-    font-size: var(--font-size-${p => p.size ?? "std"});
-    height: var(--element-height-${p => p.size ?? "std"});
-    line-height: var(--element-height-${p => p.size ?? "std"});
+    border-radius: ${p => RADIUS_SIZES[p.round ? "round" : "std"]};
+    font-size: ${p => FONT_SIZES[p.size ?? "std"]};
+    height: ${p => ELEMENT_HEIGHTS[p.size ?? "std"]};
+    line-height: ${p => ELEMENT_HEIGHTS[p.size ?? "std"]};
     ${p => p.mode === "filled" ? css`
-        color: var(--text-inverted-color);
-        background-color: var(--${p.type});
+        color: ${LIGHT_MODE_COLORS["text-inverted"]};
+        background-color: ${p.type ? LIGHT_MODE_COLORS[p.type] : "default"};
         &:hover:not([disabled]) {
             opacity: 0.88;
         }
@@ -28,6 +28,10 @@ export const Button = styled.button<ButtonProps>`
         }
         &[disabled] {
             opacity: 0.75;
+        }
+        @media (prefers-color-scheme: dark) {
+            color: ${DARK_MODE_COLORS["text-inverted"]};
+            background-color: ${p.type ? DARK_MODE_COLORS[p.type] : "default"};
         }
     `
     : css<ButtonProps>`
@@ -39,10 +43,17 @@ export const Button = styled.button<ButtonProps>`
             background-color: rgba(45, 50, 55, 0.13);
         }
         ${p.disabled ? css`
-            color: var(--secondary-text-color);
+            color: ${LIGHT_MODE_COLORS["secondary-text"]};
         ` : p.type ? css`
-            color: var(--${p.type});
+            color: ${LIGHT_MODE_COLORS[p.type]};
         ` : null}
+        @media (prefers-color-scheme: dark) {
+            ${p.disabled ? css`
+                color: ${DARK_MODE_COLORS["secondary-text"]};
+            ` : p.type ? css`
+                color: ${DARK_MODE_COLORS[p.type]};
+            ` : null}
+        }
     `
 }
 `

@@ -1,8 +1,9 @@
+import { styled } from "styled-components"
 import { Button, Input, Label, SecondaryText } from "@/components/universal"
 import { Setting } from "@/functions/setting"
 import { useServerHealth } from "@/functions/server"
 import { useEditor } from "@/utils/reactivity"
-import { styled } from "styled-components"
+import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, FONT_SIZES, SPACINGS } from "@/styles"
 
 interface OptionsServerPanelProps {
     server: Setting["server"] | null | undefined
@@ -57,19 +58,22 @@ export function OptionsServerPanel(props: OptionsServerPanelProps) {
 }
 
 const StyledHealthDiv = styled.div`
-    padding: var(--spacing-2);
+    padding: ${SPACINGS[2]};
     vertical-align: middle;
 `
 
 const StyledHealth = styled.span<{ $status: "NOT_INITIALIZED" | "INITIALIZING" | "LOADING" | "READY" | "DISCONNECTED" | "UNKNOWN" }>`
-    font-size: var(--font-size-large);
-    color: var(--${p => STATUS_TO_COLOR[p.$status]});
-    margin-right: var(--spacing-4);
+    font-size: ${FONT_SIZES["large"]};
+    margin-right: ${SPACINGS[4]};
+    color: ${p => LIGHT_MODE_COLORS[STATUS_TO_COLOR[p.$status]]};
+    @media (prefers-color-scheme: dark) {
+        color: ${p => DARK_MODE_COLORS[STATUS_TO_COLOR[p.$status]]};
+    }
 `
 
 const StyledSaveButton = styled(Button)`
-    margin-top: var(--spacing-2);
-    padding: 0 var(--spacing-5);
+    margin-top: ${SPACINGS[2]};
+    padding: 0 ${SPACINGS[5]};
 `
 
 const STATUS_TO_COLOR = {
@@ -79,7 +83,7 @@ const STATUS_TO_COLOR = {
     "READY": "success",
     "DISCONNECTED": "danger",
     "UNKNOWN": "warning",
-}
+} as const
 
 const STATUS_TO_DESCRIPTION = {
     "NOT_INITIALIZED": "后台服务还没有初始化。",
