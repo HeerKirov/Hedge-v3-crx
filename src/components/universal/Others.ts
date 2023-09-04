@@ -41,3 +41,24 @@ export const Group = styled.div`
         margin-right: ${SPACINGS[1]};
     }
 `
+
+export const Separator = styled.div<{ direction?: "horizontal" | "vertical", spacing?: number }>`
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    background-color: ${LIGHT_MODE_COLORS["border"]};
+    @media (prefers-color-scheme: dark) {
+        background-color: ${DARK_MODE_COLORS["border"]};
+    }
+    ${p => p.direction === "vertical" ? css`
+        display: inline-block;
+        vertical-align: middle;
+        width: 1px;
+        height: ${ELEMENT_HEIGHTS["std"]};
+        ${p.spacing && css`margin: 0 ${SPACINGS[p.spacing]};`}
+    ` : css`
+        display: block;
+        width: 100%;
+        height: 1px;
+        ${p.spacing && css`margin: ${SPACINGS[p.spacing]} 0;`}
+    `}
+`

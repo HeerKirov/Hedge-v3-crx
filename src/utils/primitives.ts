@@ -70,3 +70,9 @@ export const objects = {
         }
     }
 }
+
+export const numbers = {
+    compareTo(a: number, b: number): -1 | 0 | 1 {
+        return a === b ? 0 : a > b ? 1 : -1
+    }
+}

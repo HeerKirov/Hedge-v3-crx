@@ -7,6 +7,7 @@ interface ButtonProps {
     size?: "std" | "small" | "large"
     square?: boolean
     round?: boolean
+    width?: string
 }
 
 export const Button = styled.button<ButtonProps>`
@@ -17,6 +18,7 @@ export const Button = styled.button<ButtonProps>`
     font-size: ${p => FONT_SIZES[p.size ?? "std"]};
     height: ${p => ELEMENT_HEIGHTS[p.size ?? "std"]};
     line-height: ${p => ELEMENT_HEIGHTS[p.size ?? "std"]};
+    ${p => p.width && css`width: ${p.width};`}
     ${p => p.mode === "filled" ? css`
         color: ${LIGHT_MODE_COLORS["text-inverted"]};
         background-color: ${p.type ? LIGHT_MODE_COLORS[p.type] : "default"};

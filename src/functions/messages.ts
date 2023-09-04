@@ -39,7 +39,7 @@ export type ContentScriptCallbackTypes = Extract<ContentScriptMessagesList, MsgT
 
 export type ServiceSenderMessagesList = Test | ReportSourceData | ReportSourceDataPath
 
-export type ContentScriptMessagesList = SetActiveTabBadge
+export type ContentScriptMessagesList = SetActiveTabBadge | QueryBookmarks | UpsertBookmark | DeleteBookmark
 
 //== service worker发送至content script的消息类型定义 ==
 
@@ -52,3 +52,15 @@ type ReportSourceDataPath = MsgTemplateWithCallback<"REPORT_SOURCE_DATA_PATH", u
 //== content script发送至service worker的消息类型定义
 
 type SetActiveTabBadge = MsgTemplate<"SET_ACTIVE_TAB_BADGE", {path: SourceDataPath}>
+
+type QueryBookmarks = MsgTemplateWithCallback<"QUERY_BOOKMARKS", {}, {}>
+
+type UpsertBookmark = MsgTemplate<"UPSERT_BOOKMARK", {}>
+
+type DeleteBookmark = MsgTemplate<"DELETE_BOOKMARK", {}>
+
+type GetBookmarkPage = MsgTemplateWithCallback<"GET_BOOKMARK_PAGE", {}, {}>
+
+type UpsertBookmarkPage = MsgTemplate<"UPSERT_BOOKMARK_PAGE", {}>
+
+type DeleteBookmarkPage = MsgTemplate<"DELETE_BOOKMARK_PAGE", {}>

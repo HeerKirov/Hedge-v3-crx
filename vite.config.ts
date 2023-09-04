@@ -10,6 +10,13 @@ export default defineConfig({
     react(),
     crx({ manifest })
   ],
+  build: {
+    rollupOptions: {
+      input: {
+        welcome: 'bookmark.html',
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src')

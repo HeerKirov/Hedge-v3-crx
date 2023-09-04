@@ -1,4 +1,6 @@
 export { CheckBox } from "./CheckBox"
 export { Button } from "./Button"
 export { Input } from "./Input"
-export { Label, FormattedText, SecondaryText, Group } from "./Others"
+export { Icon } from "./Icon"
+export { StandardSideLayout, MiddleLayout } from "./Layouts"
+export { Label, FormattedText, SecondaryText, Group, Separator } from "./Others"
