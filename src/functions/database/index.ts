@@ -114,6 +114,8 @@ interface Cursor<T> {
     direction(direction: "next" | "prev" | undefined): Cursor<T>
     order(compareFn: ((a: T, b: T) => number) | undefined): Cursor<T>
     toList(): Promise<T[]>
+    count(): Promise<number>
+    forEach(func: (record: T) => void): Promise<void>
 }
 
 async function createDatabase(): Promise<Database> {
@@ -266,7 +268,7 @@ function createCursor<T>(getter: (direction: "next" | "prev") => IDBRequest<IDBC
                 req.onsuccess = () => {
                     const cursor = req.result
                     if(cursor) {
-                        if(offset === undefined || index >= offset) {
+                        if((offset === undefined || index >= offset) && filters.every(filter => filter(cursor.value))) {
                             ret.push(cursor.value)
                         }
                         cursor.continue()
@@ -284,7 +286,56 @@ function createCursor<T>(getter: (direction: "next" | "prev") => IDBRequest<IDBC
                     reject(req.error?.message)
                 }
             })
-        }
+        },
+        count() {
+            return new Promise((resolve, reject) => {
+                const req = getter(direction)
+                let count = 0
+                let index = 0
+                req.onsuccess = () => {
+                    const cursor = req.result
+                    if(cursor) {
+                        if((offset === undefined || index >= offset) && filters.every(filter => filter(cursor.value))) {
+                            count += 1
+                        }
+                        cursor.continue()
+                        index += 1
+                        if(limit !== undefined && index >= (limit + (offset ?? 0))) {
+                            resolve(count)
+                        }
+                    }else{
+                        resolve(count)
+                    }
+                }
+                req.onerror = () => {
+                    reject(req.error?.message)
+                }
+            })
+        },
+        forEach(func) {
+            return new Promise((resolve, reject) => {
+                const req = getter(direction)
+                let index = 0
+                req.onsuccess = () => {
+                    const cursor = req.result
+                    if(cursor) {
+                        if((offset === undefined || index >= offset) && filters.every(filter => filter(cursor.value))) {
+                            func(cursor.value)
+                        }
+                        cursor.continue()
+                        index += 1
+                        if(limit !== undefined && index >= (limit + (offset ?? 0))) {
+                            resolve()
+                        }
+                    }else{
+                        resolve()
+                    }
+                }
+                req.onerror = () => {
+                    reject(req.error?.message)
+                }
+            })
+        },
     }
 
     return that

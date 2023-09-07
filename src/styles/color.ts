@@ -14,7 +14,7 @@ export type ThemeColors = typeof THEME_COLOR_NAMES[number]
 
 type GreyColors = typeof GREY_COLOR_NAMES[number]
 
-type FunctionalColors = typeof FUNCTIONAL_COLOR_NAMES[number]
+export type FunctionalColors = typeof FUNCTIONAL_COLOR_NAMES[number]
 
 type InvertedBasicColors = `${BasicColors}-inverted`
 

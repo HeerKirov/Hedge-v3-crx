@@ -10,6 +10,13 @@ export default defineConfig({
     react(),
     crx({ manifest })
   ],
+  server: {
+    strictPort: true,
+    port: 5174,
+    hmr: {
+        clientPort: 5174
+    }
+  },
   build: {
     rollupOptions: {
       input: {

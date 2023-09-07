@@ -1,6 +1,6 @@
 import { useState } from "react"
 import styled from "styled-components"
-import { Button, CheckBox, Group, Input, Label, SecondaryText } from "@/components/universal"
+import { Button, CheckBox, Group, Icon, Input, Label, SecondaryText } from "@/components/universal"
 import { DOWNLOAD_RENAME_SITES, DOWNLOAD_EXTENSIONS } from "@/functions/sites"
 import { Setting } from "@/functions/setting"
 import { useEditor } from "@/utils/reactivity"
@@ -65,14 +65,14 @@ export function OptionsDownloadPanel(props: OptionsDownloadPanelProps) {
     }
 
     return <>
-        <p>
+        <div>
             文件下载功能提供在图源网站下载图像时的重命名建议功能，在建议名称中包含图源网站的类型、图像ID等信息，方便保存后的溯源操作。
-        </p>
+        </div>
         <Label>自定义扩展名</Label>
-        <p>
+        <div>
             <SecondaryText>何种扩展名可以触发建议。以逗号(,)分隔多个扩展名。默认的扩展名包括{DOWNLOAD_EXTENSIONS.join(", ")}。</SecondaryText>
             <Input value={editor.customExtensions} onUpdateValue={v => setProperty("customExtensions", v)}/>
-        </p>
+        </div>
         <Label>重命名规则</Label>
         <SecondaryText>内置的重命名规则。可以调整规则的启用与否，以及重命名模板。</SecondaryText>
         {editor.rules.map((rule, i) => <StandardRuleItem key={rule.siteName} {...rule} onUpdate={v => updateStandardRuleAt(i, v)}/>)}
@@ -80,7 +80,7 @@ export function OptionsDownloadPanel(props: OptionsDownloadPanelProps) {
         <SecondaryText>自行添加的重命名规则。referrer、url、filename全部正则匹配成功时，应用规则。</SecondaryText>
         {editor.customRules.map((customRule, i) => <CustomRuleItem key={i} {...customRule} onUpdate={v => updateCustomRuleAt(i, v)} onRemove={() => removeCustomRuleAt(i)}/>)}
         <CustomRuleAddItem onAdd={addCustomRule}/>
-        <StyledSaveButton mode="filled" type="primary" disabled={!changed} onClick={save}>保存</StyledSaveButton>
+        {changed && <StyledSaveButton mode="filled" width="10em" type="primary" onClick={save}><Icon icon="save" mr={2}/>保存</StyledSaveButton>}
     </>
 }
 
@@ -150,7 +150,7 @@ function CustomRuleAddItem({ onAdd }: {onAdd(item: CustomRule): void}) {
 }
 
 const StyledSaveButton = styled(Button)`
-    margin-top: ${SPACINGS[2]};
+    margin-top: ${SPACINGS[4]};
     padding: 0 ${SPACINGS[5]};
 `
 

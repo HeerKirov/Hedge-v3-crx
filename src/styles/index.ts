@@ -4,7 +4,7 @@ import { FONT_SIZES } from "./size"
 
 export { BASIC_COLOR_NAMES, THEME_COLOR_NAMES, LIGHT_MODE_COLORS, DARK_MODE_COLORS } from "./color"
 export { FONT_SIZE_NAMES, RADIUS_SIZE_NAMES, ELEMENT_HEIGHT_NAMES, FONT_SIZES, RADIUS_SIZES, ELEMENT_HEIGHTS, SPACINGS } from "./size"
-export type { BasicColors, ThemeColors } from "./color"
+export type { BasicColors, ThemeColors, FunctionalColors } from "./color"
 export type { FontSizes, RadiusSizes, ElementHeights } from "./size"
 
 export const GlobalStyle = createGlobalStyle`

@@ -21,7 +21,7 @@ export interface Page {
     description: string | undefined
     keywords: string[] | undefined
     groups: [string, string][] | undefined
-    collectRange: { upToId: string, upToTime: Date } | undefined
+    lastCollect: string | undefined
     lastCollectTime: Date | undefined
     createTime: Date
     updateTime: Date

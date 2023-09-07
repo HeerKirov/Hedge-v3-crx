@@ -1,6 +1,6 @@
 import React from "react"
 import styled from "styled-components"
-import { Button, CheckBox, Input, Label, SecondaryText } from "@/components/universal"
+import { Button, CheckBox, Icon, Input, Label, SecondaryText } from "@/components/universal"
 import { Setting } from "@/functions/setting"
 import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { maps, objects } from "@/utils/primitives"
@@ -58,7 +58,7 @@ export function OptionsSourceDataPanel(props: OptionsSourceDataPanelProps) {
         <Label>来源数据收集规则</Label>
         <SecondaryText>为每一类来源数据收集指定其在Hedge中对应的site名称，以及每一种附加数据在Hedge中对应的附加数据字段名。</SecondaryText>
         {editor.rules.map((rule, i) => <CollectRuleItem key={rule.siteName} {...rule} onUpdate={v => updateCollectRuleAt(i ,v)}/>)}
-        <StyledSaveButton mode="filled" type="primary" disabled={!changed} onClick={save}>保存</StyledSaveButton>
+        {changed && <StyledSaveButton mode="filled" width="10em" type="primary" onClick={save}><Icon icon="save" mr={2}/>保存</StyledSaveButton>}
     </>
 }
 
@@ -86,7 +86,7 @@ function CollectRuleItem({ onUpdate, ...rule }: CollectRuleItemProps) {
 }
 
 const StyledSaveButton = styled(Button)`
-    margin-top: ${SPACINGS[2]};
+    margin-top: ${SPACINGS[4]};
     padding: 0 ${SPACINGS[5]};
 `
 

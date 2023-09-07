@@ -1,5 +1,5 @@
 import { styled } from "styled-components"
-import { Button, Input, Label, SecondaryText } from "@/components/universal"
+import { Button, Icon, Input, Label, SecondaryText } from "@/components/universal"
 import { Setting } from "@/functions/setting"
 import { useServerHealth } from "@/functions/server"
 import { useEditor } from "@/utils/reactivity"
@@ -34,26 +34,26 @@ export function OptionsServerPanel(props: OptionsServerPanelProps) {
     })
 
     return <>
-        <p>
+        <div>
             连接到后台服务后，可以使用一系列与来源数据相关的交互功能。
-        </p>
+        </div>
         <Label>后台服务连通状态</Label>
         <StyledHealthDiv>
             <StyledHealth $status={health}>{health}</StyledHealth>
-            <Button size="small" onClick={refreshHealth}>刷新</Button>
+            <Button size="small" onClick={() => refreshHealth()}>刷新</Button>
             <SecondaryText>{STATUS_TO_DESCRIPTION[health]}</SecondaryText>
         </StyledHealthDiv>
         <Label>通信端口</Label>
-        <p>
+        <div>
             <Input placeholder="通信端口" value={editor.port} onUpdateValue={v => setProperty("port", v)}/>
             <SecondaryText>连接到后台服务的端口。为了确保稳定连接，建议在「核心服务」设置中设定固定的端口号。</SecondaryText>
-        </p>
+        </div>
         <Label>通信Token</Label>
-        <p>
+        <div>
             <Input placeholder="通信Token" value={editor.token} onUpdateValue={v => setProperty("token", v)}/>
             <SecondaryText>连接到后台服务的Token。建议在「核心服务」设置中设定固定的Token。</SecondaryText>
-        </p>
-        <StyledSaveButton mode="filled" type="primary" disabled={!changed} onClick={save}>保存</StyledSaveButton>
+        </div>
+        {changed && <StyledSaveButton mode="filled" width="10em" type="primary" onClick={save}><Icon icon="save" mr={2}/>保存</StyledSaveButton>}
     </>
 }
 
@@ -72,7 +72,7 @@ const StyledHealth = styled.span<{ $status: "NOT_INITIALIZED" | "INITIALIZING" |
 `
 
 const StyledSaveButton = styled(Button)`
-    margin-top: ${SPACINGS[2]};
+    margin-top: ${SPACINGS[4]};
     padding: 0 ${SPACINGS[5]};
 `
 

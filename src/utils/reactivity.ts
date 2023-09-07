@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 
 export function usePartialSet<T extends object>(value: T | null | undefined, setValue?: (v: T) => void) {
     return function<K extends keyof T>(key: K, newValue: T[K]) {
-        if(value !== null && value !== undefined && setValue) {
+        if(value !== null && value !== undefined && setValue && value[key] !== newValue) {
             setValue({...value, [key]: newValue})
         }
     }
@@ -39,6 +39,30 @@ export function useEditor<T, F extends object>(props: UseEditorProps<T, F>) {
     return {editor, changed, setProperty, save}
 }
 
+interface UseCreatorProps<T, F> {
+    updateValue?(v: T): void
+    to(v: F): T
+    default(): F
+    effect?(v: T | null | undefined): void
+}
+
+export function useCreator<T, F extends object>(props: UseCreatorProps<T, F>) {
+    const [editor, setEditor] = useState(props.default())
+    const [changed, setChanged] = useState(false)
+
+    const setProperty = usePartialSet(editor, v => {
+        setEditor(v)
+        if(!changed) setChanged(true)
+    })
+
+    const save = () => {
+        setChanged(false)
+        props.updateValue?.(props.to(editor))
+    }
+
+    return {editor, changed, setProperty, save}
+}
+
 interface AsyncLoadingProps<T> {
     default: T
     loading?: T
@@ -46,9 +70,9 @@ interface AsyncLoadingProps<T> {
     call(): Promise<T>
 }
 
-export function useAsyncLoading<T>(props: AsyncLoadingProps<T>): [T, () => void]
-export function useAsyncLoading<T>(call: () => Promise<T>): [T | null, () => void]
-export function useAsyncLoading<T>(props: AsyncLoadingProps<T> | (() => Promise<T>)): [T | null, () => void] {
+export function useAsyncLoading<T>(props: AsyncLoadingProps<T>): [T, (t?: T) => void]
+export function useAsyncLoading<T>(call: () => Promise<T>): [T | null, (t?: T) => void]
+export function useAsyncLoading<T>(props: AsyncLoadingProps<T> | (() => Promise<T>)): [T | null, (t?: T) => void] {
     const loading = useRef(false)
     const initialized = useRef(false)
     if(typeof props === "function") {
@@ -63,6 +87,14 @@ export function useAsyncLoading<T>(props: AsyncLoadingProps<T> | (() => Promise<
             }
         }
 
+        const set = (newData?: T) => {
+            if(newData !== undefined) {
+                setData(newData)
+            }else{
+                refresh()
+            }
+        }
+
         useEffect(() => {
             if(!initialized.current) {
                 initialized.current = true
@@ -70,7 +102,7 @@ export function useAsyncLoading<T>(props: AsyncLoadingProps<T> | (() => Promise<
             }
         }, [])
     
-        return [data, refresh]
+        return [data, set]
     }else{
         const [data, setData] = useState<T>(props.default)
 
@@ -86,7 +118,15 @@ export function useAsyncLoading<T>(props: AsyncLoadingProps<T> | (() => Promise<
                      })
             }
         }
-    
+
+        const set = (newData?: T) => {
+            if(newData !== undefined) {
+                setData(newData)
+            }else{
+                refresh()
+            }
+        }
+
         useEffect(() => {
             if(!initialized.current) {
                 initialized.current = true
@@ -94,6 +134,6 @@ export function useAsyncLoading<T>(props: AsyncLoadingProps<T> | (() => Promise<
             }
         }, [])
     
-        return [data, refresh]
+        return [data, set]
     }
 }

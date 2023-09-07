@@ -1,6 +1,7 @@
 import styled, { css } from "styled-components"
 import { IconProp } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { SPACINGS } from "@/styles"
 
 type Size = "2xs" | "xs" | "sm" | "lg" | "xl" | "2xl" | "1x" | "2x" | "3x" | "4x" | "5x" | "6x" | "7x" | "8x" | "9x" |"10x"
 
@@ -45,6 +46,7 @@ interface IconProps {
      * margin-left。
      */
     ml?: number
+    onClick?(): void
 }
 
 export function Icon(props: IconProps) {
@@ -54,6 +56,7 @@ export function Icon(props: IconProps) {
             spin={props.spin} spinReverse={props.spinReverse} 
             bounce={props.bounce} shake={props.shake} 
             beat={props.beat} fade={props.fade}
+            onClick={props.onClick}
         />
     )
 }
@@ -65,9 +68,13 @@ const StyledIcon = styled(FontAwesomeIcon)<{ $mr?: number, $ml?: number }>`
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { 
+    faBookmark,
     faCalendar, faClose, faDownload, faFileInvoice,
-    faFolder, faPlus, faSearch, faServer, faToolbox, faTrash
+    faFolder, faPlus, faSave, faSearch, faServer, faStar, faToolbox, faTrash
 } from "@fortawesome/free-solid-svg-icons"
-import { SPACINGS } from "@/styles"
+import {
+    faStar as faStarRegular
+} from "@fortawesome/free-regular-svg-icons"
 
-library.add(faFolder, faSearch, faCalendar, faServer, faDownload, faToolbox, faFileInvoice, faPlus, faTrash, faClose)
+library.add(faFolder, faSearch, faCalendar, faServer, faDownload, faToolbox, faFileInvoice, faPlus, faTrash, faClose, faStar, faBookmark, faSave)
+library.add(faStarRegular)

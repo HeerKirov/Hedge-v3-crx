@@ -1,7 +1,7 @@
-import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, FONT_SIZES, LIGHT_MODE_COLORS, RADIUS_SIZES } from "@/styles"
+import React, { useEffect, useRef, useState } from "react"
 import { mix } from "polished"
-import React from "react"
 import { styled, css } from "styled-components"
+import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, FONT_SIZES, LIGHT_MODE_COLORS, RADIUS_SIZES } from "@/styles"
 
 interface InputProps {
     value?: string | null | undefined
@@ -10,20 +10,49 @@ interface InputProps {
     width?: string
     placeholder?: string
     disabled?: boolean
+    updateOnInput?: boolean
     onUpdateValue?(value: string): void
+    onKeydown?(e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>): void
 }
 
-export function Input(props: InputProps) {
+export const Input = React.forwardRef(function (props: InputProps, ref: React.ForwardedRef<HTMLElement>) {
     const { type, size, width, placeholder, disabled, value, onUpdateValue } = props
 
-    const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onUpdateValue?.(e.target.value)
-
-    if(type === "textarea") {
-        return <StyledTextarea $size={size ?? "std"} $width={width} disabled={disabled} placeholder={placeholder} value={value ?? undefined} onChange={onChange}/>
-    }else{
-        return <StyledInput type={type ?? "text"} $size={size ?? "std"} $width={width} disabled={disabled} placeholder={placeholder} value={value ?? undefined} onChange={onChange}/>
+    const onKeydown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if(!compositionRef.current) {
+            props.onKeydown?.(e)
+        }
     }
-}
+
+    //输入法合成器防抖
+    const compositionRef = useRef(false)
+    const onCompositionstart = () => compositionRef.current = true
+    const onCompositionend = () => compositionRef.current = false
+
+    if(props.updateOnInput) {
+        const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onUpdateValue?.(e.target.value)
+    
+        if(type === "textarea") {
+            return <StyledTextarea ref={ref as any} $size={size ?? "std"} $width={width} disabled={disabled} placeholder={placeholder} value={value ?? undefined} onChange={onChange} onKeyDown={onKeydown} onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
+        }else{
+            return <StyledInput ref={ref as any} type={type ?? "text"} $size={size ?? "std"} $width={width} disabled={disabled} placeholder={placeholder} value={value ?? undefined} onChange={onChange} onKeyDown={onKeydown} onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
+        }
+    }else{
+        const [text, setText] = useState<string>(props.value ?? "")
+
+        const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setText(e.target.value)
+    
+        const onBlur = () => onUpdateValue?.(text)
+
+        useEffect(() => { if((props.value ?? "") !== text) setText(props.value ?? "") }, [props.value ?? ""])
+    
+        if(type === "textarea") {
+            return <StyledTextarea ref={ref as any} $size={size ?? "std"} $width={width} disabled={disabled} placeholder={placeholder} value={text} onChange={onChange} onBlur={onBlur} onKeyDown={onKeydown} onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
+        }else{
+            return <StyledInput ref={ref as any} type={type ?? "text"} $size={size ?? "std"} $width={width} disabled={disabled} placeholder={placeholder} value={text} onChange={onChange} onBlur={onBlur} onKeyDown={onKeydown} onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
+        }
+    }
+})
 
 const StyledCss = css<{ $size: "small" | "std" | "large", $width?: string }>`
     vertical-align: middle;

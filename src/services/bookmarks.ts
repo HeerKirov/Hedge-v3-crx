@@ -1,6 +1,8 @@
+import { useState } from "react"
 import { databases } from "@/functions/database"
-import { BookmarkModel, Page, PageReferenceModel } from "@/functions/database/model"
+import { BookmarkModel, GroupModel, Page, PageReferenceModel } from "@/functions/database/model"
 import { Result, numbers } from "@/utils/primitives"
+import { useAsyncLoading } from "@/utils/reactivity"
 
 export function tabCreated(tab: chrome.tabs.Tab) {
     
@@ -8,6 +10,115 @@ export function tabCreated(tab: chrome.tabs.Tab) {
 
 export function tabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) {
 
+}
+
+export function useBookmarkList() {
+    const [bookmarkList, setBookmarkList] = useAsyncLoading(async () => {
+        return await bookmarks.queryBookmarks()
+    })
+
+    const updateBookmark = async (index: number, form: BookmarkForm) => {
+        if(bookmarkList && index >= 0 && index < bookmarkList.length) {
+            const old = bookmarkList[index]
+            const res = await bookmarks.updateBookmark(old.bookmarkId, form)
+            if(res.ok) {
+                setBookmarkList([...bookmarkList.slice(0, index), res.value, ...bookmarkList.slice(index + 1)])
+            }
+        }
+    }
+
+    const deleteBookmark = async (index: number) => {
+        if(bookmarkList && index >= 0 && index < bookmarkList.length) {
+            const b = bookmarkList[index]
+            const res = await bookmarks.deleteBookmark(b.bookmarkId)
+            if(res.ok) {
+                setBookmarkList([...bookmarkList.slice(0, index), ...bookmarkList.slice(index + 1)])
+            }
+        }
+    }
+
+    const updatePage = async (index: number, pageIndex: number, page: PageForm) => {
+        if(bookmarkList && index >= 0 && index < bookmarkList.length) {
+            const b = bookmarkList[index]
+            const p = b.pages[pageIndex]
+            const res = await bookmarks.updatePage(b.bookmarkId, p.pageId, page)
+            if(res.ok) {
+                setBookmarkList([
+                    ...bookmarkList.slice(0, index), 
+                    {
+                        ...b,
+                        pages: [...b.pages.slice(0, pageIndex), res.value, ...b.pages.slice(pageIndex + 1)]
+                    }, 
+                    ...bookmarkList.slice(index + 1)
+                ])
+            }
+        }
+    }
+
+    const deletePage = async (index: number, pageIndex: number) => {
+        if(bookmarkList && index >= 0 && index < bookmarkList.length) {
+            const b = bookmarkList[index]
+            const p = b.pages[pageIndex]
+            const res = await bookmarks.deletePage(b.bookmarkId, p.pageId)
+            if(res.ok) {
+                setBookmarkList([
+                    ...bookmarkList.slice(0, index), 
+                    {
+                        ...b,
+                        pages: [...b.pages.slice(0, pageIndex), ...b.pages.slice(pageIndex + 1)]
+                    },
+                    ...bookmarkList.slice(index + 1)
+                ])
+            }
+        }
+    }
+
+    return {bookmarkList, updateBookmark, deleteBookmark, updatePage, deletePage}
+}
+
+export function useGroupList() {
+    const [groupList, setGroupList] = useAsyncLoading(bookmarks.getGroups)
+    const [ errorMessage, setErrorMessage ] = useState<{keyPath: string | null, error: "ALREADY_EXISTS" | "ITEM_OCCUPIED" | "GROUP_OCCUPIED"} | null>(null)
+
+    const addGroup = async (form: GroupModel) => {
+        const res = await bookmarks.addGroup(form)
+        if(res.ok) {
+            setGroupList([...(groupList ?? []), res.value])
+            if(errorMessage !== null) setErrorMessage(null)
+        }else if(res.err === "ALREADY_EXISTS") {
+            setErrorMessage({keyPath: null, error: res.err})
+        }
+    }
+
+    const updateGroup = async (index: number, form: GroupModel) => {
+        if(groupList && index >= 0 && index < groupList.length) {
+            const old = groupList[index]
+            if(old.groupKeyPath === form.groupKeyPath) {
+                const res = await bookmarks.updateGroup(form)
+                if(res.ok) {
+                    setGroupList([...groupList.slice(0, index), res.value, ...groupList.slice(index + 1)])
+                    if(errorMessage !== null) setErrorMessage(null)
+                }else if(res.err === "ITEM_OCCUPIED") {
+                    setErrorMessage({keyPath: form.groupKeyPath, error: res.err})
+                }
+            }
+        }
+    }
+
+    const deleteGroup = async (index: number) => {
+        if(groupList && index >= 0 && index < groupList.length) {
+            const old = groupList[index]
+            const res = await bookmarks.deleteGroup(old.groupKeyPath)
+            if(res.ok) {
+                setGroupList([...groupList.slice(0, index), ...groupList.slice(index + 1)])
+                if(errorMessage !== null) setErrorMessage(null)
+            }else if(res.err === "GROUP_OCCUPIED") {
+                setErrorMessage({keyPath: old.groupKeyPath, error: res.err})
+            }
+        }
+    }
+
+    return {groupList, addGroup, updateGroup, deleteGroup, errorMessage}
 }
 
 export const bookmarks = {
@@ -50,12 +161,10 @@ export const bookmarks = {
             return {ok: false, err: "NOT_FOUND"}
         }
         const now = new Date()
-        return {
-            ok: true, 
-            value: await t.putBookmark({...model, ...form, updateTime: now})
-        }
+        const res = await t.putBookmark({...model, ...form, updateTime: now})
+        return {ok: true, value: res}
     },
-    async deleteBookmark(bookmarkId: BookmarkModel["bookmarkId"]): Promise<Result<undefined, "NOT_FOUND">> {
+    async deleteBookmark(bookmarkId: number): Promise<Result<undefined, "NOT_FOUND">> {
         const t = await databases.transaction("bookmark", "readwrite")
         const model = await t.getBookmark(bookmarkId)
         if(model === undefined) {
@@ -90,9 +199,9 @@ export const bookmarks = {
         if((await t.getPageReferenceByUrl(form.url)) !== undefined) {
             return {ok: false, err: "URL_ALREADY_EXISTS"}
         }
-        const pageRefModel = await t.addPageReference({url: form.url, bookmarkId: bookmarkModel.bookmarkId})
         const now = new Date()
-        const page: Page = {pageId: pageRefModel.pageId, ...form, createTime: now, updateTime: now}
+        const pageRefModel = await t.addPageReference({url: form.url, bookmarkId: bookmarkModel.bookmarkId})
+        const page: Page = {pageId: pageRefModel.pageId, ...form, host: generateHost(form.url), createTime: now, updateTime: now}
         const pages = [...bookmarkModel.pages, page]
         const lastCollectTime = pages.map(p => p.lastCollectTime).reduce((pre, cur) => pre === undefined || cur !== undefined && cur.getMilliseconds() > pre.getMilliseconds() ? cur : pre)
         await t.putBookmark({...bookmarkModel, pages, lastCollectTime, updateTime: now})
@@ -113,20 +222,87 @@ export const bookmarks = {
             return {ok: false, err: "URL_ALREADY_EXISTS"}
         }
         const now = new Date()
-        const newPage = {...page, ...form, updateTime: now}
+        const newPage = {...page, ...form, host: generateHost(form.url), updateTime: now}
         const pages = [...bookmarkModel.pages.slice(0, pageIndex), newPage, ...bookmarkModel.pages.slice(pageIndex + 1)]
         const lastCollectTime = form.lastCollectTime !== page.lastCollectTime ? pages.map(p => p.lastCollectTime).reduce((pre, cur) => pre === undefined || cur !== undefined && cur.getMilliseconds() > pre.getMilliseconds() ? cur : pre) : bookmarkModel.lastCollectTime
         await t.putBookmark({...bookmarkModel, pages, lastCollectTime, updateTime: now})
+        if(newPage.url !== page.url) {
+            await t.putPageReference({pageId, bookmarkId, url: newPage.url})
+        }
         return {ok: true, value: newPage}
     },
-    async getGroups() {
-
+    async deletePage(bookmarkId: number, pageId: number): Promise<Result<undefined, "BOOKMARK_NOT_FOUND" | "PAGE_NOT_FOUND">> {
+        const t = await databases.transaction(["bookmark", "pageReference"], "readwrite")
+        const bookmarkModel = await t.getBookmark(bookmarkId)
+        if(bookmarkModel === undefined) {
+            return {ok: false, err: "BOOKMARK_NOT_FOUND"}
+        }
+        const pageIndex = bookmarkModel.pages.findIndex(p => p.pageId === pageId)
+        if(pageIndex < 0) {
+            return {ok: false, err: "PAGE_NOT_FOUND"}
+        }
+        const page = bookmarkModel.pages[pageIndex]
+        
+        const now = new Date()
+        const pages = [...bookmarkModel.pages.slice(0, pageIndex), ...bookmarkModel.pages.slice(pageIndex + 1)]
+        const lastCollectTime = page.lastCollectTime !== undefined ? pages.map(p => p.lastCollectTime).reduce((pre, cur) => pre === undefined || cur !== undefined && cur.getMilliseconds() > pre.getMilliseconds() ? cur : pre) : bookmarkModel.lastCollectTime
+        await t.putBookmark({...bookmarkModel, pages, lastCollectTime, updateTime: now})
+        await t.deletePageReference(pageId)
+        return {ok:true, value: undefined}
     },
-    async upsertGroup() {
-
+    async getGroups(): Promise<GroupModel[]> {
+        const t = await databases.transaction("group", "readonly")
+        return await t.cursorGroup().toList()
     },
-    async deleteGroup() {
+    async addGroup(form: GroupModel): Promise<Result<GroupModel, "ALREADY_EXISTS">> {
+        const t = await databases.transaction("group", "readwrite")
+        const model = await t.getGroup(form.groupKeyPath)
+        if(model !== undefined) {
+            return {ok: false, err: "ALREADY_EXISTS"}
+        }
+        const res = await t.putGroup(form)
 
+        return {ok: true, value: res}
+    },
+    async updateGroup(form: GroupModel): Promise<Result<GroupModel, "NOT_FOUND" | "ITEM_OCCUPIED">> {
+        const t = await databases.transaction(["group", "bookmark"], "readwrite")
+        const model = await t.getGroup(form.groupKeyPath)
+        if(model === undefined) {
+            return {ok: false, err: "NOT_FOUND"}
+        }
+        const removedItems = model.items.filter(item => !form.items.some(newItem => newItem.itemKeyPath === item.itemKeyPath)).map(item => item.itemKeyPath)
+        const occupiedCount = removedItems.length > 0 ? await t.cursorBookmark().filter(record => record.groups.some(([gn, gk]) => model.groupKeyPath === gn && removedItems.includes(gk)) || record.pages.some(p => p.groups?.some(([gn, gk]) => model.groupKeyPath === gn && removedItems.includes(gk)))).count() : 0
+        if(occupiedCount > 0) {
+            return {ok: false, err: "ITEM_OCCUPIED"}
+        }
+
+        const res = await t.putGroup(form)
+        
+        return {ok: true, value: res}
+    },
+    async deleteGroup(groupKeyPath: string): Promise<Result<undefined, "NOT_FOUND" | "GROUP_OCCUPIED">> {
+        const t = await databases.transaction(["group", "bookmark"], "readwrite")
+        const model = await t.getGroup(groupKeyPath)
+        if(model === undefined) {
+            return {ok: false, err: "NOT_FOUND"}
+        }
+        const occupiedCount = await t.cursorBookmark()
+            .filter(record => record.groups.some(([gn, _]) => groupKeyPath === gn) || record.pages.some(p => p.groups?.some(([gn, _]) => groupKeyPath === gn)))
+            .count()
+        if(occupiedCount > 0) {
+            return {ok: false, err: "GROUP_OCCUPIED"}
+        }
+        await t.deleteGroup(groupKeyPath)
+        return {ok: true, value: undefined}
+    }
+}
+
+function generateHost(url: string): string {
+    try {
+        const u = new URL(url)
+        return u.host
+    }catch(e) {
+        return ""
     }
 }
 
@@ -139,7 +315,7 @@ interface QueryBookmarkFilter {
     orderDirection?: "asc" | "desc"
 }
 
-interface BookmarkForm {
+export interface BookmarkForm {
     name: string
     otherNames: string[]
     description: string
@@ -148,13 +324,12 @@ interface BookmarkForm {
     score: number | undefined
 }
 
-interface PageForm {
+export interface PageForm {
     url: string
-    host: string
     title: string
     description: string | undefined
     keywords: string[] | undefined
     groups: [string, string][] | undefined
-    collectRange: { upToId: string, upToTime: Date } | undefined
+    lastCollect: string | undefined
     lastCollectTime: Date | undefined
 }
