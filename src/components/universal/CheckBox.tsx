@@ -1,17 +1,18 @@
+import { ReactNode } from "react"
 import { styled } from "styled-components"
 
 interface CheckBoxProps {
     checked?: boolean
     onUpdateChecked?(checked: boolean): void
     disabled?: boolean
-    children?: JSX.Element | JSX.Element[] | string
+    children?: ReactNode
 }
 
 interface RadioProps {
     checked?: boolean
     onUpdateChecked?(): void
     disabled?: boolean
-    children?: JSX.Element | JSX.Element[] | string
+    children?: ReactNode
 }
 
 interface RadioGroupProps<T> {

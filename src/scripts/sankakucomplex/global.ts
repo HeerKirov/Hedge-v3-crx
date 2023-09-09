@@ -94,6 +94,7 @@ function enableTagListEnhancement() {
                 const childNode = childNodes[i]
                 if(childNode.textContent) {
                     if(childNode.nodeName === "#text" && childNode.textContent.startsWith("Posts:")) {
+                        //TODO 网站已变更，需要重写此处的获取方法
                         postCount = childNode.textContent.substring("Posts:".length + 1).trim()
                     }else if(childNode.nodeName === "#text" && childNode.textContent.startsWith("Books:")) {
                         const aNode = childNodes[i + 1]

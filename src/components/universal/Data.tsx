@@ -1,12 +1,12 @@
-import { useCallback, useMemo, useRef } from "react"
+import { ReactNode, useCallback, useMemo, useRef } from "react"
 
 interface DraggableEditListProps<T> {
     items?: T[]
     onUpdateItems?(items: T[]): void
     editable?: boolean
-    child?(item: T, index: number): (JSX.Element | string | null)[] | JSX.Element | string | null
+    child?(item: T, index: number): ReactNode
     keyOf?(item: T, index: number): string | number
-    children?(): (JSX.Element | string | null)[] | JSX.Element | string | null
+    children?: ReactNode
 }
 
 export function DraggableEditList<T>(props: DraggableEditListProps<T>) {
@@ -29,7 +29,7 @@ export function DraggableEditList<T>(props: DraggableEditListProps<T>) {
                     const targetIndex = [...rootRef.current.childNodes.values()].findIndex(n => n === e.target || n.contains(e.target as HTMLElement))
                     if(targetIndex >= 0 && targetIndex !== dragItemRef.current) {
                         if(targetIndex > dragItemRef.current) {
-                            props.onUpdateItems([...props.items.slice(0, dragItemRef.current), ...props.items.slice(dragItemRef.current + 1, targetIndex), props.items[dragItemRef.current], ...props.items.slice(targetIndex)])
+                            props.onUpdateItems([...props.items.slice(0, dragItemRef.current), ...props.items.slice(dragItemRef.current + 1, targetIndex + 1), props.items[dragItemRef.current], ...props.items.slice(targetIndex + 1)])
                         }else{
                             props.onUpdateItems([...props.items.slice(0, targetIndex), props.items[dragItemRef.current], ...props.items.slice(targetIndex, dragItemRef.current), ...props.items.slice(dragItemRef.current + 1)])
                         }
@@ -59,5 +59,8 @@ export function DraggableEditList<T>(props: DraggableEditListProps<T>) {
         </span>)
     }, [props.items, props.onUpdateItems, props.editable])
 
-    return <span ref={rootRef}>{memoDom}</span>
+    return <span ref={rootRef}>
+        {memoDom}
+        {props.children}
+    </span>
 }

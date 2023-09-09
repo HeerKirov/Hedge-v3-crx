@@ -1,20 +1,21 @@
-import styled, { css } from "styled-components"
+import { styled, css } from "styled-components"
 import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, SPACINGS } from "@/styles"
+import { ReactNode } from "react"
 
 interface StandardSideLayoutProps {
-    left?: JSX.Element | JSX.Element[] | string | null
-    top?: JSX.Element | JSX.Element[] | string | null
-    content?: JSX.Element | JSX.Element[] | string | null
-    bottom?: JSX.Element | JSX.Element[] | string | null
+    left?: ReactNode
+    top?: ReactNode
+    content?: ReactNode
+    bottom?: ReactNode
     bottomVisible?: boolean
     contentPadding?: number
     bottomPadding?: number
 }
 
 interface MidddleLayoutProps {
-    left?: JSX.Element | JSX.Element[] | string | null
-    middle?: JSX.Element | JSX.Element[] | string | null
-    right?: JSX.Element | JSX.Element[] | string | null
+    left?: ReactNode
+    middle?: ReactNode
+    right?: ReactNode
 }
 
 export function StandardSideLayout(props: StandardSideLayoutProps) {

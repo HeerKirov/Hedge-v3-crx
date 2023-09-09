@@ -1,4 +1,4 @@
-import styled from "styled-components"
+import { styled } from "styled-components"
 import { Button, CheckBox, Icon, Input, Label, SecondaryText } from "@/components/universal"
 import { Setting } from "@/functions/setting"
 import { useEditor } from "@/utils/reactivity"

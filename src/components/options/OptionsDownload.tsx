@@ -1,5 +1,5 @@
 import { useState } from "react"
-import styled from "styled-components"
+import { styled } from "styled-components"
 import { Button, CheckBox, Group, Icon, Input, Label, SecondaryText } from "@/components/universal"
 import { DOWNLOAD_RENAME_SITES, DOWNLOAD_EXTENSIONS } from "@/functions/sites"
 import { Setting } from "@/functions/setting"

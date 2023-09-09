@@ -1,3 +1,4 @@
+import { ReactNode } from "react"
 import { css, styled } from "styled-components"
 import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, FONT_SIZES, LIGHT_MODE_COLORS, RADIUS_SIZES, ThemeColors } from "@/styles"
 
@@ -10,7 +11,7 @@ interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
     width?: string
     disabled?: boolean
     onClick?: () => void
-    children?: (JSX.Element | string)[] | JSX.Element | string | null
+    children?: ReactNode
 }
 
 export function Button(props: ButtonProps) {

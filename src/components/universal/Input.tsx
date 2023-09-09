@@ -13,6 +13,7 @@ interface InputProps {
     updateOnInput?: boolean
     onUpdateValue?(value: string): void
     onKeydown?(e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>): void
+    onBlur?(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>): void
 }
 
 export const Input = React.forwardRef(function (props: InputProps, ref: React.ForwardedRef<HTMLElement>) {
@@ -33,23 +34,38 @@ export const Input = React.forwardRef(function (props: InputProps, ref: React.Fo
         const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onUpdateValue?.(e.target.value)
     
         if(type === "textarea") {
-            return <StyledTextarea ref={ref as any} $size={size ?? "std"} $width={width} disabled={disabled} placeholder={placeholder} value={value ?? undefined} onChange={onChange} onKeyDown={onKeydown} onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
+            return <StyledTextarea ref={ref as any} $size={size ?? "std"} $width={width} 
+                disabled={disabled} placeholder={placeholder} value={value ?? undefined} 
+                onChange={onChange} onKeyDown={onKeydown} onBlur={props.onBlur}
+                onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
         }else{
-            return <StyledInput ref={ref as any} type={type ?? "text"} $size={size ?? "std"} $width={width} disabled={disabled} placeholder={placeholder} value={value ?? undefined} onChange={onChange} onKeyDown={onKeydown} onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
+            return <StyledInput ref={ref as any} $size={size ?? "std"} $width={width} 
+                type={type ?? "text"} disabled={disabled} placeholder={placeholder} value={value ?? undefined} 
+                onChange={onChange} onKeyDown={onKeydown} onBlur={props.onBlur}
+                onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
         }
     }else{
         const [text, setText] = useState<string>(props.value ?? "")
 
         const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setText(e.target.value)
     
-        const onBlur = () => onUpdateValue?.(text)
+        const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            onUpdateValue?.(text)
+            props.onBlur?.(e)
+        }
 
         useEffect(() => { if((props.value ?? "") !== text) setText(props.value ?? "") }, [props.value ?? ""])
     
         if(type === "textarea") {
-            return <StyledTextarea ref={ref as any} $size={size ?? "std"} $width={width} disabled={disabled} placeholder={placeholder} value={text} onChange={onChange} onBlur={onBlur} onKeyDown={onKeydown} onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
+            return <StyledTextarea ref={ref as any} $size={size ?? "std"} $width={width} 
+                disabled={disabled} placeholder={placeholder} value={text} 
+                onChange={onChange} onBlur={onBlur} onKeyDown={onKeydown} 
+                onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
         }else{
-            return <StyledInput ref={ref as any} type={type ?? "text"} $size={size ?? "std"} $width={width} disabled={disabled} placeholder={placeholder} value={text} onChange={onChange} onBlur={onBlur} onKeyDown={onKeydown} onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
+            return <StyledInput ref={ref as any} $size={size ?? "std"} type={type ?? "text"} $width={width} 
+                disabled={disabled} placeholder={placeholder} value={text} 
+                onChange={onChange} onBlur={onBlur} onKeyDown={onKeydown} 
+                onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
         }
     }
 })
@@ -59,6 +75,7 @@ const StyledCss = css<{ $size: "small" | "std" | "large", $width?: string }>`
     align-items: center;
     display: inline-flex;
     line-height: 1.2;
+    box-sizing: border-box;
     border-radius: ${RADIUS_SIZES["std"]};
     border: 1px solid ${LIGHT_MODE_COLORS["border"]};
     color: ${LIGHT_MODE_COLORS["text"]};

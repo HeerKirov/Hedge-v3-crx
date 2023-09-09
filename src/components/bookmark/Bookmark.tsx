@@ -1,15 +1,14 @@
 import { useState } from "react"
 import { Button, Icon, MiddleLayout, StandardSideLayout } from "@/components/universal"
-import { bookmarks } from "@/services/bookmarks"
-import { useAsyncLoading } from "@/utils/reactivity"
+import { useBookmarkList, useGroupList } from "@/services/bookmarks"
 import { BookmarkList } from "./BookmarkList"
 import { BookmarkSideBar } from "./BookmarkSideBar"
 import { BookmarkDetail } from "./BookmarkDetail"
 
 export function Bookmark() {
-    const [bookmarkList] = useAsyncLoading(async () => {
-        return await bookmarks.queryBookmarks()
-    })
+    const { bookmarkList, updateBookmark, updatePage } = useBookmarkList()
+
+    const { groupList } = useGroupList()
 
     const [bookmarkSelectedIndex, setBookmarkSelectedIndex] = useState<[number, number | null] | null>(null)
 
@@ -21,10 +20,9 @@ export function Bookmark() {
         </>}
     />
 
-    const content = bookmarkList && <BookmarkList bookmarkList={bookmarkList} selectedIndex={bookmarkSelectedIndex} onUpdateSelectedIndex={setBookmarkSelectedIndex}/>
+    const content = bookmarkList && <BookmarkList bookmarkList={bookmarkList} allGroups={groupList ?? []} selectedIndex={bookmarkSelectedIndex} onUpdateSelectedIndex={setBookmarkSelectedIndex}/>
 
-    const bottom = bookmarkSelectedIndex && <BookmarkDetail/>
+    const bottom = bookmarkList && bookmarkSelectedIndex && <BookmarkDetail bookmarkList={bookmarkList} allGroups={groupList ?? []} index={bookmarkSelectedIndex} updateBookmark={updateBookmark} updatePage={updatePage}/>
 
     return <StandardSideLayout left={left} top={top} content={content} bottom={bottom} bottomVisible={true}/>
 }
-

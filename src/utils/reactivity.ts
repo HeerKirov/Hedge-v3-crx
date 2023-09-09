@@ -56,8 +56,10 @@ export function useCreator<T, F extends object>(props: UseCreatorProps<T, F>) {
     })
 
     const save = () => {
+        const form = props.to(editor)
         setChanged(false)
-        props.updateValue?.(props.to(editor))
+        setEditor(props.default())
+        props.updateValue?.(form)
     }
 
     return {editor, changed, setProperty, save}

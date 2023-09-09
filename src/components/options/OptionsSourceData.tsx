@@ -1,5 +1,5 @@
-import React from "react"
-import styled from "styled-components"
+import { Fragment } from "react"
+import { styled } from "styled-components"
 import { Button, CheckBox, Icon, Input, Label, SecondaryText } from "@/components/universal"
 import { Setting } from "@/functions/setting"
 import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
@@ -78,10 +78,10 @@ function CollectRuleItem({ onUpdate, ...rule }: CollectRuleItemProps) {
         <CheckBox checked={rule.enable} onUpdateChecked={v => onUpdate({...rule, enable: v})}/>
         <StyledFixedRuleName>{rule.siteName}</StyledFixedRuleName>
         <Input disabled={!rule.enable} value={rule.sourceSite} placeholder="对应site名称" onUpdateValue={v => onUpdate({...rule, sourceSite: v})}/>
-        {rule.additionalInfo.map((additionalInfo, i) => <React.Fragment key={additionalInfo.key}>
+        {rule.additionalInfo.map((additionalInfo, i) => <Fragment key={additionalInfo.key}>
             <StyledFixedAdditionalKey>{additionalInfo.key}</StyledFixedAdditionalKey>
             <Input width="100px" disabled={!rule.enable} placeholder="对应附加数据字段名" value={additionalInfo.additionalField} onUpdateValue={v => onUpdate({...rule, additionalInfo: [...rule.additionalInfo.slice(0, i), {key: additionalInfo.key, additionalField: v}, ...rule.additionalInfo.slice(i + 1)]})}/>
-        </React.Fragment>)}
+        </Fragment>)}
     </p>
 }
 
