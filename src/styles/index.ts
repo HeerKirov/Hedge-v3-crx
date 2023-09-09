@@ -49,24 +49,6 @@ button {
     color: inherit;
 }
 
-//input默认样式
-input[type="text"],
-input[type="number"],
-input[type="password"],
-textarea {
-    text-rendering: auto;
-    letter-spacing: normal;
-    word-spacing: normal;
-    text-transform: none;
-    text-indent: 0;
-    text-shadow: none;
-    text-align: start;
-    justify-content: flex-start;
-    -webkit-rtl-ordering: logical;
-    box-sizing: border-box;
-    outline: none;
-}
-
 //文本默认样式
 html,
 body,

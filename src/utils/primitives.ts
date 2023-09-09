@@ -2,13 +2,12 @@
 export type Result<T, E> = {ok: true, value: T} | {ok: false, err: E}
 
 export const arrays = {
-    equals<T>(a: {[key: string]: T}, b: {[key: string]: T}, eq: (a: T, b: T) => boolean = (a, b) => a === b): boolean {
-        const entriesA = Object.entries(a)
-        if(entriesA.length !== Object.keys(b).length) {
+    equals<T>(a: T[], b: T[], eq: (a: T, b: T) => boolean = (a, b) => a === b): boolean {
+        if (a.length !== b.length) {
             return false
         }
-        for(const [key, valueA] of entriesA) {
-            if(!b.hasOwnProperty(key) || !eq(valueA, b[key])) {
+        for (let i = 0; i < a.length; ++i) {
+            if (!eq(a[i], b[i])) {
                 return false
             }
         }
@@ -49,7 +48,8 @@ export const maps = {
 
 export const objects = {
     deepEquals(a: any, b: any): boolean {
-        const typeA = a === null ? "null" : typeof a, typeB = b === null ? "null" : typeof b
+        const typeA = a === null ? "null" : typeof a
+        const typeB = b === null ? "null" : typeof b
 
         if(typeA === "object" && typeB === "object") {
             const aIsArray = a instanceof Array, bIsArray = b instanceof Array

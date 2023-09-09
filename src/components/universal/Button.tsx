@@ -36,7 +36,7 @@ export const StyledButton = styled.button<{
     font-size: ${p => FONT_SIZES[p.$size ?? "std"]};
     height: ${p => ELEMENT_HEIGHTS[p.$size ?? "std"]};
     line-height: ${p => ELEMENT_HEIGHTS[p.$size ?? "std"]};
-    ${p => p.$width && css`width: ${p.$width};`}
+    ${p => p.$square ? css`width: ${ELEMENT_HEIGHTS[p.$size ?? "std"]};` : p.$width ? css`width: ${p.$width};` : null}
     ${p => p.$mode === "filled" ? css`
         color: ${LIGHT_MODE_COLORS["text-inverted"]};
         background-color: ${p.$type ? LIGHT_MODE_COLORS[p.$type] : "default"};

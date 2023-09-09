@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useMemo, useState } from "react"
 import { css, styled } from "styled-components"
-import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, SPACINGS } from "@/styles"
+import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, LIGHT_MODE_COLORS, SPACINGS } from "@/styles"
 import { DraggableEditList, FormattedText, Icon, Input, LayouttedDiv } from "."
 import { GroupModel } from "@/functions/database/model"
 
@@ -31,6 +31,11 @@ interface GroupPickerProps {
     onUpdateGroups?(groups: [string, string][]): void
     allGroups: GroupModel[]
     mode: "page" | "bookmark"
+}
+
+interface CollectTimePickerProps {
+    value?: Date
+    onUpdateValue?(value: Date | undefined): void
 }
 
 export const DynamicInputList = memo(function (props: DynamicInputListProps) {
@@ -111,6 +116,7 @@ export const GroupPicker = memo(function (props: GroupPickerProps) {
         if(a.availableCondition?.length ?? 0 !== b.availableCondition?.length ?? 0) return (a.availableCondition?.length ?? 0) < (b.availableCondition?.length ?? 0) ? -1 : 1
         return 0
     }).map(group => {
+        //TODO 实现多选机制
         const selectedItem = props.groups?.find(g => g[0] === group.groupKeyPath)?.[1]
 
         const select = (itemKeyPath: string | undefined) => {
@@ -191,6 +197,60 @@ const GroupPickerItem = memo(function ({ group, selectedItem, onUpdateSelected }
     </GroupPickerItemDiv>
 })
 
+export const CollectTimePicker = memo(function (props: CollectTimePickerProps) {
+    const [editMode, setEditMode] = useState(false)
+
+    const updateValue = useCallback((value: Date | undefined) => {
+        if(value?.getTime() !== props.value?.getTime()) {
+            props.onUpdateValue?.(value)
+        }
+        setEditMode(false)
+    }, [props.onUpdateValue, props.value])
+
+    const edit = useCallback(() => setEditMode(true), [])
+
+    return editMode ? <FormattedText>
+        <CollectTimePickerEditMode value={props.value} onUpdateValue={updateValue}/>
+    </FormattedText> : <FormattedText userSelect="text" onClick={edit}>
+        {props.value?.toLocaleString() ?? "未记录上次收集时间"}
+    </FormattedText>
+})
+
+const CollectTimePickerEditMode = memo(function (props: CollectTimePickerProps) {
+    const [value, setValue] = useState(() => {
+        const fmt = (n: number) => n >= 10 ? n : `0${n}`
+        return props.value !== undefined ? `${props.value.getFullYear()}/${props.value.getMonth() + 1}/${props.value.getDate()} ${fmt(props.value.getHours())}:${fmt(props.value.getMinutes())}:${fmt(props.value.getSeconds())}` : ""
+    })
+
+    const [error, setError] = useState(false)
+
+    const submitValue = () => {
+        const trimed = value.trim()
+        if("today".startsWith(trimed.toLowerCase())) {
+            props.onUpdateValue?.(new Date())
+            if(error) setError(false)
+        }else if(trimed) {
+            const d = new Date(trimed)
+            if(isNaN(d.getTime())) {
+                if(!error) setError(true)
+            }else{
+                props.onUpdateValue?.(d)
+                if(error) setError(false)
+            }
+        }else{
+            props.onUpdateValue?.(undefined)
+        }
+    }
+
+    const onKeydown = (e: React.KeyboardEvent<HTMLElement>) => {
+        if(e.code === "Enter" && !e.altKey && !e.ctrlKey) {
+            submitValue()
+        }
+    }
+
+    return <Input size="small" borderColor={error ? "danger" : undefined} placeholder="YYYY/MM/DD HH:mm:SS" value={value} onUpdateValue={setValue} updateOnInput onBlur={submitValue} onKeydown={onKeydown}/>
+})
+
 const STARLIGHT_COLOR_PICKS = ["text", "secondary", "info", "success", "warning", "danger"] as const
 
 
@@ -234,9 +294,8 @@ const KeywordInputDiv = styled.div`
     display: flex;
     align-items: center;
     gap: ${SPACINGS[1]};
-    padding: ${SPACINGS[1]};
     overflow-y: auto;
-    height: 100%;
+    line-height: ${ELEMENT_HEIGHTS["small"]};
     &::-webkit-scrollbar {
         display: none;
     }

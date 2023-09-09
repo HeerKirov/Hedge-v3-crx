@@ -69,12 +69,15 @@ const StyledIcon = styled(FontAwesomeIcon)<{ $mr?: number, $ml?: number }>`
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { 
     faBookmark,
-    faCalendar, faClose, faDownload, faFileInvoice,
-    faFolder, faPlus, faSave, faSearch, faServer, faStar, faToolbox, faTrash
+    faCalendar, faCalendarDay, faCalendarPlus, faCheck, faClose, faDownload, faFileInvoice,
+    faFolder, faPlus, faRecordVinyl, faSave, faSearch, faServer, faStar, faToolbox, faTrash
 } from "@fortawesome/free-solid-svg-icons"
 import {
     faStar as faStarRegular
 } from "@fortawesome/free-regular-svg-icons"
 
-library.add(faFolder, faSearch, faCalendar, faServer, faDownload, faToolbox, faFileInvoice, faPlus, faTrash, faClose, faStar, faBookmark, faSave)
+library.add(
+    faFolder, faSearch, faCalendar, faServer, faDownload, faToolbox, faFileInvoice, faPlus, faTrash, faClose, faStar, faBookmark, faSave, 
+    faCalendarPlus, faCalendarDay, faRecordVinyl, faCheck
+)
 library.add(faStarRegular)

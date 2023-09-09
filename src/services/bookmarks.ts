@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { databases } from "@/functions/database"
 import { BookmarkModel, GroupModel, Page, PageReferenceModel } from "@/functions/database/model"
-import { Result, numbers } from "@/utils/primitives"
+import { Result, numbers, objects } from "@/utils/primitives"
 import { useAsyncLoading } from "@/utils/reactivity"
 
 export function tabCreated(tab: chrome.tabs.Tab) {
@@ -221,11 +221,12 @@ export const bookmarks = {
         if(form.url !== page.url && (await t.getPageReferenceByUrl(form.url)) !== undefined) {
             return {ok: false, err: "URL_ALREADY_EXISTS"}
         }
+        const fieldChanged = form.title !== page.title || form.url !== page.url || form.description !== page.description || !objects.deepEquals(form.keywords, page.keywords) || !objects.deepEquals(form.groups, page.groups)
         const now = new Date()
-        const newPage = {...page, ...form, host: generateHost(form.url), updateTime: now}
+        const newPage = {...page, ...form, host: generateHost(form.url), updateTime: fieldChanged ? now : page.updateTime}
         const pages = [...bookmarkModel.pages.slice(0, pageIndex), newPage, ...bookmarkModel.pages.slice(pageIndex + 1)]
         const lastCollectTime = form.lastCollectTime !== page.lastCollectTime ? pages.map(p => p.lastCollectTime).reduce((pre, cur) => pre === undefined || cur !== undefined && cur.getMilliseconds() > pre.getMilliseconds() ? cur : pre) : bookmarkModel.lastCollectTime
-        await t.putBookmark({...bookmarkModel, pages, lastCollectTime, updateTime: now})
+        await t.putBookmark({...bookmarkModel, pages, lastCollectTime, updateTime: fieldChanged ? now : bookmarkModel.updateTime})
         if(newPage.url !== page.url) {
             await t.putPageReference({pageId, bookmarkId, url: newPage.url})
         }
