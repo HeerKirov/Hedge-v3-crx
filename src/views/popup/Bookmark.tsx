@@ -1,4 +1,4 @@
-import { Button } from "@/components/universal"
+import { Button } from "@/components"
 
 export function BookmarkNotice() {
     const click = () => {

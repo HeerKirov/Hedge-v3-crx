@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { styled } from "styled-components"
-import { Button, Icon, StandardSideLayout } from "@/components/universal"
+import { Button, Icon, StandardSideLayout } from "@/components"
 import { useSetting } from "@/functions/setting"
 import { usePartialSet } from "@/utils/reactivity"
 import { SPACINGS } from "@/styles"
@@ -13,7 +13,7 @@ import { OptionsBookmarkPanel } from "./OptionsBookmark"
 export function Options() {
     const { setting, saveSetting } = useSetting()
 
-    const [panel, setPanel] = useState<"server" | "tool" | "download" | "sourceData" | "bookmark">("bookmark")
+    const [panel, setPanel] = useState<"server" | "tool" | "download" | "sourceData" | "bookmark">("server")
 
     const setSettingPartial = usePartialSet(setting, saveSetting)
 

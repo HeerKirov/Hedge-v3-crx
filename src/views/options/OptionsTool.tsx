@@ -1,5 +1,5 @@
 import { styled } from "styled-components"
-import { Button, CheckBox, Icon, Input, Label, SecondaryText } from "@/components/universal"
+import { Button, CheckBox, Icon, Input, Label, SecondaryText } from "@/components"
 import { Setting } from "@/functions/setting"
 import { useEditor } from "@/utils/reactivity"
 import { SPACINGS } from "@/styles"

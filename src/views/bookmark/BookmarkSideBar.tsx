@@ -1,5 +1,5 @@
 import { styled } from "styled-components"
-import { Button, Icon, Input, Separator } from "@/components/universal"
+import { Button, Icon, Input, Separator } from "@/components"
 
 interface BookmarkSideBarProps {
 

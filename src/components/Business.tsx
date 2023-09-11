@@ -116,29 +116,40 @@ export const GroupPicker = memo(function (props: GroupPickerProps) {
         if(a.availableCondition?.length ?? 0 !== b.availableCondition?.length ?? 0) return (a.availableCondition?.length ?? 0) < (b.availableCondition?.length ?? 0) ? -1 : 1
         return 0
     }).map(group => {
-        //TODO 实现多选机制
-        const selectedItem = props.groups?.find(g => g[0] === group.groupKeyPath)?.[1]
+        const selectedItems = props.groups?.filter(g => g[0] === group.groupKeyPath).map(g => g[1]) ?? []
 
-        const select = (itemKeyPath: string | undefined) => {
+        const click = (itemKeyPath: string) => {
             if(props.onUpdateGroups) {
-                if(props.groups?.length) {
-                    const idx = props.groups.findIndex(g => g[0] === group.groupKeyPath)
+                const oldGroups = props.groups ?? []
+                if(group.multi) {
+                    //多选模式下，click只会将指定项追加/移除，因此查询条件限定了目标item
+                    const idx = oldGroups.findIndex(g => g[0] === group.groupKeyPath && g[1] === itemKeyPath)
                     if(idx >= 0) {
-                        const oldItemKeyPath = props.groups[idx][1]
-                        const newGroups: [string, string][] = itemKeyPath !== undefined ? [...props.groups.slice(0, idx), [group.groupKeyPath, itemKeyPath], ...props.groups.slice(idx + 1)] : [...props.groups.slice(0, idx), ...props.groups.slice(idx + 1)]
-                        const processedGroups = processGroupChange(props.allGroups, newGroups, {groupKeyPath: group.groupKeyPath, oldItemKeyPath, newItemKeyPath: itemKeyPath})
+                        const newGroups: [string, string][] = [...oldGroups.slice(0, idx), ...oldGroups.slice(idx + 1)]
+                        const processedGroups = processGroupChange(props.allGroups, newGroups, {groupKeyPath: group.groupKeyPath, oldItemKeyPath: itemKeyPath, newItemKeyPath: undefined})
                         props.onUpdateGroups(processedGroups)
-                    }else if(itemKeyPath !== undefined) {
-                        const newGroups: [string, string][] = [...props.groups, [group.groupKeyPath, itemKeyPath]]
+                    }else{
+                        const newGroups: [string, string][] = [...oldGroups, [group.groupKeyPath, itemKeyPath]]
                         props.onUpdateGroups(newGroups)
                     }
-                }else if(itemKeyPath !== undefined) {
-                    props.onUpdateGroups([[group.groupKeyPath, itemKeyPath]])
+                }else{
+                    //单选模式下，click要顾及整个group，因此查询条件仅为group
+                    const idx = oldGroups.findIndex(g => g[0] === group.groupKeyPath)
+                    if(idx >= 0) {
+                        const oldItemKeyPath = oldGroups[idx][1]
+                        const newItemKeyPath = oldItemKeyPath !== itemKeyPath ? itemKeyPath : undefined
+                        const newGroups: [string, string][] = newItemKeyPath !== undefined ? [...oldGroups.slice(0, idx), [group.groupKeyPath, newItemKeyPath], ...oldGroups.slice(idx + 1)] : [...oldGroups.slice(0, idx), ...oldGroups.slice(idx + 1)]
+                        const processedGroups = processGroupChange(props.allGroups, newGroups, {groupKeyPath: group.groupKeyPath, oldItemKeyPath, newItemKeyPath})
+                        props.onUpdateGroups(processedGroups)
+                    }else{
+                        const newGroups: [string, string][] = [...oldGroups, [group.groupKeyPath, itemKeyPath]]
+                        props.onUpdateGroups(newGroups)
+                    }
                 }
             }
         }
 
-        return {group, selectedItem, select}
+        return {group, selectedItems, click}
     }), [props.allGroups, props.mode, props.groups, props.onUpdateGroups])
 
     const processGroupChange = useCallback((allGroups: GroupModel[], groups: [string, string][], changedGroup: {groupKeyPath: string, oldItemKeyPath: string, newItemKeyPath: string | undefined}): [string, string][] => {
@@ -169,14 +180,14 @@ export const GroupPicker = memo(function (props: GroupPickerProps) {
     }, [])
 
     return filteredGroups.length > 0 ? <GroupPickerDiv>
-        {filteredGroups.map(({ group, selectedItem, select }) => <GroupPickerItem key={group.groupKeyPath} group={group} selectedItem={selectedItem} onUpdateSelected={select}/>)}
+        {filteredGroups.map(({ group, selectedItems, click }) => <GroupPickerItem key={group.groupKeyPath} group={group} selectedItems={selectedItems} onClick={click}/>)}
     </GroupPickerDiv> : <LayouttedDiv textAlign="center" color="secondary">
         <i>没有可用的组</i>
     </LayouttedDiv>
 })
 
-const GroupPickerItem = memo(function ({ group, selectedItem, onUpdateSelected }: {group: GroupModel, selectedItem: string | undefined, onUpdateSelected(item: string | undefined): void}) {
-    const click = (itemKeyPath: string) => onUpdateSelected(itemKeyPath !== selectedItem ? itemKeyPath : undefined)
+const GroupPickerItem = memo(function ({ group, selectedItems, onClick }: {group: GroupModel, selectedItems: string[], onClick(item: string): void}) {
+    const selected = useMemo(() => group.items.map(item => selectedItems.includes(item.itemKeyPath)), [group, selectedItems])
 
     const color = group.availableFor === "both" ? "primary" : group.availableFor === "bookmark" ? "info" : "success"
 
@@ -184,11 +195,11 @@ const GroupPickerItem = memo(function ({ group, selectedItem, onUpdateSelected }
         [
         <FormattedText size="small" color="secondary">{group.groupName}:</FormattedText>
         <div>
-            {group.items.map(item => (
+            {group.items.map((item, index) => (
                 <FormattedText key={item.itemKeyPath} ml={1} 
-                    color={item.itemKeyPath === selectedItem ? color : undefined} 
-                    bold={item.itemKeyPath === selectedItem} 
-                    onClick={() => click(item.itemKeyPath)}>
+                    color={selected[index] ? color : undefined} 
+                    bold={selected[index]} 
+                    onClick={() => onClick(item.itemKeyPath)}>
                         {item.itemName}
                 </FormattedText>
             ))}
@@ -248,7 +259,12 @@ const CollectTimePickerEditMode = memo(function (props: CollectTimePickerProps) 
         }
     }
 
-    return <Input size="small" borderColor={error ? "danger" : undefined} placeholder="YYYY/MM/DD HH:mm:SS" value={value} onUpdateValue={setValue} updateOnInput onBlur={submitValue} onKeydown={onKeydown}/>
+    return <Input size="small" borderColor={error ? "danger" : undefined} 
+        placeholder="YYYY/MM/DD HH:mm:SS" 
+        value={value} onUpdateValue={setValue} 
+        onBlur={submitValue} onKeydown={onKeydown} 
+        updateOnInput autoFocus
+    />
 })
 
 const STARLIGHT_COLOR_PICKS = ["text", "secondary", "info", "success", "warning", "danger"] as const

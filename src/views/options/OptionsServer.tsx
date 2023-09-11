@@ -1,5 +1,5 @@
 import { styled } from "styled-components"
-import { Button, Icon, Input, Label, SecondaryText } from "@/components/universal"
+import { Button, Icon, Input, Label, SecondaryText } from "@/components"
 import { Setting } from "@/functions/setting"
 import { useServerHealth } from "@/functions/server"
 import { useEditor } from "@/utils/reactivity"

@@ -1,15 +1,24 @@
-import React, { memo, useMemo, useRef, useState } from "react"
+import React, { memo, useEffect, useMemo, useRef, useState } from "react"
 import { styled } from "styled-components"
-import { Button, CheckBox, RadioGroup, FormattedText, Icon, Input, Label, LayouttedDiv, Group, Select, GroupTag, DraggableEditList } from "@/components/universal"
+import { Button, CheckBox, RadioGroup, FormattedText, Icon, Input, Label, LayouttedDiv, Group, Select, GroupTag, DraggableEditList } from "@/components"
 import { GroupModel } from "@/functions/database/model"
 import { useGroupList } from "@/services/bookmarks"
 import { useCreator, useEditor } from "@/utils/reactivity"
 import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, RADIUS_SIZES, SPACINGS } from "@/styles"
 
 export function OptionsBookmarkPanel() {
-    const { groupList, errorMessage, addGroup, updateGroup, deleteGroup } = useGroupList()
+    const { groupList, errorMessage, addGroup, updateGroup, deleteGroup, clearErrorMessage } = useGroupList()
 
     const [selectedIndex, setSelectedIndex] = useState<number | "new" | null>(null)
+
+    useEffect(clearErrorMessage, [selectedIndex])
+
+    const addGroupWithCallback = async (form: GroupModel) => {
+        if(groupList && await addGroup(form)) {
+            //此处取得的是上一次闭包的过期值，但是它恰好是新项的插入位置
+            setSelectedIndex(groupList.length)
+        }
+    }
 
     return <>
         <p>
@@ -26,7 +35,7 @@ export function OptionsBookmarkPanel() {
         )}
         {selectedIndex !== "new" 
             ? <GroupListNew onSelect={() => setSelectedIndex("new")}/>
-            : <GroupNew onAdd={addGroup} allGroups={groupList ?? []} error={errorMessage !== null && errorMessage.keyPath === null ? errorMessage.error : null}/>
+            : <GroupNew onAdd={addGroupWithCallback} allGroups={groupList ?? []} error={errorMessage !== null && errorMessage.keyPath === null ? errorMessage.error : null}/>
         }
     </>
 }

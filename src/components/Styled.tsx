@@ -13,8 +13,10 @@ interface Formatted {
     lineHeight?: ElementHeights
     elementHeight?: ElementHeights
     bold?: boolean
+    monospace?: boolean
     textAlign?: "left" | "center" | "right"
     userSelect?: "text" | "none"
+    float?: "right" | "left"
     mr?: number, ml?: number
 }
 
@@ -43,19 +45,19 @@ type StyledLayouttedProps = { [K in keyof Layoutted as `$${K}`]: Layoutted[K] }
 type StyledSeparatorProps = { [K in keyof SeparatorProps as `$${K}`]: SeparatorProps[K] }
 
 export function FormattedText(props: FormattedTextProps) {
-    const { backgroundColor, bold, color, size, textAlign, lineHeight, elementHeight, mr, ml, userSelect, children, ...attrs } = props
+    const { backgroundColor, bold, color, size, textAlign, monospace, lineHeight, float, elementHeight, mr, ml, userSelect, children, ...attrs } = props
     
     return <StyledFormattedText {...attrs} 
         $backgroundColor={backgroundColor} $textAlign={textAlign} $bold={bold} $color={color} $size={size} 
-        $elementHeight={elementHeight} $lineHeight={lineHeight} 
+        $elementHeight={elementHeight} $lineHeight={lineHeight} $float={float} $monospace={monospace}
         $mr={mr} $ml={ml} $userSelect={userSelect}
     >{children}</StyledFormattedText>
 }
 
 export function LayouttedDiv(props: LayouttedDivProps) {
     const {
-        backgroundColor, color, display, radius, border, borderColor,
-        bold, size, lineHeight, elementHeight, textAlign, userSelect,
+        backgroundColor, color, display, radius, border, borderColor, float,
+        bold, size, lineHeight, elementHeight, textAlign, userSelect, monospace,
         margin, padding, mr, ml, mt, mb, pr, pl, pt, pb,
         children, ...attrs
     } = props
@@ -63,8 +65,8 @@ export function LayouttedDiv(props: LayouttedDivProps) {
     return <StyledLayouttedDiv {...attrs}
         $backgroundColor={backgroundColor} $display={display}
         $radius={radius} $border={border} $borderColor={borderColor}
-        $bold={bold} $color={color} $size={size}  $textAlign={textAlign}
-        $lineHeight={lineHeight} $elementHeight={elementHeight} $userSelect={userSelect}
+        $bold={bold} $color={color} $size={size}  $textAlign={textAlign} $float={float}
+        $lineHeight={lineHeight} $elementHeight={elementHeight} $userSelect={userSelect} $monospace={monospace}
         $margin={margin} $padding={padding} 
         $mr={mr} $ml={ml} $mt={mt} $mb={mb} 
         $pt={pt} $pb={pb} $pl={pl} $pr={pr}
@@ -88,12 +90,14 @@ const FormattedCSS = css<StyledFormattedProps>`
             color: ${DARK_MODE_COLORS[p.$color]};
         }
     `}
+    ${p => p.$monospace && css`font-family: monospace;`}
     ${p => p.$bold && css`font-weight: 700;`}
     ${p => p.$size && css`font-size: ${FONT_SIZES[p.$size]};`}
     ${p => p.$textAlign && css`text-align: ${p.$textAlign};`}
     ${p => p.$lineHeight && css`line-height: ${ELEMENT_HEIGHTS[p.$lineHeight]};`}
     ${p => p.$elementHeight && css`height: ${ELEMENT_HEIGHTS[p.$elementHeight]};`}
     ${p => p.$userSelect && css`user-select: ${p.$userSelect};`}
+    ${p => p.$float && css`float: ${p.$float};`}
     ${p => p.$mr && css`margin-right: ${SPACINGS[p.$mr]};`}
     ${p => p.$ml && css`margin-left: ${SPACINGS[p.$ml]};`}
 `

@@ -1,8 +1,8 @@
-import { memo, useCallback } from "react"
+import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { styled } from "styled-components"
-import { Input, KeywordList, Label, Starlight, DynamicInputList, GroupPicker, Icon, CollectTimePicker } from "@/components/universal"
-import { BookmarkModel, GroupModel, Page } from "@/functions/database/model"
-import { BookmarkForm, PageForm } from "@/services/bookmarks"
+import { Input, KeywordList, Label, Starlight, DynamicInputList, GroupPicker, Icon, CollectTimePicker, FormattedText, LayouttedDiv } from "@/components"
+import { BookmarkModel, GroupModel } from "@/functions/database/model"
+import { BookmarkForm, PageForm, useBookmarkList } from "@/services/bookmarks"
 import { ELEMENT_HEIGHTS, FONT_SIZES, SPACINGS } from "@/styles"
 import { objects } from "@/utils/primitives"
 
@@ -12,18 +12,53 @@ interface BookmarkDetailProps {
     updateBookmark(index: number, bookmark: BookmarkForm): void
     updatePage(index: number, pageIndex: number, page: PageForm): void
     allGroups: GroupModel[]
+    errorMessage: Extract<ReturnType<typeof useBookmarkList>["errorMessage"], object> | null
+}
+
+interface BookmarkCreationProps {
+    bookmarkList: BookmarkModel[]
+    index: [number, number | null]
+    addBookmark(bookmark: BookmarkForm): void
+    addPage(index: number, pageIndex: number, page: PageForm): void
+    allGroups: GroupModel[]
+    errorMessage: Extract<ReturnType<typeof useBookmarkList>["errorMessage"], object> | null
 }
 
 interface BookmarkProps {
-    bookmark: BookmarkModel
+    bookmark: BookmarkDto
     updateBookmark(bookmark: BookmarkForm): void
     allGroups: GroupModel[]
 }
 
 interface PageProps {
-    page: Page
+    page: PageDto
     updatePage(page: PageForm): void
     allGroups: GroupModel[]
+    errorMessage: Extract<ReturnType<typeof useBookmarkList>["errorMessage"], object> | null
+}
+
+interface BookmarkDto {
+    name: string
+    otherNames: string[]
+    description: string
+    keywords: string[]
+    groups: [string, string][]
+    score: number | undefined
+    lastCollectTime?: Date | undefined
+    createTime?: Date
+    updateTime?: Date
+}
+
+interface PageDto {
+    url: string
+    title: string
+    description: string | undefined
+    keywords: string[] | undefined
+    groups: [string, string][] | undefined
+    lastCollect: string | undefined
+    lastCollectTime: Date | undefined
+    createTime?: Date
+    updateTime?: Date
 }
 
 export const BookmarkDetail = memo(function(props: BookmarkDetailProps) {
@@ -34,11 +69,50 @@ export const BookmarkDetail = memo(function(props: BookmarkDetailProps) {
 
         const updatePage = useCallback((page: PageForm) => props.updatePage(index, pageIndex, page), [props.updatePage, index, pageIndex])
 
-        return <BookmarkDetailOfPage page={page} updatePage={updatePage} allGroups={props.allGroups}/>
+        return <BookmarkDetailOfPage page={page} updatePage={updatePage} allGroups={props.allGroups} errorMessage={props.errorMessage}/>
     }else{
         const updateBookmark = useCallback((bookmark: BookmarkForm) => props.updateBookmark(index, bookmark), [props.updateBookmark, index, null])
 
         return <BookmarkDetailOfBookmark bookmark={bookmark} updateBookmark={updateBookmark} allGroups={props.allGroups}/>
+    }
+})
+
+export const BookmarkCreation = memo(function(props: BookmarkCreationProps) {
+    const [index, pageIndex] = props.index
+    if(pageIndex !== null) {
+        const [form, setForm] = useState<PageDto>({url: "", title: "", groups: undefined, keywords: undefined, description: undefined, lastCollect: undefined, lastCollectTime: undefined})
+
+        const once = useRef(true)
+
+        const updatePage = (page: PageForm) => {
+            setForm({...form, ...page})
+        }
+
+        useEffect(() => {
+            if(once.current && (form.url || form.title)) {
+                once.current = false
+                props.addPage(index, pageIndex, form)
+            }
+        }, [form])
+
+        return <BookmarkDetailOfPage page={form} updatePage={updatePage} allGroups={props.allGroups} errorMessage={props.errorMessage}/>
+    }else{
+        const [form, setForm] = useState<BookmarkDto>({name: "", otherNames: [], groups: [], keywords: [], description: "", score: undefined})
+        
+        const once = useRef(true)
+        
+        const updateBookmark = (bookmark: BookmarkForm) => {
+            setForm({...form, ...bookmark})
+        }
+
+        useEffect(() => {
+            if(once.current && form.name) {
+                once.current = false
+                props.addBookmark(form)
+            }
+        }, [form])
+
+        return <BookmarkDetailOfBookmark bookmark={form} updateBookmark={updateBookmark} allGroups={props.allGroups}/>
     }
 })
 
@@ -88,9 +162,9 @@ const BookmarkDetailOfBookmark = memo(function(props: BookmarkProps) {
             <Input type="textarea" placeholder="描述" value={props.bookmark.description} onUpdateValue={setDescription}/>
         </KeywordsAndDescriptionDiv>
         <TimeDiv>
-            {props.bookmark.lastCollectTime !== undefined && <><Icon icon="record-vinyl" mr={1} ml={3}/>{props.bookmark.lastCollectTime.toLocaleString()}</>}
-            <Icon icon="calendar-day" mr={1} ml={3}/>{props.bookmark.updateTime.toLocaleString()}
-            <Icon icon="calendar-plus" mr={1} ml={3}/>{props.bookmark.createTime.toLocaleString()}
+            {props.bookmark.lastCollectTime !== undefined && <><Icon icon="record-vinyl" mr={1}/>{props.bookmark.lastCollectTime.toLocaleString()}</>}
+            {props.bookmark.updateTime !== undefined && <><Icon icon="calendar-day" mr={1} ml={3}/>{props.bookmark.updateTime.toLocaleString()}</>}
+            {props.bookmark.createTime !== undefined && <><Icon icon="calendar-plus" mr={1} ml={3}/>{props.bookmark.createTime.toLocaleString()}</>}
         </TimeDiv>
     </BookmarkRootDiv>
 })
@@ -117,9 +191,9 @@ const BookmarkDetailOfPage = memo(function(props: PageProps) {
 
     const setDescription = (description: string) => props.page.description !== (description.length > 0 ? description : undefined) && props.updatePage(generateForm({description: description.length > 0 ? description : undefined}))
 
-    const setGroups = (groups: [string, string][]) => !objects.deepEquals(props.page.groups, groups) && props.updatePage(generateForm({groups}))
+    const setGroups = (groups: [string, string][]) => !objects.deepEquals(props.page.groups, groups) && props.updatePage(generateForm({groups: groups.length ? groups : undefined}))
 
-    const setLastCollect = (lastCollect: string) => props.page.lastCollect !== lastCollect.trim() && props.updatePage(generateForm({lastCollect: lastCollect.trim()}))
+    const setLastCollect = (lastCollect: string) => props.page.lastCollect !== lastCollect.trim() && props.updatePage(generateForm({lastCollect: lastCollect.trim() || undefined}))
 
     const setLastCollectTime = (lastCollectTime: Date | undefined) => props.page.lastCollectTime?.getTime() !== lastCollectTime?.getTime() && props.updatePage(generateForm({lastCollectTime}))
 
@@ -129,11 +203,14 @@ const BookmarkDetailOfPage = memo(function(props: PageProps) {
             <Input width="100%" placeholder="页面标题" value={props.page.title} onUpdateValue={setTitle}/>
         </div>
         <div>
-            <Label>URL</Label>
-            <Input width="100%" placeholder="URL" value={props.page.url} onUpdateValue={setURL}/>
+            <LayouttedDiv display="flex">
+                <Label>URL</Label>
+                {props.errorMessage?.error === "URL_ALREADY_EXISTS" && <FormattedText size="small" color="danger" ml={2}>此URL与现有其他页面重复了。</FormattedText>}
+            </LayouttedDiv>
+            <Input width="100%" placeholder="URL" borderColor={props.errorMessage?.error === "URL_ALREADY_EXISTS" ? "danger" : undefined} value={props.page.url} onUpdateValue={setURL}/>
         </div>
         <ScoreOrLastCollectDiv>
-            <Label>上次收集</Label>
+            <Label>UpTo</Label>
             <Input width="55%" size="small" value={props.page.lastCollect} onUpdateValue={setLastCollect}/>
         </ScoreOrLastCollectDiv>
         <GroupPickerDiv>
@@ -144,10 +221,10 @@ const BookmarkDetailOfPage = memo(function(props: PageProps) {
             <Input type="textarea" placeholder="描述" value={props.page.description} onUpdateValue={setDescription}/>
         </KeywordsAndDescriptionDiv>
         <TimeDiv>
-            <Icon icon="record-vinyl" mr={1} ml={3}/>
+            <Icon icon="record-vinyl" mr={1}/>
             <CollectTimePicker value={props.page.lastCollectTime} onUpdateValue={setLastCollectTime}/>
-            <Icon icon="calendar-day" mr={1} ml={3}/>{props.page.updateTime.toLocaleString()}
-            <Icon icon="calendar-plus" mr={1} ml={3}/>{props.page.createTime.toLocaleString()}
+            {props.page.updateTime !== undefined && <><Icon icon="calendar-day" mr={1} ml={3}/>{props.page.updateTime.toLocaleString()}</>}
+            {props.page.createTime !== undefined && <><Icon icon="calendar-plus" mr={1} ml={3}/>{props.page.createTime.toLocaleString()}</>}
         </TimeDiv>
     </BookmarkRootDiv>
 })

@@ -13,6 +13,7 @@ interface InputProps {
     placeholder?: string
     disabled?: boolean
     updateOnInput?: boolean
+    autoFocus?: boolean
     onUpdateValue?(value: string): void
     onKeydown?(e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>): void
     onBlur?(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>): void
@@ -32,17 +33,32 @@ export const Input = React.forwardRef(function (props: InputProps, ref: React.Fo
     const onCompositionstart = () => compositionRef.current = true
     const onCompositionend = () => compositionRef.current = false
 
+    //自动聚焦
+    const localRef = useRef<HTMLElement | null>()
+    const setRef = (el: HTMLInputElement | HTMLTextAreaElement | null) => {
+        if(ref !== null) {
+            if(typeof ref === "function") ref(el)
+            else ref.current = el
+        }
+        if(props.autoFocus) {
+            localRef.current = el
+        }
+    }
+    if(props.autoFocus) {
+        useEffect(() => { localRef.current?.focus() }, [])
+    }
+
     if(props.updateOnInput) {
         const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onUpdateValue?.(e.target.value)
     
         if(type === "textarea") {
-            return <StyledTextarea ref={ref as any} 
+            return <StyledTextarea ref={setRef} 
                 $size={size ?? "std"} $width={width} $textAlign={textAlign} $borderColor={borderColor}
                 disabled={disabled} placeholder={placeholder} value={value ?? undefined} 
                 onChange={onChange} onKeyDown={onKeydown} onBlur={props.onBlur}
                 onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
         }else{
-            return <StyledInput ref={ref as any} 
+            return <StyledInput ref={setRef} 
                 $size={size ?? "std"} $width={width} $textAlign={textAlign} $borderColor={borderColor}
                 type={type ?? "text"} disabled={disabled} placeholder={placeholder} value={value ?? undefined} 
                 onChange={onChange} onKeyDown={onKeydown} onBlur={props.onBlur}
@@ -61,13 +77,13 @@ export const Input = React.forwardRef(function (props: InputProps, ref: React.Fo
         useEffect(() => { if((props.value ?? "") !== text) setText(props.value ?? "") }, [props.value ?? ""])
     
         if(type === "textarea") {
-            return <StyledTextarea ref={ref as any} 
+            return <StyledTextarea ref={setRef} 
                 $size={size ?? "std"} $width={width} $textAlign={textAlign} $borderColor={borderColor}
                 disabled={disabled} placeholder={placeholder} value={text} 
                 onChange={onChange} onBlur={onBlur} onKeyDown={onKeydown} 
                 onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
         }else{
-            return <StyledInput ref={ref as any} 
+            return <StyledInput ref={setRef} 
                 $size={size ?? "std"} type={type ?? "text"} $width={width} $textAlign={textAlign} $borderColor={borderColor}
                 disabled={disabled} placeholder={placeholder} value={text} 
                 onChange={onChange} onBlur={onBlur} onKeyDown={onKeydown} 

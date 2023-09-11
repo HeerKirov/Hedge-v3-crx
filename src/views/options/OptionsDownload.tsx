@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { styled } from "styled-components"
-import { Button, CheckBox, Group, Icon, Input, Label, SecondaryText } from "@/components/universal"
+import { Button, CheckBox, Group, Icon, Input, Label, SecondaryText } from "@/components"
 import { DOWNLOAD_RENAME_SITES, DOWNLOAD_EXTENSIONS } from "@/functions/sites"
 import { Setting } from "@/functions/setting"
 import { useEditor } from "@/utils/reactivity"

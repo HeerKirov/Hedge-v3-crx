@@ -1,6 +1,6 @@
 import { Fragment } from "react"
 import { styled } from "styled-components"
-import { Button, CheckBox, Icon, Input, Label, SecondaryText } from "@/components/universal"
+import { Button, CheckBox, Icon, Input, Label, SecondaryText } from "@/components"
 import { Setting } from "@/functions/setting"
 import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { maps, objects } from "@/utils/primitives"
