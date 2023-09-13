@@ -1,4 +1,6 @@
-import { BookmarkModel, GroupModel, PageReferenceModel } from "./model"
+import { BookmarkModel, GroupModel, PageReferenceModel, Page, StoredQueryModel } from "./model"
+
+export type { BookmarkModel, GroupModel, PageReferenceModel, Page, StoredQueryModel }
 
 export const databases = {
     async load(): Promise<void> {
@@ -84,7 +86,7 @@ interface Database {
     transaction(object: ObjectStoreNames | ObjectStoreNames[], mode: "readwrite" | "readonly"): Transaction
 }
 
-interface Transaction {
+export interface Transaction {
     putGroup(model: GroupModel): Promise<GroupModel>
     getGroup(groupKeyPath: string): Promise<GroupModel | undefined>
     deleteGroup(groupKeyPath: string): Promise<boolean>
@@ -106,16 +108,40 @@ interface Transaction {
     deletePageReference(pageId: number): Promise<boolean>
     getPageReferenceByUrl(url: string): Promise<PageReferenceModel | undefined>
     clearPageReference(): Promise<void>
+
+    addStoredQuery(model: Omit<StoredQueryModel, "queryId">): Promise<StoredQueryModel>
+    putStoredQuery(model: StoredQueryModel): Promise<StoredQueryModel>
+    getStoredQuery(queryId: number): Promise<StoredQueryModel | undefined>
+    deleteStoredQuery(queryId: number): Promise<boolean>
+    cursorStoredQuery(): Cursor<StoredQueryModel>
+    clearStoredQuery(): Promise<void>
 }
 
 interface Cursor<T> {
+    /**
+     * 添加偏移量和限制数量。
+     */
     limitAndOffset(limit: number | undefined, offset: number | undefined): Cursor<T>
+    /**
+     * 添加过滤器。
+     */
     filter(condition: (record: T) => boolean): Cursor<T>
+    /**
+     * 调整排序方向。这也会影响实现时的游标方向，因此正确的排序方向可以适当提高性能。
+     */
     direction(direction: "next" | "prev" | undefined): Cursor<T>
+    /**
+     * 添加排序比较。
+     */
     order(compareFn: ((a: T, b: T) => number) | undefined): Cursor<T>
+    /**
+     * 将结果导出为列表。
+     */
     toList(): Promise<T[]>
+    /**
+     * 统计数量。在统计数量过程中，order、limit、offset是不会生效的，也就是说始终统计相同过滤器下的全部数量。
+     */
     count(): Promise<number>
-    forEach(func: (record: T) => void): Promise<void>
 }
 
 async function createDatabase(): Promise<Database> {
@@ -140,17 +166,6 @@ async function createDatabase(): Promise<Database> {
                 }
             })
         }
-    })
-}
-
-async function dropDatabase(): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const dbOpenReq = indexedDB.deleteDatabase("Hedge-Bookmark")
-        dbOpenReq.onerror = () => {
-            console.error("Database drop failed. ", dbOpenReq.error?.message)
-            reject(dbOpenReq.error?.message)
-        }
-        dbOpenReq.onsuccess = () => { resolve() }
     })
 }
 
@@ -232,6 +247,26 @@ function createTransaction(idb: IDBDatabase, object: ObjectStoreNames | ObjectSt
         async clearPageReference() {
             await promiseRequest(() => trans.objectStore("pageReference").clear())
         },
+        async addStoredQuery(model) {
+            const key = await promiseRequest(() => trans.objectStore("query").add(model))
+            return {...model, queryId: key as number}
+        },
+        async putStoredQuery(model) {
+            await promiseRequest(() => trans.objectStore("query").put(model))
+            return model
+        },
+        async getStoredQuery(queryId) {
+            return await promiseRequest(() => trans.objectStore("query").get(queryId))
+        },
+        async deleteStoredQuery(queryId) {
+            return await promiseRequest(() => trans.objectStore("query").delete(queryId)) === undefined
+        },
+        cursorStoredQuery() {
+            return createCursor(direction => trans.objectStore("query").openCursor(null, direction))
+        },
+        async clearStoredQuery() {
+            await promiseRequest(() => trans.objectStore("query").clear())
+        },
     }
 }
 
@@ -265,21 +300,48 @@ function createCursor<T>(getter: (direction: "next" | "prev") => IDBRequest<IDBC
                 const req = getter(direction)
                 const ret: T[] = []
                 let index = 0
-                req.onsuccess = () => {
-                    const cursor = req.result
-                    if(cursor) {
-                        if((offset === undefined || index >= offset) && filters.every(filter => filter(cursor.value))) {
-                            ret.push(cursor.value)
+
+                if(orderFn) {
+                    //在存在排序时，offset&limit无法嵌入遍历过程，因此无论如何都必须扫全表，然后截取需要的量。
+                    req.onsuccess = () => {
+                        const cursor = req.result
+                        if(cursor) {
+                            if(filters.every(filter => filter(cursor.value))) {
+                                ret.push(cursor.value)
+                            }
+                            cursor.continue()
+                            index += 1
+                        }else{
+                            if(direction === "prev") {
+                                ret.sort((a, b) => orderFn!(b, a))
+                            }else{
+                                ret.sort(orderFn)
+                            }
+                            if(limit !== undefined) {
+                                resolve(ret.slice(offset, (offset ?? 0) + limit))
+                            }else if(offset !== undefined) {
+                                resolve(ret.slice(offset))
+                            }else{
+                                resolve(ret)
+                            }
                         }
-                        cursor.continue()
-                        index += 1
-                        if(limit !== undefined && index >= (limit + (offset ?? 0))) {
-                            if(orderFn) ret.sort(orderFn)
+                    }
+                }else{
+                    //在没有排序时，offset&limit可以正常嵌入遍历过程，因此得以优化。
+                    req.onsuccess = () => {
+                        const cursor = req.result
+                        if(cursor) {
+                            if((offset === undefined || index >= offset) && filters.every(filter => filter(cursor.value))) {
+                                ret.push(cursor.value)
+                            }
+                            cursor.continue()
+                            index += 1
+                            if(limit !== undefined && index >= (limit + (offset ?? 0))) {
+                                resolve(ret)
+                            }
+                        }else{
                             resolve(ret)
                         }
-                    }else{
-                        if(orderFn) ret.sort(orderFn)
-                        resolve(ret)
                     }
                 }
                 req.onerror = () => {
@@ -291,18 +353,13 @@ function createCursor<T>(getter: (direction: "next" | "prev") => IDBRequest<IDBC
             return new Promise((resolve, reject) => {
                 const req = getter(direction)
                 let count = 0
-                let index = 0
                 req.onsuccess = () => {
                     const cursor = req.result
                     if(cursor) {
-                        if((offset === undefined || index >= offset) && filters.every(filter => filter(cursor.value))) {
+                        if(filters.every(filter => filter(cursor.value))) {
                             count += 1
                         }
                         cursor.continue()
-                        index += 1
-                        if(limit !== undefined && index >= (limit + (offset ?? 0))) {
-                            resolve(count)
-                        }
                     }else{
                         resolve(count)
                     }
@@ -311,31 +368,7 @@ function createCursor<T>(getter: (direction: "next" | "prev") => IDBRequest<IDBC
                     reject(req.error?.message)
                 }
             })
-        },
-        forEach(func) {
-            return new Promise((resolve, reject) => {
-                const req = getter(direction)
-                let index = 0
-                req.onsuccess = () => {
-                    const cursor = req.result
-                    if(cursor) {
-                        if((offset === undefined || index >= offset) && filters.every(filter => filter(cursor.value))) {
-                            func(cursor.value)
-                        }
-                        cursor.continue()
-                        index += 1
-                        if(limit !== undefined && index >= (limit + (offset ?? 0))) {
-                            resolve()
-                        }
-                    }else{
-                        resolve()
-                    }
-                }
-                req.onerror = () => {
-                    reject(req.error?.message)
-                }
-            })
-        },
+        }
     }
 
     return that

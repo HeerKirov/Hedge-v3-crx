@@ -45,7 +45,7 @@ type OrderListItem<T extends string> = `${OrderPrefix}${T}`
 export type OrderList<T extends string> = OrderListItem<T> | OrderListItem<T>[]
 
 export function mapFromOrderList(orderList: OrderList<string> | null | undefined): string | undefined {
-    return orderList == null ? undefined : typeof orderList === "object" ? (orderList.length ? orderList.join(",") : undefined) : orderList
+    return orderList === null || orderList === undefined ? undefined : typeof orderList === "object" ? (orderList.length ? orderList.join(",") : undefined) : orderList
 }
 
 export function mapListResult<T, R>(r: ListResult<T>, mapper: (t: T) => R): ListResult<R> {

@@ -7,7 +7,6 @@ interface StandardSideLayoutProps {
     top?: ReactNode
     content?: ReactNode
     bottom?: ReactNode
-    bottomVisible?: boolean
     contentPadding?: number
     bottomPadding?: number
 }
@@ -26,10 +25,10 @@ export function StandardSideLayout(props: StandardSideLayoutProps) {
         <StandardSideLayoutTopDiv>
             {props.top}
         </StandardSideLayoutTopDiv>
-        <StandardSideLayoutContentDiv $rightVisibie={props.bottomVisible ?? false} $padding={props.contentPadding}>
+        <StandardSideLayoutContentDiv $rightVisibie={!!props.bottom} $padding={props.contentPadding}>
             {props.content}
         </StandardSideLayoutContentDiv>
-        {props.bottomVisible && <StandardSideLayoutBottomDiv $padding={props.bottomPadding}>
+        {!!props.bottom && <StandardSideLayoutBottomDiv $padding={props.bottomPadding}>
             {props.bottom}
         </StandardSideLayoutBottomDiv>}
     </StandardSideLayoutRootDiv>

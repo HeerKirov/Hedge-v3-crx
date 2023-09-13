@@ -1,6 +1,8 @@
-import { ReactNode } from "react"
+import React, { ReactNode } from "react"
 import { css, styled } from "styled-components"
-import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, FONT_SIZES, LIGHT_MODE_COLORS, RADIUS_SIZES, ThemeColors } from "@/styles"
+import { IconProp } from "@fortawesome/fontawesome-svg-core"
+import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, FONT_SIZES, LIGHT_MODE_COLORS, MarginCSS, RADIUS_SIZES, SPACINGS, ThemeColors } from "@/styles"
+import { Icon, Separator } from "."
 
 interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
     mode?: "transparent" | "filled"
@@ -10,18 +12,40 @@ interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
     round?: boolean
     width?: string
     disabled?: boolean
-    onClick?: () => void
+    onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
+    onContextMenu?: (e: React.MouseEvent<HTMLButtonElement>) => void
     children?: ReactNode
 }
 
+interface SeparatorButton extends React.HTMLAttributes<HTMLButtonElement> {
+    margin?: number | [number, number] | [number, number, number, number]
+    spacing?: number
+    icon?: IconProp
+    text?: string
+    disabled?: boolean
+    onClick?: () => void
+}
+
 export function Button(props: ButtonProps) {
-    const { mode, type, size, square, round, width, disabled, onClick, children, ...attrs } = props
-    return <StyledButton {...attrs} $mode={mode} $type={type} $size={size} $square={square} $round={round} $width={width} disabled={disabled} onClick={onClick}>
-        {props.children}
+    const { mode, type, size, square, round, width, disabled, onClick, onContextMenu, children, ...attrs } = props
+    return <StyledButton {...attrs} $mode={mode} $type={type} $size={size} $square={square} $round={round} $width={width} disabled={disabled} onClick={onClick} onContextMenu={onContextMenu}>
+        {children}
     </StyledButton>
 }
 
-export const StyledButton = styled.button<{
+export function SeparatorButton(props: SeparatorButton) {
+    const { spacing, margin, icon, text, disabled, onClick, ...attrs } = props
+    return <StyledSeparatorButton {...attrs} $margin={margin} $spacing={spacing ?? 2} disabled={disabled} onClick={onClick}>
+        <Separator direction="horizontal"/>
+        <span>
+            {icon !== undefined && <Icon icon={icon} mr={text !== undefined ? 2 : 0}/>}
+            {text}
+        </span>
+        <Separator direction="horizontal"/>
+    </StyledSeparatorButton>
+}
+
+const StyledButton = styled.button<{
     $mode?: "transparent" | "filled"
     $type?: ThemeColors
     $size?: "std" | "small" | "large"
@@ -76,4 +100,26 @@ export const StyledButton = styled.button<{
         }
     `
 }
+`
+
+const StyledSeparatorButton = styled(Button)<{ $spacing: number, $margin?: number | [number, number] | [number, number, number, number] }>`
+    width: 100%;
+    line-height: initial;
+    height: calc(${p => SPACINGS[p.$spacing]} * 2 + 1px);
+    padding: 0;
+    ${MarginCSS};
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: stretch;
+    align-items: center;
+    > div {
+        flex: 1 1 auto;
+    }
+    > span {
+        flex: 1 0 auto;
+        margin: 0 ${SPACINGS[2]};
+        > svg {
+            transform: translateY(1px);
+        }
+    }
 `

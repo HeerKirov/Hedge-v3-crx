@@ -1,8 +1,8 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from "react"
+import React, { memo, useMemo, useRef, useState } from "react"
 import { styled } from "styled-components"
 import { Button, CheckBox, RadioGroup, FormattedText, Icon, Input, Label, LayouttedDiv, Group, Select, GroupTag, DraggableEditList } from "@/components"
-import { GroupModel } from "@/functions/database/model"
-import { useGroupList } from "@/services/bookmarks"
+import { GroupModel } from "@/functions/database"
+import { useGroupList } from "@/hooks/bookmarks"
 import { useCreator, useEditor } from "@/utils/reactivity"
 import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, RADIUS_SIZES, SPACINGS } from "@/styles"
 
@@ -11,12 +11,15 @@ export function OptionsBookmarkPanel() {
 
     const [selectedIndex, setSelectedIndex] = useState<number | "new" | null>(null)
 
-    useEffect(clearErrorMessage, [selectedIndex])
+    const setSelectedIndexWithAOP = (selectedIndex: number | "new" | null) => {
+        setSelectedIndex(selectedIndex)
+        clearErrorMessage()
+    }
 
-    const addGroupWithCallback = async (form: GroupModel) => {
+    const addGroupWithAOP = async (form: GroupModel) => {
         if(groupList && await addGroup(form)) {
             //此处取得的是上一次闭包的过期值，但是它恰好是新项的插入位置
-            setSelectedIndex(groupList.length)
+            setSelectedIndexWithAOP(groupList.length)
         }
     }
 
@@ -26,7 +29,7 @@ export function OptionsBookmarkPanel() {
         </p>
         <Label>组配置</Label>
         {groupList?.map((group, index) => selectedIndex !== index 
-            ? <GroupListItem key={group.groupKeyPath} group={group} onSelect={() => setSelectedIndex(index)}/> 
+            ? <GroupListItem key={group.groupKeyPath} group={group} onSelect={() => setSelectedIndexWithAOP(index)}/> 
             : <GroupDetail key={group.groupKeyPath} 
                 group={group} allGroups={groupList} 
                 onUpdateGroup={f => updateGroup(index, f)} onDeleteGroup={() => deleteGroup(index)} 
@@ -34,8 +37,8 @@ export function OptionsBookmarkPanel() {
                 />
         )}
         {selectedIndex !== "new" 
-            ? <GroupListNew onSelect={() => setSelectedIndex("new")}/>
-            : <GroupNew onAdd={addGroupWithCallback} allGroups={groupList ?? []} error={errorMessage !== null && errorMessage.keyPath === null ? errorMessage.error : null}/>
+            ? <GroupListNew onSelect={() => setSelectedIndexWithAOP("new")}/>
+            : <GroupNew onAdd={addGroupWithAOP} allGroups={groupList ?? []} error={errorMessage !== null && errorMessage.keyPath === null ? errorMessage.error : null}/>
         }
     </>
 }
@@ -165,11 +168,11 @@ const ConditionList = memo(function ({ selfKeyPath, conditions, onUpdateConditio
 })
 
 const NewConditionItem = memo(function ({ onAdd, selfKeyPath, allGroups }: { onAdd(condition: [string, string]): void, selfKeyPath?: string, allGroups: GroupModel[] }) {
-    const [selectedGroup, setSelectedGroup] = useState<string>()
-    const [selectedItem, setSelectedItem] = useState<string>()
-
-    const groupSelectItems = useMemo(() => allGroups.filter(g => g.groupKeyPath !== selfKeyPath).map(g => ({label: g.groupName, value: g.groupKeyPath})), [allGroups])
-    const itemSelectItems = useMemo(() => selectedGroup == undefined ? undefined : allGroups.find(g => g.groupKeyPath === selectedGroup)?.items.map(i => ({label: i.itemName, value: i.itemKeyPath})), [allGroups, selectedGroup])
+    const groupSelectItems = useMemo(() => allGroups.filter(g => g.groupKeyPath !== selfKeyPath).map(g => ({label: g.groupName, value: g.groupKeyPath})), [selfKeyPath, allGroups])
+    const [selectedGroup, setSelectedGroup] = useState<string | undefined>(() => groupSelectItems.length > 0 ? groupSelectItems[0].value : undefined)
+    
+    const itemSelectItems = useMemo(() => selectedGroup === undefined ? undefined : allGroups.find(g => g.groupKeyPath === selectedGroup)?.items.map(i => ({label: i.itemName, value: i.itemKeyPath})), [allGroups, selectedGroup])
+    const [selectedItem, setSelectedItem] = useState<string | undefined>(() => itemSelectItems && itemSelectItems.length > 0 ? itemSelectItems[0].value : undefined)
 
     const add = () => {
         if(selectedGroup !== undefined && selectedItem !== undefined) {

@@ -5,9 +5,12 @@ import react from '@vitejs/plugin-react'
 import manifest from './manifest.json'
 
 // https://vitejs.dev/config/
+
 export default defineConfig({
   plugins: [
     react(),
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     crx({ manifest })
   ],
   server: {

@@ -1,6 +1,6 @@
 import { version } from "@/../package.json"
 import { Migrate, migrate } from "@/utils/migrations"
-import { useEffect, useRef, useState } from "react"
+import { useAsyncLoading } from "@/utils/reactivity"
 
 /**
  * 所有的设置项。
@@ -215,24 +215,12 @@ export const settings = {
 }
 
 export function useSetting() {
-    const [setting, setSetting] = useState<Setting | null>(null)
-
-    const loading = useRef(false)
+    const [setting, setSetting] = useAsyncLoading(settings.get)
 
     const saveSetting = async (newSetting: Setting) => {
         setSetting(newSetting)
         await settings.set(newSetting)
     }
-
-    useEffect(() => {
-        if(!loading.current) {
-            loading.current = true
-            settings.get().then(res => {
-                setSetting(res)
-                loading.current = false
-            })
-        }
-    }, [])
     
     return { setting, saveSetting }
 }

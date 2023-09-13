@@ -42,7 +42,7 @@ export interface GroupModel {
     items: {itemKeyPath: string, itemName: string}[]
 }
 
-export interface QueryModel {
+export interface StoredQueryModel {
     queryId: number
     ordinal: number
     name: string

@@ -1,8 +1,9 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react"
+import { memo, useCallback, useRef, useState } from "react"
 import { styled } from "styled-components"
 import { Input, KeywordList, Label, Starlight, DynamicInputList, GroupPicker, Icon, CollectTimePicker, FormattedText, LayouttedDiv } from "@/components"
-import { BookmarkModel, GroupModel } from "@/functions/database/model"
-import { BookmarkForm, PageForm, useBookmarkList } from "@/services/bookmarks"
+import { BookmarkModel, GroupModel } from "@/functions/database"
+import { BookmarkForm, PageForm } from "@/services/bookmarks"
+import { useBookmarkList } from "@/hooks/bookmarks"
 import { ELEMENT_HEIGHTS, FONT_SIZES, SPACINGS } from "@/styles"
 import { objects } from "@/utils/primitives"
 
@@ -62,55 +63,58 @@ interface PageDto {
 }
 
 export const BookmarkDetail = memo(function(props: BookmarkDetailProps) {
-    const [index, pageIndex] = props.index
+    const { index: [index, pageIndex], updatePage, updateBookmark } = props
     const bookmark = props.bookmarkList[index]
-    if(pageIndex !== null) {
-        const page = bookmark.pages[pageIndex]
+    if(bookmark !== undefined) {
+        if(pageIndex !== null) {
+            const page = bookmark.pages[pageIndex]
+            // eslint-disable-next-line react-hooks/rules-of-hooks,react-hooks/exhaustive-deps
+            const onUpdatePage = useCallback((page: PageForm) => props.updatePage(index, pageIndex, page), [updatePage, index, pageIndex])
 
-        const updatePage = useCallback((page: PageForm) => props.updatePage(index, pageIndex, page), [props.updatePage, index, pageIndex])
+            return page && <BookmarkDetailOfPage page={page} updatePage={onUpdatePage} allGroups={props.allGroups} errorMessage={props.errorMessage}/>
+        }else{
+            // eslint-disable-next-line react-hooks/rules-of-hooks,react-hooks/exhaustive-deps
+            const onUpdateBookmark = useCallback((bookmark: BookmarkForm) => props.updateBookmark(index, bookmark), [updateBookmark, index, null])
 
-        return <BookmarkDetailOfPage page={page} updatePage={updatePage} allGroups={props.allGroups} errorMessage={props.errorMessage}/>
+            return <BookmarkDetailOfBookmark bookmark={bookmark} updateBookmark={onUpdateBookmark} allGroups={props.allGroups}/>
+        }
     }else{
-        const updateBookmark = useCallback((bookmark: BookmarkForm) => props.updateBookmark(index, bookmark), [props.updateBookmark, index, null])
-
-        return <BookmarkDetailOfBookmark bookmark={bookmark} updateBookmark={updateBookmark} allGroups={props.allGroups}/>
+        return undefined
     }
 })
 
 export const BookmarkCreation = memo(function(props: BookmarkCreationProps) {
     const [index, pageIndex] = props.index
     if(pageIndex !== null) {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         const [form, setForm] = useState<PageDto>({url: "", title: "", groups: undefined, keywords: undefined, description: undefined, lastCollect: undefined, lastCollectTime: undefined})
-
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         const once = useRef(true)
 
         const updatePage = (page: PageForm) => {
-            setForm({...form, ...page})
-        }
-
-        useEffect(() => {
-            if(once.current && (form.url || form.title)) {
+            const newForm = {...form, ...page}
+            setForm(newForm)
+            if(once.current && (page.url || page.title)) {
                 once.current = false
-                props.addPage(index, pageIndex, form)
+                props.addPage(index, pageIndex, newForm)
             }
-        }, [form])
+        }
 
         return <BookmarkDetailOfPage page={form} updatePage={updatePage} allGroups={props.allGroups} errorMessage={props.errorMessage}/>
     }else{
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         const [form, setForm] = useState<BookmarkDto>({name: "", otherNames: [], groups: [], keywords: [], description: "", score: undefined})
-        
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         const once = useRef(true)
         
         const updateBookmark = (bookmark: BookmarkForm) => {
-            setForm({...form, ...bookmark})
-        }
-
-        useEffect(() => {
-            if(once.current && form.name) {
+            const newForm = {...form, ...bookmark}
+            setForm(newForm)
+            if(once.current && bookmark.name) {
                 once.current = false
-                props.addBookmark(form)
+                props.addBookmark(newForm)
             }
-        }, [form])
+        }
 
         return <BookmarkDetailOfBookmark bookmark={form} updateBookmark={updateBookmark} allGroups={props.allGroups}/>
     }
@@ -129,17 +133,17 @@ const BookmarkDetailOfBookmark = memo(function(props: BookmarkProps) {
         return {...form, ...additional}
     }
 
-    const setName = (name: string) => props.updateBookmark(generateForm({name: name.trim()}))
+    const setName = (name: string) => props.bookmark.name !== name.trim() && props.updateBookmark(generateForm({name: name.trim()}))
 
-    const setOtherNames = (otherNames: string[]) => props.updateBookmark(generateForm({otherNames}))
+    const setOtherNames = (otherNames: string[]) => !objects.deepEquals(props.bookmark.otherNames, otherNames) && props.updateBookmark(generateForm({otherNames}))
     
-    const setScore = (score: number | undefined) => props.updateBookmark(generateForm({score}))
+    const setScore = (score: number | undefined) => props.bookmark.score !== score && props.updateBookmark(generateForm({score}))
 
-    const setKeywords = (keywords: string[]) => props.updateBookmark(generateForm({keywords}))
+    const setKeywords = (keywords: string[]) => !objects.deepEquals(props.bookmark.keywords, keywords) && props.updateBookmark(generateForm({keywords}))
 
-    const setDescription = (description: string) => props.updateBookmark(generateForm({description}))
+    const setDescription = (description: string) => props.bookmark.description !== description && props.updateBookmark(generateForm({description}))
 
-    const setGroups = (groups: [string, string][]) => props.updateBookmark(generateForm({groups}))
+    const setGroups = (groups: [string, string][]) => !objects.deepEquals(props.bookmark.groups, groups) && props.updateBookmark(generateForm({groups}))
 
     return <BookmarkRootDiv>
         <div>

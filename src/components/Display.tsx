@@ -1,5 +1,5 @@
-import { GroupModel } from "@/functions/database/model"
 import { memo, useMemo } from "react"
+import { GroupModel } from "@/functions/database"
 import { FormattedText } from "."
 
 interface GroupTagProps {

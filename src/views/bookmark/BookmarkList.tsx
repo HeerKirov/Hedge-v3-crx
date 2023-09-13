@@ -1,9 +1,10 @@
-import { memo, useEffect, useState } from "react"
+import React, { memo, useState } from "react"
 import { styled, css } from "styled-components"
 import { mix } from "polished"
 import { FormattedText, GroupTag, Icon, PopupMenu, PopupMenuItem, Starlight } from "@/components"
-import { BookmarkModel, GroupModel, Page } from "@/functions/database/model"
+import { BookmarkModel, GroupModel, Page } from "@/functions/database"
 import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, LIGHT_MODE_COLORS, SPACINGS } from "@/styles"
+import { useWatch } from "@/utils/reactivity"
 
 interface BookmarkListProps { 
     bookmarkList: BookmarkModel[]
@@ -119,7 +120,7 @@ export function BookmarkList(props: BookmarkListProps) {
 const BookmarkListUnit = memo(function (props: BookmarkListUnitProps) {
     const [expanded, setExpanded] = useState(true)
 
-    useEffect(() => {
+    useWatch(() => {
         if(props.creatingPageIndex !== null && !expanded) {
             setExpanded(true)
         }
@@ -205,8 +206,8 @@ const PageItem = memo(function (props: PageItemProps) {
 
     const click = () => props.onSelected(props.index)
 
-    const dblClick = () => {
-        if(props.item.url) chrome.tabs.create({url: props.item.url})
+    const openURL = () => {
+        if(props.item.url) chrome.tabs.create({url: props.item.url}).finally()
     }
 
     const deletePage = () => {
@@ -216,6 +217,8 @@ const PageItem = memo(function (props: PageItemProps) {
     }
 
     const popupMenu = (): PopupMenuItem[] => [
+        {type: "normal", label: "打开链接", click: openURL},
+        {type: "separator"},
         {type: "normal", label: "在下一行添加页面", click: () => props.onCreating(props.index + 1)},
         {type: "separator"},
         {type: "normal", label: "上移一行", disabled: props.index <= 0, click: () => props.onMovePage(props.index, props.index - 1)},
@@ -226,7 +229,7 @@ const PageItem = memo(function (props: PageItemProps) {
         {type: "normal", label: "删除页面", backgroundColor: "danger", click: deletePage}
     ]
 
-    return <PopupMenu items={popupMenu} children={popup => <PageRow $selected={props.selected} $cliped={props.clipboarded} onClick={click} onDoubleClick={dblClick} onContextMenu={popup}>
+    return <PopupMenu items={popupMenu} children={popup => <PageRow $selected={props.selected} $clipped={props.clipboarded} onClick={click} onDoubleClick={openURL} onContextMenu={popup}>
         <Col $shrink={0}>
             <Icon icon="file"/>
         </Col>
@@ -263,7 +266,7 @@ const BookmarkCreateItem = memo(function () {
 })
 
 const PageCreateItem = memo(function () {
-    return <PageRow $selected $cliped={false}>
+    return <PageRow $selected $clipped={false}>
         <i>新页面</i>
     </PageRow>
 })
@@ -310,7 +313,7 @@ const BookmarkRow = styled.div<{ $selected: boolean }>`
     }
 `
 
-const PageRow = styled.div<{ $selected: boolean, $cliped: boolean }>`
+const PageRow = styled.div<{ $selected: boolean, $clipped: boolean }>`
     width: 100%;
     padding-left: ${SPACINGS[6]};
     line-height: ${ELEMENT_HEIGHTS["small"]};
@@ -329,7 +332,7 @@ const PageRow = styled.div<{ $selected: boolean, $cliped: boolean }>`
             background-color: ${p => p.$selected ? mix(0.8, DARK_MODE_COLORS["primary"], "#ffffff") : "rgba(45, 50, 55, 0.09)"};
         }
     }
-    ${p => p.$cliped && css`opacity: 0.25;`}
+    ${p => p.$clipped && css`opacity: 0.25;`}
 `
 
 const Col = styled.div<{ $width?: string, $grow?: number, $shrink?: number, $overflow?: "hidden" | "ellipsis", $textAlign?: "center" | "right" }>`

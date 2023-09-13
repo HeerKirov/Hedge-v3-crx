@@ -7,6 +7,8 @@ export { FONT_SIZE_NAMES, RADIUS_SIZE_NAMES, ELEMENT_HEIGHT_NAMES, FONT_SIZES, R
 export type { BasicColors, ThemeColors, FunctionalColors } from "./color"
 export type { FontSizes, RadiusSizes, ElementHeights } from "./size"
 
+export { MarginCSS } from "./css"
+
 export const GlobalStyle = createGlobalStyle`
 
 body {

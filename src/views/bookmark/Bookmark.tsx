@@ -1,71 +1,88 @@
-import { useEffect, useState } from "react"
 import { Button, Icon, MiddleLayout, StandardSideLayout } from "@/components"
-import { BookmarkForm, PageForm, useBookmarkList, useGroupList } from "@/services/bookmarks"
+import { BookmarkForm, PageForm, QueryBookmarkFilter, } from "@/services/bookmarks"
+import { useBookmarkList, useBookmarkSelection, useGroupList, useQueryAndFilter, useStoredQueryList } from "@/hooks/bookmarks"
 import { BookmarkList } from "./BookmarkList"
 import { BookmarkSideBar } from "./BookmarkSideBar"
 import { BookmarkCreation, BookmarkDetail } from "./BookmarkDetail"
+import { useCallback } from "react";
+import { useWatch } from "@/utils/reactivity";
 
 export function Bookmark() {
-    const { bookmarkList, errorMessage, addBookmark, updateBookmark, deleteBookmark, addPage, updatePage, movePage, deletePage, clearErrorMessage } = useBookmarkList()
-
     const { groupList } = useGroupList()
 
-    const [bookmarkSelectedIndex, setBookmarkSelectedIndex] = useState<[number, number | null] | null>(null)
+    const { storedQueryList, addStoredQuery, updateStoredQuery, moveStoredQuery, deleteStoredQuery } = useStoredQueryList()
 
-    const [bookmarkCreatingIndex, setBookmarkCreatingIndex] = useState<[number, number | null] | null>(null)
+    const { queryItem, filter, filterDifferent, setQueryItem, saveStoredQuery, saveAsNewStoredQuery, setFilter } = useQueryAndFilter({allStoredQueries: storedQueryList, addStoredQuery, updateStoredQuery})
 
-    useEffect(clearErrorMessage, [bookmarkCreatingIndex, bookmarkSelectedIndex])
+    const { bookmarkList, errorMessage, addBookmark, updateBookmark, deleteBookmark, addPage, updatePage, movePage, deletePage, clearErrorMessage } = useBookmarkList({filter})
 
-    const setSelectedIndex = (idx: [number, number | null] | null) => {
-        setBookmarkSelectedIndex(idx)
-        setBookmarkCreatingIndex(null)
-    }
+    const { selectedIndex, creatingIndex, setSelectedIndex, setCreatingIndex } = useBookmarkSelection({afterUpdate: clearErrorMessage})
 
-    const setCreatingIndex = (idx: [number, number | null]) => {
-        setBookmarkSelectedIndex(null)
-        setBookmarkCreatingIndex(idx)
-    }
+    const addBookmarkAndSelect = useCallback(async (bookmark: BookmarkForm) => {
+        const ok = await addBookmark(bookmark)
+        if(ok && creatingIndex !== null) setSelectedIndex([creatingIndex[0], null])
+        return ok
+    }, [addBookmark, creatingIndex, setSelectedIndex])
 
-    const createInEnd = () => {
+    const addPageAndSelect = useCallback(async (index: number, pageIndex: number, page: PageForm) => {
+        const ok = await addPage(index, pageIndex, page)
+        if(ok && creatingIndex !== null) setSelectedIndex([index, pageIndex])
+    }, [addPage, creatingIndex, setSelectedIndex])
+
+    const deleteStoredQueryAndReset = useCallback(async (index: number) => {
+        await deleteStoredQuery(index)
+        if(storedQueryList?.[index].queryId === queryItem) setQueryItem("SEARCH")
+    }, [deleteStoredQuery, storedQueryList, queryItem, setQueryItem])
+
+    const setFilterAndCleanSelected = useCallback((filter: QueryBookmarkFilter | null) => {
+        setFilter(filter)
+        setSelectedIndex(null)
+    }, [setFilter, setSelectedIndex])
+
+    const setCreatingIndexToEnd = useCallback(() => {
         if(bookmarkList !== null) {
             setCreatingIndex([bookmarkList.length, null])
         }
-    }
+    }, [bookmarkList, setCreatingIndex])
 
-    const addBookmarkWithCallback = async (form: BookmarkForm) => {
-        if(bookmarkCreatingIndex !== null && await addBookmark(form)) {
-            setSelectedIndex([bookmarkCreatingIndex[0], null])
-        }
-    }
+    useWatch(() => { if(selectedIndex !== null || creatingIndex !== null) setSelectedIndex(null) }, [filter])
 
-    const addPageWithCallback = async (index: number, pageIndex: number, form: PageForm) => {
-        if(bookmarkCreatingIndex !== null && await addPage(index, pageIndex, form)) {
-            setSelectedIndex([index, pageIndex])
-        }
-    }
+    const left = (
+        <BookmarkSideBar
+            queryItem={queryItem} filter={filter} filterDifferent={filterDifferent}
+            storedQueries={storedQueryList} allGroups={groupList}
+            onUpdateQueryItem={setQueryItem}
+            onUpdateFilter={setFilterAndCleanSelected}
+            onSaveStoredQueryFromFilter={saveStoredQuery}
+            onSaveNewStoredQueryFromFilter={saveAsNewStoredQuery}
+            onMoveStoredQuery={moveStoredQuery}
+            onUpdateStoredQuery={updateStoredQuery}
+            onDeleteStoredQuery={deleteStoredQueryAndReset}
+        />
+    )
 
-    const left = <BookmarkSideBar/>
+    const top = (
+        <MiddleLayout 
+            right={<Button onClick={setCreatingIndexToEnd}><Icon icon="plus" mr={2}/>新建书签</Button>}
+        />
+    )
 
-    const top = <MiddleLayout 
-        right={<>
-            <Button onClick={createInEnd}><Icon icon="plus" mr={2}/>新建书签</Button>
-        </>}
-    />
-
-    const content = bookmarkList && <BookmarkList 
-        bookmarkList={bookmarkList} allGroups={groupList ?? []} 
-        selectedIndex={bookmarkSelectedIndex} creatingIndex={bookmarkCreatingIndex} 
-        onUpdateSelectedIndex={setSelectedIndex} onUpdateCreatingIndex={setCreatingIndex}
-        onDeleteBookmark={deleteBookmark} onDeletePage={deletePage} onMovePage={movePage}
-    />
+    const content = bookmarkList && (
+        <BookmarkList 
+            bookmarkList={bookmarkList} allGroups={groupList ?? []}
+            selectedIndex={selectedIndex} creatingIndex={creatingIndex} 
+            onUpdateSelectedIndex={setSelectedIndex} onUpdateCreatingIndex={setCreatingIndex}
+            onDeleteBookmark={deleteBookmark} onDeletePage={deletePage} onMovePage={movePage}
+        />
+    )
 
     const bottom = bookmarkList && (
-        bookmarkSelectedIndex ? (
-            <BookmarkDetail bookmarkList={bookmarkList} allGroups={groupList ?? []} errorMessage={errorMessage} index={bookmarkSelectedIndex} updateBookmark={updateBookmark} updatePage={updatePage}/>
-        ) : bookmarkCreatingIndex ? (
-            <BookmarkCreation bookmarkList={bookmarkList} allGroups={groupList ?? []} errorMessage={errorMessage} index={bookmarkCreatingIndex} addBookmark={addBookmarkWithCallback} addPage={addPageWithCallback}/>
+        selectedIndex ? (
+            <BookmarkDetail bookmarkList={bookmarkList} allGroups={groupList ?? []} errorMessage={errorMessage} index={selectedIndex} updateBookmark={updateBookmark} updatePage={updatePage}/>
+        ) : creatingIndex ? (
+            <BookmarkCreation key={`${creatingIndex[0]}-${creatingIndex[1]}`} bookmarkList={bookmarkList} allGroups={groupList ?? []} errorMessage={errorMessage} index={creatingIndex} addBookmark={addBookmarkAndSelect} addPage={addPageAndSelect}/>
         ) : undefined
     )
 
-    return <StandardSideLayout left={left} top={top} content={content} bottom={bottom} bottomVisible={true}/>
+    return <StandardSideLayout left={left} top={top} content={content} bottom={bottom}/>
 }

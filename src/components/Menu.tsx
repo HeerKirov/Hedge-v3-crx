@@ -85,6 +85,8 @@ const PopupMenuBackground = styled.div`
 const PopupMenuDiv = styled.div<{ $x: number, $y: number }>`
     position: fixed;
     z-index: 2;
+    min-width: 5.5em;
+    user-select: none;
     left: ${p => p.$x}px;
     top: ${p => p.$y}px;
     padding: ${SPACINGS[1]};

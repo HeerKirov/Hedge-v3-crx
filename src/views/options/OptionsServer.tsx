@@ -28,7 +28,7 @@ export function OptionsServerPanel(props: OptionsServerPanelProps) {
             port: "",
             token: ""
         }),
-        effect() {
+        afterChange() {
             refreshHealth()
         }
     })

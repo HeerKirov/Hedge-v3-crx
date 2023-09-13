@@ -1,4 +1,28 @@
-import { useEffect, useRef, useState } from "react"
+import { DependencyList, useCallback, useEffect, useRef, useState } from "react"
+
+/**
+ * 提供对某些state变化的响应。它看起来有点像useEffect，但作用并不相同，它不是副作用，在每次渲染期间就会执行。
+ */
+export function useWatch(func: () => void, dependencies: DependencyList) {
+    const [prevValue, setPrevValue] = useState(dependencies)
+
+    function isChange(): boolean {
+        if(prevValue === dependencies) {
+            return false
+        }
+        for(let i = 0; i < dependencies.length; ++i) {
+            if(dependencies[i] !== prevValue[i]) {
+                return true
+            }
+        }
+        return false
+    }
+
+    if(isChange()) {
+        setPrevValue(dependencies)
+        func()
+    }
+}
 
 export function usePartialSet<T extends object>(value: T | null | undefined, setValue?: (v: T) => void) {
     return function<K extends keyof T>(key: K, newValue: T[K]) {
@@ -14,16 +38,16 @@ interface UseEditorProps<T, F> {
     from(v: T): F
     to(v: F): T
     default(): F
-    effect?(v: T | null | undefined): void
+    afterChange?(v: T | null | undefined): void
 }
 
 export function useEditor<T, F extends object>(props: UseEditorProps<T, F>) {
     const [editor, setEditor] = useState(props.default())
     const [changed, setChanged] = useState(false)
 
-    useEffect(() => {
+    useWatch(() => {
         setEditor(props.value ? props.from(props.value) : props.default())
-        props.effect?.(props.value)
+        props.afterChange?.(props.value)
     }, [props.value])
 
     const setProperty = usePartialSet(editor, v => {
@@ -78,62 +102,75 @@ export function useAsyncLoading<T>(props: AsyncLoadingProps<T> | (() => Promise<
     const loading = useRef(false)
     const initialized = useRef(false)
     if(typeof props === "function") {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         const [data, setData] = useState<T | null>(null)
-    
-        const refresh = () => {
+
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const refresh = useCallback(() => {
             if(!loading.current) {
                 loading.current = true
-                props().then(res => setData(res)).finally(() => {
+                props().then(res => {
+                    setData(res)
+                }).finally(() => {
                     loading.current = false
                 })
             }
-        }
+        }, [props])
 
-        const set = (newData?: T) => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const set = useCallback((newData?: T) => {
             if(newData !== undefined) {
                 setData(newData)
             }else{
                 refresh()
             }
-        }
+        }, [refresh])
 
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         useEffect(() => {
             if(!initialized.current) {
                 initialized.current = true
                 refresh()
             }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [])
     
         return [data, set]
     }else{
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         const [data, setData] = useState<T>(props.default)
 
-        const refresh = () => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const refresh = useCallback(() => {
             if(!loading.current) {
                 loading.current = true
                 if(props.loading !== undefined) setData(props.loading)
                 props.call()
                     .then(res => setData(res))
                     .catch(() => { if(props.failed !== undefined) setData(props.failed)})
-                    .finally(() => { 
+                    .finally(() => {
                         loading.current = false
-                     })
+                    })
             }
-        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [props.loading, props.call, props.failed])
 
-        const set = (newData?: T) => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const set = useCallback((newData?: T) => {
             if(newData !== undefined) {
                 setData(newData)
             }else{
                 refresh()
             }
-        }
+        }, [refresh])
 
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         useEffect(() => {
             if(!initialized.current) {
                 initialized.current = true
                 refresh()
             }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [])
     
         return [data, set]

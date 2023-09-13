@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react"
 import { mix } from "polished"
 import { styled, css } from "styled-components"
+import { useWatch } from "@/utils/reactivity"
 import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, FONT_SIZES, FunctionalColors, LIGHT_MODE_COLORS, RADIUS_SIZES, ThemeColors } from "@/styles"
 
 interface InputProps {
@@ -16,17 +17,13 @@ interface InputProps {
     autoFocus?: boolean
     onUpdateValue?(value: string): void
     onKeydown?(e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>): void
+    onEnter?(e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>): void
     onBlur?(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>): void
+    onFocus?(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>): void
 }
 
 export const Input = React.forwardRef(function (props: InputProps, ref: React.ForwardedRef<HTMLElement>) {
     const { type, size, width, textAlign, borderColor, placeholder, disabled, value, onUpdateValue } = props
-
-    const onKeydown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        if(!compositionRef.current) {
-            props.onKeydown?.(e)
-        }
-    }
 
     //输入法合成器防抖
     const compositionRef = useRef(false)
@@ -45,37 +42,60 @@ export const Input = React.forwardRef(function (props: InputProps, ref: React.Fo
         }
     }
     if(props.autoFocus) {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         useEffect(() => { localRef.current?.focus() }, [])
     }
 
     if(props.updateOnInput) {
         const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onUpdateValue?.(e.target.value)
+
+        const onKeydown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            if(!compositionRef.current) {
+                props.onKeydown?.(e)
+                if(e.code === "Enter" && !e.ctrlKey && !e.altKey) {
+                    props.onEnter?.(e)
+                }
+            }
+        }
     
         if(type === "textarea") {
             return <StyledTextarea ref={setRef} 
                 $size={size ?? "std"} $width={width} $textAlign={textAlign} $borderColor={borderColor}
                 disabled={disabled} placeholder={placeholder} value={value ?? undefined} 
-                onChange={onChange} onKeyDown={onKeydown} onBlur={props.onBlur}
+                onChange={onChange} onKeyDown={onKeydown} onBlur={props.onBlur} onFocus={props.onFocus}
                 onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
         }else{
             return <StyledInput ref={setRef} 
                 $size={size ?? "std"} $width={width} $textAlign={textAlign} $borderColor={borderColor}
                 type={type ?? "text"} disabled={disabled} placeholder={placeholder} value={value ?? undefined} 
-                onChange={onChange} onKeyDown={onKeydown} onBlur={props.onBlur}
+                onChange={onChange} onKeyDown={onKeydown} onBlur={props.onBlur} onFocus={props.onFocus}
                 onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
         }
     }else{
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         const [text, setText] = useState<string>(props.value ?? "")
 
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        useWatch(() => setText(props.value ?? ""), [props.value ?? ""])
+
         const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setText(e.target.value)
+
+        const onKeydown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            if(!compositionRef.current) {
+                props.onKeydown?.(e)
+                if(e.code === "Enter" && !e.ctrlKey && !e.altKey) {
+                    props.onEnter?.(e)
+                    //在按下Enter时，主动触发updateValue
+                    props.onUpdateValue?.(text)
+                }
+            }
+        }
     
         const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
             onUpdateValue?.(text)
             props.onBlur?.(e)
         }
 
-        useEffect(() => { if((props.value ?? "") !== text) setText(props.value ?? "") }, [props.value ?? ""])
-    
         if(type === "textarea") {
             return <StyledTextarea ref={setRef} 
                 $size={size ?? "std"} $width={width} $textAlign={textAlign} $borderColor={borderColor}
@@ -138,7 +158,7 @@ const StyledCSS = css<StyledCSSProps>`
 `
 
 const StyledInput = styled.input<StyledCSSProps>`
-    ${StyledCSS}
+    ${StyledCSS};
     padding: 0 calc(0.85em - 1px);
     &::-webkit-outer-spin-button, 
     &::-webkit-inner-spin-button {
@@ -147,7 +167,7 @@ const StyledInput = styled.input<StyledCSSProps>`
 `
 
 const StyledTextarea = styled.textarea<StyledCSSProps>`
-    ${StyledCSS}
+    ${StyledCSS};
     padding: calc(0.6em - 1px) calc(0.85em - 1px);
     resize: vertical;
     &:not([rows]) {

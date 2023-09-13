@@ -1,6 +1,6 @@
 import { styled } from "styled-components"
 import { Button, FormattedText, SecondaryText } from "@/components"
-import { useTabInfo } from "@/services/active-tab"
+import { useTabInfo } from "@/hooks/active-tab"
 import { useServerHealth } from "@/functions/server"
 import { SourceDataCollectStatus, SourceEditStatus } from "@/functions/server/api-source-data"
 import { SourceDataPath } from "@/functions/server/api-all"

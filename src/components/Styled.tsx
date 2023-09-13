@@ -1,6 +1,6 @@
 import React, { ReactNode } from "react"
 import { styled, css } from "styled-components"
-import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, ElementHeights, FONT_SIZES, FontSizes, LIGHT_MODE_COLORS, ThemeColors, FunctionalColors, SPACINGS, RadiusSizes, RADIUS_SIZES } from "@/styles"
+import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, ElementHeights, FONT_SIZES, FontSizes, LIGHT_MODE_COLORS, ThemeColors, FunctionalColors, SPACINGS, RadiusSizes, RADIUS_SIZES, MarginCSS } from "@/styles"
 
 interface Children {
     children?: ReactNode
@@ -31,7 +31,7 @@ interface Layoutted {
 
 interface SeparatorProps {
     direction?: "horizontal" | "vertical"
-    spacing?: number
+    spacing?: number | [number, number]
 }
 
 type FormattedTextProps = Formatted & Children & React.HTMLAttributes<HTMLSpanElement>
@@ -111,11 +111,7 @@ const LayouttedCSS = css<StyledLayouttedProps>`
             border-color: ${DARK_MODE_COLORS[p.$borderColor ?? "border"]};
         }
     `}
-    ${p => p.$margin && (
-        typeof p.$margin === "number" ? css`margin: ${SPACINGS[p.$margin]};` 
-        : p.$margin.length === 2 ? css`margin: ${SPACINGS[p.$margin[0]]} ${SPACINGS[p.$margin[1]]};`
-        : css`margin: ${SPACINGS[p.$margin[0]]} ${SPACINGS[p.$margin[1]]} ${SPACINGS[p.$margin[2]]} ${SPACINGS[p.$margin[3]]};`
-    )}
+    ${MarginCSS}
     ${p => p.$padding && (
         typeof p.$padding === "number" ? css`padding: ${SPACINGS[p.$padding]};` 
         : p.$padding.length === 2 ? css`padding: ${SPACINGS[p.$padding[0]]} ${SPACINGS[p.$padding[1]]};`
@@ -180,11 +176,17 @@ const StyledSeparator = styled.div<StyledSeparatorProps>`
         vertical-align: middle;
         width: 1px;
         height: ${ELEMENT_HEIGHTS["std"]};
-        ${p.$spacing && css`margin: 0 ${SPACINGS[p.$spacing]};`}
+        ${p.$spacing && (typeof p.$spacing === "number" 
+            ? css`margin: 0 ${SPACINGS[p.$spacing]};` 
+            : css`margin: 0 ${SPACINGS[p.$spacing[1]]} 0 ${SPACINGS[p.$spacing[0]]};`
+        )}
     ` : css`
         display: block;
         width: 100%;
         height: 1px;
-        ${p.$spacing && css`margin: ${SPACINGS[p.$spacing]} 0;`}
+        ${p.$spacing && (typeof p.$spacing === "number" 
+            ? css`margin: ${SPACINGS[p.$spacing]} 0;`
+            : css`margin: ${SPACINGS[p.$spacing[0]]} 0 ${SPACINGS[p.$spacing[1]]} 0;`
+        )}
     `}
 `

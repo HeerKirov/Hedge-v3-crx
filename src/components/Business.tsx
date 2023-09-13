@@ -1,8 +1,8 @@
 import React, { memo, useCallback, useMemo, useState } from "react"
 import { css, styled } from "styled-components"
+import { GroupModel } from "@/functions/database"
 import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, LIGHT_MODE_COLORS, SPACINGS } from "@/styles"
 import { DraggableEditList, FormattedText, Icon, Input, LayouttedDiv } from "."
-import { GroupModel } from "@/functions/database/model"
 
 interface DynamicInputListProps {
     values?: string[]
@@ -41,7 +41,7 @@ interface CollectTimePickerProps {
 export const DynamicInputList = memo(function (props: DynamicInputListProps) {
     const [newText, setNewText] = useState<string>("")
 
-    const update = (index: number, value: string) => {
+    const update = useCallback((index: number, value: string) => {
         const newValue = value.trim()
         if(props.onUpdateValues && (!props.values?.length || props.values.indexOf(newValue) === -1)) {
             if(newValue) {
@@ -50,7 +50,8 @@ export const DynamicInputList = memo(function (props: DynamicInputListProps) {
                 props.onUpdateValues([...props.values.slice(0, index), ...props.values.slice(index + 1)])
             }
         }
-    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.values, props.onUpdateValues])
 
     const add = () => {
         const newValue = newText.trim()
@@ -60,17 +61,11 @@ export const DynamicInputList = memo(function (props: DynamicInputListProps) {
         }
     }
 
-    const onKeydown = (e: React.KeyboardEvent<HTMLElement>) => {
-        if(e.code === "Enter" && !e.altKey && !e.ctrlKey) {
-            add()
-        }
-    }
-
-    const inputs = useMemo(() => props.values?.map((v, i) => <Input key={i} size={props.size} disabled={props.disabled} value={v} onUpdateValue={v => update(i, v)}/>), [props.values, props.disabled])
+    const inputs = useMemo(() => props.values?.map((v, i) => <Input key={i} size={props.size} disabled={props.disabled} value={v} onUpdateValue={v => update(i, v)}/>), [props.size, props.values, props.disabled, update])
 
     return <DynamicInputListDiv $mode={props.mode ?? "stretch"} $count={props.values?.length ?? 0}>
         {inputs}
-        <Input size={props.size} disabled={props.disabled} placeholder={props.placeholder} value={newText} onUpdateValue={setNewText} updateOnInput onKeydown={onKeydown} onBlur={add}/>
+        <Input size={props.size} disabled={props.disabled} placeholder={props.placeholder} value={newText} onUpdateValue={setNewText} updateOnInput onEnter={add} onBlur={add}/>
     </DynamicInputListDiv>
 })
 
@@ -91,9 +86,9 @@ export const Starlight = memo(function (props: StarlightProps) {
 export const KeywordList = memo(function (props: KeywordListProps) {
     const [addText, setAddText] = useState("")
 
-    const onTextKeydown = (e: React.KeyboardEvent) => {
+    const onEnter = () => {
         const text = addText.trim()
-        if(text && !e.altKey && !e.ctrlKey && e.code === "Enter") {
+        if(text) {
             props.onUpdateKeywords?.(props.keywords ? [...props.keywords, text] : [text])
             setAddText("")
         }
@@ -101,7 +96,7 @@ export const KeywordList = memo(function (props: KeywordListProps) {
 
     return <KeywordInputDiv>
         <DraggableEditList editable={props.editable} items={props.keywords} onUpdateItems={props.onUpdateKeywords} child={keyword => (<KeywordSpan><span>[</span>{keyword}<span>]</span></KeywordSpan>)}>
-            {props.editable && <Input width="10em" size="small" placeholder="添加新的关键词" value={addText} onUpdateValue={setAddText} onKeydown={onTextKeydown} updateOnInput/>}
+            {props.editable && <Input width="10em" size="small" placeholder="添加新的关键词" value={addText} onUpdateValue={setAddText} onEnter={onEnter} updateOnInput/>}
         </DraggableEditList>
     </KeywordInputDiv>
 })
@@ -109,8 +104,7 @@ export const KeywordList = memo(function (props: KeywordListProps) {
 export const GroupPicker = memo(function (props: GroupPickerProps) {
     const filteredGroups = useMemo(() => props.allGroups.filter(group => {
         if((group.availableFor === "page" && props.mode === "bookmark") || (group.availableFor === "bookmark" && props.mode === "page")) return false
-        if(group.availableCondition?.length && group.availableCondition.every(c => !props.groups?.some(g => g[0] === c[0] && g[1] === c[1]))) return false
-        return true
+        return !(group.availableCondition?.length && group.availableCondition.every(c => !props.groups?.some(g => g[0] === c[0] && g[1] === c[1])))
     }).sort((a, b) => {
         if(a.availableFor !== b.availableFor) return a.availableFor === "both" ? -1 : 1
         if(a.availableCondition?.length ?? 0 !== b.availableCondition?.length ?? 0) return (a.availableCondition?.length ?? 0) < (b.availableCondition?.length ?? 0) ? -1 : 1
@@ -150,6 +144,7 @@ export const GroupPicker = memo(function (props: GroupPickerProps) {
         }
 
         return {group, selectedItems, click}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [props.allGroups, props.mode, props.groups, props.onUpdateGroups])
 
     const processGroupChange = useCallback((allGroups: GroupModel[], groups: [string, string][], changedGroup: {groupKeyPath: string, oldItemKeyPath: string, newItemKeyPath: string | undefined}): [string, string][] => {
@@ -211,12 +206,12 @@ const GroupPickerItem = memo(function ({ group, selectedItems, onClick }: {group
 export const CollectTimePicker = memo(function (props: CollectTimePickerProps) {
     const [editMode, setEditMode] = useState(false)
 
-    const updateValue = useCallback((value: Date | undefined) => {
+    const updateValue = (value: Date | undefined) => {
         if(value?.getTime() !== props.value?.getTime()) {
             props.onUpdateValue?.(value)
         }
         setEditMode(false)
-    }, [props.onUpdateValue, props.value])
+    }
 
     const edit = useCallback(() => setEditMode(true), [])
 
@@ -290,7 +285,7 @@ const DynamicInputListDiv = styled.div<{ $mode: "stretch" | "start", $count: num
 
 const StarlightSpan = styled.span<{ $editable: boolean, $value: number | undefined }>`
     padding: 0 ${SPACINGS[1]};
-    ${p => p.$value && p.$value <= 5 && css` color: ${LIGHT_MODE_COLORS[STARLIGHT_COLOR_PICKS[p.$value]]}; ` }
+    ${p => p.$value && p.$value <= 5 && css` color: ${LIGHT_MODE_COLORS[STARLIGHT_COLOR_PICKS[p.$value]]}; ` };
     @media (prefers-color-scheme: dark) {
         ${p => p.$value && p.$value <= 5 && css` color: ${DARK_MODE_COLORS[STARLIGHT_COLOR_PICKS[p.$value]]}; ` }
     }
