@@ -20,7 +20,6 @@ interface QueryAndFilterOptions {
     updateStoredQuery?(index: number, form: StoredQueryForm): void
 }
 
-
 export function useBookmarkList(options?: BookmarkListOptions) {
     const [bookmarkList, setBookmarkList] = useAsyncLoading(async () => {
         if(options?.filter !== undefined) {

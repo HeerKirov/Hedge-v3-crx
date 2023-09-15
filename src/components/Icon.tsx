@@ -68,7 +68,7 @@ const StyledIcon = styled(FontAwesomeIcon)<{ $mr?: number, $ml?: number }>`
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
-    faArrowDownWideShort, faArrowUpShortWide, faBookBookmark, faBookmark,
+    faArrowDownWideShort, faArrowUpShortWide, faBookBookmark, faBookmark, faCloudArrowDown, faCopy,
     faCalendar, faCalendarCheck, faCalendarDay, faCalendarPlus, faCalendarWeek, faCaretDown, faCaretRight, faCaretUp, faCheck, faClose,
     faDownload, faFile, faFileInvoice, faFolder, faPlus,
     faRecordVinyl, faSave, faSearch, faServer, faStar, faToolbox, faTrash
@@ -78,7 +78,7 @@ import {
 } from "@fortawesome/free-regular-svg-icons"
 
 library.add(
-     faArrowDownWideShort, faArrowUpShortWide, faBookBookmark, faBookmark,
+    faArrowDownWideShort, faArrowUpShortWide, faBookBookmark, faBookmark, faCloudArrowDown, faCopy,
     faCalendar, faCalendarCheck, faCalendarDay, faCalendarPlus, faCalendarWeek, faCaretDown, faCaretRight, faCaretUp, faCheck, faClose,
     faDownload, faFile, faFileInvoice, faFolder, faPlus, 
     faRecordVinyl, faSave, faSearch, faServer, faStar, faToolbox, faTrash

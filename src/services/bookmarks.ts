@@ -1,15 +1,5 @@
-import { databases, Transaction } from "@/functions/database"
-import { BookmarkModel, GroupModel, Page, PageReferenceModel } from "@/functions/database"
+import { databases, Transaction, BookmarkModel, GroupModel, Page, PageReferenceModel, StoredQueryModel } from "@/functions/database"
 import { Result, numbers, objects } from "@/utils/primitives"
-import { StoredQueryModel } from "@/functions/database/model";
-
-export function tabCreated() {
-    
-}
-
-export function tabUpdated() {
-
-}
 
 export const bookmarks = {
     async queryBookmarks(filter?: QueryBookmarkFilter): Promise<BookmarkModel[]> {
@@ -64,6 +54,10 @@ export const bookmarks = {
         await Promise.all(model.pages.map(p => t.deletePageReference(p.pageId)))
         return {ok: true, value: undefined}
     },
+    async getPageReferences(): Promise<PageReferenceModel[]> {
+        const t = await databases.transaction("pageReference", "readonly")
+        return await t.cursorPageReference().toList()
+    },
     async queryPageByURL(url: PageReferenceModel["url"]): Promise<{bookmark: BookmarkModel, page: Page} | undefined> {
         const t = await databases.transaction(["bookmark", "pageReference"], "readonly")
         const ref = await t.getPageReferenceByUrl(url)
@@ -86,12 +80,13 @@ export const bookmarks = {
         if(bookmarkModel === undefined) {
             return {ok: false, err: "BOOKMARK_NOT_FOUND"}
         }
-        if((await t.getPageReferenceByUrl(form.url)) !== undefined) {
+        const normalizedURL = normalizeURL(form.url)
+        if((await t.getPageReferenceByUrl(normalizedURL.url)) !== undefined) {
             return {ok: false, err: "URL_ALREADY_EXISTS"}
         }
         const now = new Date()
-        const pageRefModel = await t.addPageReference({url: form.url, bookmarkId: bookmarkModel.bookmarkId})
-        const page: Page = {pageId: pageRefModel.pageId, ...form, host: generateHost(form.url), createTime: now, updateTime: now}
+        const pageRefModel = await t.addPageReference({url: normalizedURL.url, bookmarkId: bookmarkModel.bookmarkId})
+        const page: Page = {pageId: pageRefModel.pageId, ...form, ...normalizedURL, createTime: now, updateTime: now}
         const pages = insertPageIndex !== null ? [...bookmarkModel.pages.slice(0, insertPageIndex), page, ...bookmarkModel.pages.slice(insertPageIndex)] : [...bookmarkModel.pages, page]
         const lastCollectTime = pages.map(p => p.lastCollectTime).reduce((pre, cur) => pre === undefined || cur !== undefined && cur.getMilliseconds() > pre.getMilliseconds() ? cur : pre)
         const newBookmark = await t.putBookmark({...bookmarkModel, pages, lastCollectTime, updateTime: now})
@@ -103,12 +98,13 @@ export const bookmarks = {
             return queryPageRes
         }
         const { t, bookmarkModel, page, pageIndex } = queryPageRes.value
-        if(form.url !== page.url && (await t.getPageReferenceByUrl(form.url)) !== undefined) {
+        const normalizedURL = normalizeURL(form.url)
+        if(normalizedURL.url !== page.url && (await t.getPageReferenceByUrl(normalizedURL.url)) !== undefined) {
             return {ok: false, err: "URL_ALREADY_EXISTS"}
         }
-        const fieldChanged = form.title !== page.title || form.url !== page.url || form.description !== page.description || !objects.deepEquals(form.keywords, page.keywords) || !objects.deepEquals(form.groups, page.groups)
+        const fieldChanged = form.title !== page.title || normalizedURL.url !== page.url || form.description !== page.description || !objects.deepEquals(form.keywords, page.keywords) || !objects.deepEquals(form.groups, page.groups)
         const now = new Date()
-        const newPage = {...page, ...form, host: generateHost(form.url), updateTime: fieldChanged ? now : page.updateTime}
+        const newPage = {...page, ...form, ...normalizedURL, updateTime: fieldChanged ? now : page.updateTime}
         const pages = [...bookmarkModel.pages.slice(0, pageIndex), newPage, ...bookmarkModel.pages.slice(pageIndex + 1)]
         const lastCollectTime = form.lastCollectTime?.getTime() !== page.lastCollectTime?.getTime() ? pages.map(p => p.lastCollectTime).reduce((pre, cur) => pre === undefined || cur !== undefined && cur.getMilliseconds() > pre.getMilliseconds() ? cur : pre) : bookmarkModel.lastCollectTime
         const newBookmark = await t.putBookmark({...bookmarkModel, pages, lastCollectTime, updateTime: fieldChanged ? now : bookmarkModel.updateTime})
@@ -217,9 +213,7 @@ export const groups = {
 export const storedQueries = {
     async getStoredQueries(): Promise<StoredQueryModel[]> {
         const t = await databases.transaction("query", "readonly")
-        const r = await t.cursorStoredQuery().order((a, b) => numbers.compareTo(a.ordinal, b.ordinal)).toList()
-        console.log(r.map(i => `${i.ordinal}: ${i.name}`))
-        return r
+        return await t.cursorStoredQuery().order((a, b) => numbers.compareTo(a.ordinal, b.ordinal)).toList()
     },
     async addStoredQuery(form: StoredQueryForm): Promise<StoredQueryModel> {
         const t = await databases.transaction("query", "readwrite")
@@ -288,12 +282,17 @@ async function internalGetPage(bookmarkId: number, pageId: number): Promise<Resu
     return {ok: true, value: {t, bookmarkModel, page, pageIndex}}
 }
 
-function generateHost(url: string): string {
+/**
+ * 直接被用户输入的URL可能不太标准，例如没有Protocol，或者单独的hostname后面没加斜线(这可能导致页面URL与写入值匹配不上)。
+ * 因此使用此函数将URL标准化处理。
+ */
+function normalizeURL(url: string): {url: string, host: string} {
     try {
         const u = new URL(url)
-        return u.host
+        return {url: u.href, host: u.host}
     }catch(e) {
-        return ""
+        const u = new URL(`http://${url}`)
+        return {url: u.href, host: u.host}
     }
 }
 

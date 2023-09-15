@@ -1,6 +1,7 @@
 import { memo, useMemo } from "react"
+import { styled } from "styled-components"
 import { GroupModel } from "@/functions/database"
-import { FormattedText } from "."
+import { FormattedText, LayouttedDiv, WrappedText } from "."
 
 interface GroupTagProps {
     item: [string, string]
@@ -8,6 +9,13 @@ interface GroupTagProps {
     prefix?: boolean
     colored?: boolean
     bold?: boolean
+}
+
+interface DescriptionProps {
+    value?: string
+    mt?: number
+    mb?: number
+    padding?: number | [number, number] | [number, number, number, number]
 }
 
 export const GroupTag = memo(function ({ item: [groupKeyPath, itemKeyPath], allGroups, colored, bold, prefix }: GroupTagProps) {
@@ -26,10 +34,25 @@ export const GroupTag = memo(function ({ item: [groupKeyPath, itemKeyPath], allG
         }
     }, [groupKeyPath, itemKeyPath, allGroups])
 
-    return <span>
+    return <FormattedText whiteSpace="nowrap">
         [
         {prefix && <FormattedText color="secondary" size="small">{group.group}:</FormattedText>}
         <FormattedText bold={bold} color={colored ? group.color : undefined}>{group.item}</FormattedText>
         ]
-    </span>
+    </FormattedText>
 })
+
+export const Description = memo(function (props: DescriptionProps) {
+    return <DescriptionDiv size="small" radius="std" backgroundColor="block" padding={props.padding ?? [1, 2]} mt={props.mt} mb={props.mb}>
+        <WrappedText text={props.value}/>
+    </DescriptionDiv>
+})
+
+const DescriptionDiv = styled(LayouttedDiv)`
+    white-space: nowrap;
+    overflow: auto;
+    max-height: 4em;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+`

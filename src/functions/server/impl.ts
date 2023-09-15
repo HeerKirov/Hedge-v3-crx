@@ -105,13 +105,10 @@ function request<R, E extends BasicException>(requestConfig: RequestConfig<R>): 
                 resolve(error as ResponseError<E>)
             }
         })
-        .catch((reason) => {
-            console.error(`Http connect error: ${reason}`)
-            resolve({
-                ok: false,
-                exception: undefined,
-                reason
-            })
-        })
+        .catch((reason) => resolve({
+            ok: false,
+            exception: undefined,
+            reason
+        }))
     })
 }

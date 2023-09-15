@@ -53,14 +53,14 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
         if(retrieve.ok) {
             if(retrieve.data.status === "IGNORED") {
                 //已忽略的数据，不收集
-                sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
+                await sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
                 console.log(`[collectSourceData] Source data ${sourceSite}-${sourceId} is IGNORED, skip collecting.`)
                 return false
             }else if(retrieve.data.status === "EDITED") {
                 const lastUpdateTime = Date.parse(retrieve.data.updateTime)
                 if(Date.now() - lastUpdateTime < 1000 * 60 * 60 * 24 * 7) {
                     //EDITED状态，依据上次更新时间，在7天以内的不收集
-                    sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
+                    await sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
                     console.log(`[collectSourceData] Source data ${sourceSite}-${sourceId} is edited in 7 days, skip collecting.`)
                     return false
                 }
@@ -84,7 +84,7 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
                 message: "未能成功连接到核心服务。"
             })
             console.warn(`[collectSourceData] Source data ${sourceSite}-${sourceId} retrieve failed: ${retrieve.reason}`)
-            false
+            return false
         }
     }
 
@@ -125,17 +125,27 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
     }
     const res = await server.sourceData.bulk([{...reportResult.value, sourceSite, sourceId}])
     if(!res.ok) {
-        chrome.notifications.create({
-            type: "basic",
-            iconUrl: "/public/favicon.png",
-            title: "来源数据收集异常",
-            message: `${sourceSite}-${sourceId}: 数据未能成功写入。请查看扩展或核心服务日志。`
-        })
-        console.error(`[collectSourceData] Source data ${sourceSite}-${sourceId} upload failed: ${res.exception ? res.exception.message : res.reason}`)
+        if(res.exception !== undefined) {
+            chrome.notifications.create({
+                type: "basic",
+                iconUrl: "/public/favicon.png",
+                title: "来源数据收集异常",
+                message: `${sourceSite}-${sourceId}: 数据未能成功写入。请查看扩展或核心服务日志。`
+            })
+            console.error(`[collectSourceData] Source data ${sourceSite}-${sourceId} upload failed: ${res.exception.message}`)
+        }else{
+            chrome.notifications.create({
+                type: "basic",
+                iconUrl: "/public/favicon.png",
+                title: "来源数据收集异常",
+                message: `${sourceSite}-${sourceId}: 未能成功连接到核心服务。请查看扩展日志。`
+            })
+            console.error(`[collectSourceData] Connect error: ${res.exception}`)
+        }
         return false
     }
 
-    sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
+    await sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
 
     console.log(`[collectSourceData] Source data ${sourceSite}-${sourceId} collected.`)
     return true

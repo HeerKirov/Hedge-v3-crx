@@ -86,7 +86,7 @@ export const Input = React.forwardRef(function (props: InputProps, ref: React.Fo
                 if(e.code === "Enter" && !e.ctrlKey && !e.altKey) {
                     props.onEnter?.(e)
                     //在按下Enter时，主动触发updateValue
-                    props.onUpdateValue?.(text)
+                    if(type !== "textarea") props.onUpdateValue?.(text)
                 }
             }
         }

@@ -22,9 +22,9 @@ export function Options() {
         <SecondaryHeader>工具配置与扩展选项</SecondaryHeader>
         <SideButtonDiv><Button width="100%" type={panel === "server" ? "primary" : undefined} onClick={() => setPanel("server")}><Icon icon="server" mr={2}/>后台服务</Button></SideButtonDiv>
         <SideButtonDiv><Button width="100%" type={panel === "tool" ? "primary" : undefined} onClick={() => setPanel("tool")}><Icon icon="toolbox" mr={2}/>扩展工具</Button></SideButtonDiv>
-        <SideButtonDiv><Button width="100%" type={panel === "download" ? "primary" : undefined} onClick={() => setPanel("download")}><Icon icon="download" mr={2}/>文件下载</Button></SideButtonDiv>
-        <SideButtonDiv><Button width="100%" type={panel === "sourceData" ? "primary" : undefined}onClick={() => setPanel("sourceData")}><Icon icon="file-invoice" mr={2}/>来源收集</Button></SideButtonDiv>
-        <SideButtonDiv><Button width="100%" type={panel === "bookmark" ? "primary" : undefined}onClick={() => setPanel("bookmark")}><Icon icon="bookmark" mr={2}/>书签管理</Button></SideButtonDiv>
+        <SideButtonDiv><Button width="100%" type={panel === "download" ? "primary" : undefined} onClick={() => setPanel("download")}><Icon icon="download" mr={2}/>下载建议</Button></SideButtonDiv>
+        <SideButtonDiv><Button width="100%" type={panel === "sourceData" ? "primary" : undefined} onClick={() => setPanel("sourceData")}><Icon icon="cloud-arrow-down" mr={2}/>数据收集</Button></SideButtonDiv>
+        <SideButtonDiv><Button width="100%" type={panel === "bookmark" ? "primary" : undefined} onClick={() => setPanel("bookmark")}><Icon icon="bookmark" mr={2}/>书签管理</Button></SideButtonDiv>
     </>
 
     const content = panel === "server" ? <OptionsServerPanel server={setting?.server} onUpdateServer={v => setSettingPartial("server", v)}/> 
@@ -39,11 +39,13 @@ export function Options() {
 const Header = styled.h3`
     text-align: center;
     margin-bottom: ${SPACINGS[3]};
+    user-select: none;
 `
 
 const SecondaryHeader = styled.div`
     text-align: center;
     margin-bottom: ${SPACINGS[6]};
+    user-select: none;
 `
 
 const SideButtonDiv = styled.div`

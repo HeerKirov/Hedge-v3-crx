@@ -10,48 +10,6 @@ export const databases = {
             console.error("[database] initialize failed. ", e)
             idb = undefined
         }
-
-        /*
-        const t = idb!.transaction(["bookmark", "pageReference", "group"], "readwrite")
-        await t.clearBookmark()
-        await t.clearPageReference()
-        await t.clearGroup()
-        await t.putGroup({
-            groupKeyPath: "COLLECT_STATUS",
-            groupName: "收集状态",
-            availableFor: "both",
-            availableCondition: undefined,
-            multi: false,
-            items: [{itemKeyPath: "TODO", itemName: "TODO"}, {itemKeyPath: "COLLECTING", itemName: "收集中"}, {itemKeyPath: "COLLECTED", itemName: "已收集"}]
-        })
-        const b = await t.addBookmark({
-            name: "书签",
-            otherNames: ["bm", "secondary text"],
-            groups: [["COLLECT_STATUS", "COLLECTED"]],
-            description: "描述",
-            score: 4,
-            keywords: ["K1", "关键字"],
-            lastCollectTime: undefined,
-            createTime: new Date(),
-            updateTime: new Date(),
-            pages: []
-        })
-        const p = await t.addPageReference({bookmarkId: b.bookmarkId, url: "https://e-hentai.org/g/0/0"})
-        b.pages.push({
-            pageId: p.pageId,
-            url: "https://e-hentai.org/g/0/0",
-            host: "e-hentai.org",
-            title: "E-Hentai",
-            groups: [["COLLECT_STATUS", "TODO"]],
-            description: "描述",
-            keywords: ["K1", "关键字"],
-            collectRange: {upToId: "999999", upToTime: new Date()},
-            lastCollectTime: undefined,
-            createTime: new Date(),
-            updateTime: new Date(),
-        })
-        await t.putBookmark(b)
-        */
     },
     async transaction(object: ObjectStoreNames | ObjectStoreNames[], mode: "readwrite" | "readonly"): Promise<Transaction> {
         if(idb === undefined) {
@@ -102,6 +60,7 @@ export interface Transaction {
     countBookmark(): Promise<number>
     clearBookmark(): Promise<void>
 
+    cursorPageReference(): Cursor<PageReferenceModel>
     addPageReference(model: Omit<PageReferenceModel, "pageId">): Promise<PageReferenceModel>
     putPageReference(model: PageReferenceModel): Promise<PageReferenceModel>
     getPageReference(pageId: number): Promise<PageReferenceModel | undefined>
@@ -226,6 +185,9 @@ function createTransaction(idb: IDBDatabase, object: ObjectStoreNames | ObjectSt
         },
         async clearBookmark() {
             await promiseRequest(() => trans.objectStore("bookmark").clear())
+        },
+        cursorPageReference() {
+            return createCursor(direction => trans.objectStore("pageReference").openCursor(null, direction))
         },
         async addPageReference(model) {
             const key = await promiseRequest(() => trans.objectStore("pageReference").put(model))

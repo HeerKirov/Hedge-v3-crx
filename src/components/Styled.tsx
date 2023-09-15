@@ -17,6 +17,7 @@ interface Formatted {
     textAlign?: "left" | "center" | "right"
     userSelect?: "text" | "none"
     float?: "right" | "left"
+    whiteSpace?: "normal" | "nowrap"
     mr?: number, ml?: number
 }
 
@@ -38,6 +39,8 @@ type FormattedTextProps = Formatted & Children & React.HTMLAttributes<HTMLSpanEl
 
 type LayouttedDivProps = Formatted & Layoutted & Children & React.HTMLAttributes<HTMLDivElement>
 
+type WrappedTextProps = {text?: string} & React.HTMLAttributes<HTMLElement>
+
 type StyledFormattedProps = { [K in keyof Formatted as `$${K}`]: Formatted[K] }
 
 type StyledLayouttedProps = { [K in keyof Layoutted as `$${K}`]: Layoutted[K] }
@@ -45,18 +48,18 @@ type StyledLayouttedProps = { [K in keyof Layoutted as `$${K}`]: Layoutted[K] }
 type StyledSeparatorProps = { [K in keyof SeparatorProps as `$${K}`]: SeparatorProps[K] }
 
 export function FormattedText(props: FormattedTextProps) {
-    const { backgroundColor, bold, color, size, textAlign, monospace, lineHeight, float, elementHeight, mr, ml, userSelect, children, ...attrs } = props
+    const { backgroundColor, bold, color, size, textAlign, whiteSpace, monospace, lineHeight, float, elementHeight, mr, ml, userSelect, children, ...attrs } = props
     
     return <StyledFormattedText {...attrs} 
         $backgroundColor={backgroundColor} $textAlign={textAlign} $bold={bold} $color={color} $size={size} 
         $elementHeight={elementHeight} $lineHeight={lineHeight} $float={float} $monospace={monospace}
-        $mr={mr} $ml={ml} $userSelect={userSelect}
+        $mr={mr} $ml={ml} $userSelect={userSelect} $whiteSpace={whiteSpace}
     >{children}</StyledFormattedText>
 }
 
 export function LayouttedDiv(props: LayouttedDivProps) {
     const {
-        backgroundColor, color, display, radius, border, borderColor, float,
+        backgroundColor, color, display, radius, border, borderColor, float, whiteSpace,
         bold, size, lineHeight, elementHeight, textAlign, userSelect, monospace,
         margin, padding, mr, ml, mt, mb, pr, pl, pt, pb,
         children, ...attrs
@@ -65,7 +68,7 @@ export function LayouttedDiv(props: LayouttedDivProps) {
     return <StyledLayouttedDiv {...attrs}
         $backgroundColor={backgroundColor} $display={display}
         $radius={radius} $border={border} $borderColor={borderColor}
-        $bold={bold} $color={color} $size={size}  $textAlign={textAlign} $float={float}
+        $bold={bold} $color={color} $size={size}  $textAlign={textAlign} $float={float} $whiteSpace={whiteSpace}
         $lineHeight={lineHeight} $elementHeight={elementHeight} $userSelect={userSelect} $monospace={monospace}
         $margin={margin} $padding={padding} 
         $mr={mr} $ml={ml} $mt={mt} $mb={mb} 
@@ -75,6 +78,11 @@ export function LayouttedDiv(props: LayouttedDivProps) {
 
 export function Separator(props: SeparatorProps) {
     return <StyledSeparator $direction={props.direction} $spacing={props.spacing}/>
+}
+
+export function WrappedText(props: WrappedTextProps) {
+    const { text, ...attrs } = props
+    return text?.length ? text.split("\n").map(line => line ? <p {...attrs}>{line}</p> : <br {...attrs}/>) : <p {...attrs}/>
 }
 
 const FormattedCSS = css<StyledFormattedProps>`
@@ -90,6 +98,7 @@ const FormattedCSS = css<StyledFormattedProps>`
             color: ${DARK_MODE_COLORS[p.$color]};
         }
     `}
+    ${p => p.$whiteSpace && css`white-space: ${p.$whiteSpace};`}
     ${p => p.$monospace && css`font-family: monospace;`}
     ${p => p.$bold && css`font-weight: 700;`}
     ${p => p.$size && css`font-size: ${FONT_SIZES[p.$size]};`}

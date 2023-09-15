@@ -1,11 +1,11 @@
 import { receiveMessage } from "@/services/messages"
 import { determiningFilename } from "@/services/downloads"
-import { tabCreated, tabUpdated } from "@/services/bookmarks"
+import { tabCreated, tabUpdated } from "@/services/active-tab"
 import { settings } from "@/functions/setting"
 import { databases } from "@/functions/database"
 import { command } from "@/services/commands"
 
-chrome.storage.session.setAccessLevel({accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS"})
+chrome.storage.session.setAccessLevel({accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS"}).finally()
 
 chrome.runtime.onMessage.addListener(receiveMessage)
 
@@ -17,6 +17,6 @@ chrome.tabs.onUpdated.addListener(tabUpdated)
 
 chrome.commands.onCommand.addListener(command)
 
-settings.load()
+settings.load().finally()
 
-databases.load()
+databases.load().finally()

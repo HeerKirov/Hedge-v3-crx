@@ -1,12 +1,14 @@
 import { SourceDataPath } from "@/functions/server/api-all"
 import { SourceDataCollectStatus } from "@/functions/server/api-source-data"
 import { server } from "@/functions/server"
+import { bookmarks } from "@/services/bookmarks"
 
-export interface SourceInfo {
-    tabId: number
-    siteName: string
-    host: string
-    sourceDataPath: SourceDataPath | null
+export function tabCreated(tab: chrome.tabs.Tab) {
+    if(tab.id !== undefined && tab.id !== chrome.tabs.TAB_ID_NONE && tab.url !== undefined) setActiveTabIcon(tab.id, tab.url).finally()
+}
+
+export function tabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo) {
+    if(changeInfo.url !== undefined) setActiveTabIcon(tabId, changeInfo.url).finally()
 }
 
 /**
@@ -26,22 +28,32 @@ export async function setActiveTabBadge(tabId: number, sourceDataPath: SourceDat
 export function setActiveTabBadgeByStatus(tabId: number, collectStatus: SourceDataCollectStatus) {
     if(collectStatus.imageCount > 0 && collectStatus.collected) {
         //图像和来源数据都已收集
-        chrome.action.setBadgeText({tabId, text: collectStatus.imageCount > 1 ? `C:${collectStatus.imageCount}` : "CLTD"})
-        chrome.action.setBadgeBackgroundColor({tabId, color: "#1468cc"})
+        chrome.action.setBadgeText({tabId, text: collectStatus.imageCount > 1 ? `C:${collectStatus.imageCount}` : "CLTD"}).finally()
+        chrome.action.setBadgeBackgroundColor({tabId, color: "#1468cc"}).finally()
     }else if(collectStatus.collected) {
         //只收集了来源数据，没有图像
-        chrome.action.setBadgeBackgroundColor({tabId, color: "#00DDDD"})
-        chrome.action.setBadgeText({tabId, text: "SRC"})
+        chrome.action.setBadgeBackgroundColor({tabId, color: "#00DDDD"}).finally()
+        chrome.action.setBadgeText({tabId, text: "SRC"}).finally()
     }else if(collectStatus.imageCount > 0) {
         //只收集了图像，没有来源数据
-        chrome.action.setBadgeBackgroundColor({tabId, color: "#00DD00"})
-        chrome.action.setBadgeText({tabId, text: "IMG"})
+        chrome.action.setBadgeBackgroundColor({tabId, color: "#00DD00"}).finally()
+        chrome.action.setBadgeText({tabId, text: "IMG"}).finally()
     }
 }
 
 /**
- * 要求为当前tab设置icon。
+ * 提供URL，为指定tab设置icon。
  */
-export async function setActiveTabIcon(tabId: number) {
-    //TODO 查询收藏夹情况，然后设置icon
+async function setActiveTabIcon(tabId: number, url: string) {
+    if(url.startsWith("https://") || url.startsWith("http://")) {
+        const res = await bookmarks.queryPageByURL(url)
+        setActiveTabIconByBookmarked(tabId, res !== undefined)
+    }
+}
+
+/**
+ * 直接为当前tab设置icon。
+ */
+export function setActiveTabIconByBookmarked(tabId: number, bookmarked: boolean) {
+    chrome.action.setIcon({tabId, path: bookmarked ? "/icon-bookmarked.png" : "/icon-unbookmarked.png"}).finally()
 }

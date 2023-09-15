@@ -3,10 +3,13 @@ import { DependencyList, useCallback, useEffect, useRef, useState } from "react"
 /**
  * 提供对某些state变化的响应。它看起来有点像useEffect，但作用并不相同，它不是副作用，在每次渲染期间就会执行。
  */
-export function useWatch(func: () => void, dependencies: DependencyList) {
-    const [prevValue, setPrevValue] = useState(dependencies)
+export function useWatch(func: () => void, dependencies: DependencyList, options?: {immediate: boolean}) {
+    const [prevValue, setPrevValue] = useState(options?.immediate ? null : dependencies)
 
     function isChange(): boolean {
+        if(prevValue === null) {
+            return true
+        }
         if(prevValue === dependencies) {
             return false
         }
@@ -48,7 +51,7 @@ export function useEditor<T, F extends object>(props: UseEditorProps<T, F>) {
     useWatch(() => {
         setEditor(props.value ? props.from(props.value) : props.default())
         props.afterChange?.(props.value)
-    }, [props.value])
+    }, [props.value], {immediate: true})
 
     const setProperty = usePartialSet(editor, v => {
         setEditor(v)
