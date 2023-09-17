@@ -1,11 +1,11 @@
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Setting, settings } from "@/functions/setting"
 import { BookmarkModel, Page } from "@/functions/database"
 import { SourceDataPath } from "@/functions/server/api-all"
 import { SourceDataCollectStatus } from "@/functions/server/api-source-data"
 import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { server } from "@/functions/server"
-import { bookmarks } from "@/services/bookmarks"
+import { BookmarkForm, bookmarks, PageForm } from "@/services/bookmarks"
 import { setActiveTabBadgeByStatus, setActiveTabIconByBookmarked } from "@/services/active-tab"
 import { collectSourceData } from "@/services/source-data"
 import { sendMessageToTab } from "@/services/messages"
@@ -18,11 +18,9 @@ export interface SourceInfo {
     sourceDataPath: SourceDataPath | null
 }
 
-export interface BookmarkState {
-    tabId: number
-    bookmark: BookmarkModel
-    page: Page
-}
+export type BookmarkState = {tabId: number, state: "UNSUPPORTED"}
+    | {tabId: number, state: "NOT_BOOKMARKED"}
+    | {tabId: number, state: "BOOKMARKED", bookmark: BookmarkModel, page: Page}
 
 /**
  * 解析当前页面是否属于受支持的网站，提供网站host，以及解析来源数据ID。
@@ -98,7 +96,7 @@ async function matchTabSourceData(tabId: number, url: URL, setting: Setting): Pr
  * 解析当前页面是否属于已保存的书签。
  */
 export function useTabBookmarkState() {
-    const [bookmarkState] = useAsyncLoading<BookmarkState | null>(async () => {
+    const [bookmarkState, setBookmarkState] = useAsyncLoading(async (): Promise<BookmarkState> => {
         const tabs = await chrome.tabs.query({currentWindow: true, active: true})
         if(tabs.length > 0 && tabs[0].url && tabs[0].id && tabs[0].id !== chrome.tabs.TAB_ID_NONE) {
             const tabId = tabs[0].id
@@ -107,12 +105,32 @@ export function useTabBookmarkState() {
                 const res = await bookmarks.queryPageByURL(strURL)
                 setActiveTabIconByBookmarked(tabId, res !== undefined)
                 if(res !== undefined) {
-                    return {...res, tabId}
+                    return {tabId, state: "BOOKMARKED", ...res}
+                }else{
+                    return {tabId, state: "NOT_BOOKMARKED"}
                 }
             }
         }
-        return null
+        return {tabId: chrome.tabs.TAB_ID_NONE, state: "UNSUPPORTED"}
     })
 
-    return {bookmarkState}
+    const updateBookmark = useCallback(async (bookmark: BookmarkForm) => {
+        if(bookmarkState?.state === "BOOKMARKED") {
+            const res = await bookmarks.updateBookmark(bookmarkState.bookmark.bookmarkId, bookmark)
+            if(res.ok) {
+                setBookmarkState({tabId: bookmarkState.tabId, state: "BOOKMARKED", bookmark: res.value, page: bookmarkState.page})
+            }
+        }
+    }, [bookmarkState, setBookmarkState])
+
+    const updatePage = useCallback(async (page: PageForm) => {
+        if(bookmarkState?.state === "BOOKMARKED") {
+            const res = await bookmarks.updatePage(bookmarkState.bookmark.bookmarkId, bookmarkState.page.pageId, page)
+            if(res.ok) {
+                setBookmarkState({tabId: bookmarkState.tabId, state: "BOOKMARKED", bookmark: res.value.bookmark, page: res.value.page})
+            }
+        }
+    }, [bookmarkState, setBookmarkState])
+
+    return {bookmarkState, updateBookmark, updatePage}
 }

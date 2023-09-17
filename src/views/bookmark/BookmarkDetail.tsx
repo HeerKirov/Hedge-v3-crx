@@ -4,8 +4,8 @@ import { Input, KeywordList, Label, Starlight, DynamicInputList, GroupPicker, Ic
 import { BookmarkModel, GroupModel } from "@/functions/database"
 import { BookmarkForm, PageForm } from "@/services/bookmarks"
 import { useBookmarkList } from "@/hooks/bookmarks"
+import { BookmarkDto, PageDto, useBookmarkFormUpdater, usePageFormUpdater } from "@/utils/business"
 import { ELEMENT_HEIGHTS, FONT_SIZES, SPACINGS } from "@/styles"
-import { objects } from "@/utils/primitives"
 
 interface BookmarkDetailProps {
     bookmarkList: BookmarkModel[]
@@ -36,30 +36,6 @@ interface PageProps {
     updatePage(page: PageForm): void
     allGroups: GroupModel[]
     errorMessage: Extract<ReturnType<typeof useBookmarkList>["errorMessage"], object> | null
-}
-
-interface BookmarkDto {
-    name: string
-    otherNames: string[]
-    description: string
-    keywords: string[]
-    groups: [string, string][]
-    score: number | undefined
-    lastCollectTime?: Date | undefined
-    createTime?: Date
-    updateTime?: Date
-}
-
-interface PageDto {
-    url: string
-    title: string
-    description: string | undefined
-    keywords: string[] | undefined
-    groups: [string, string][] | undefined
-    lastCollect: string | undefined
-    lastCollectTime: Date | undefined
-    createTime?: Date
-    updateTime?: Date
 }
 
 export const BookmarkDetail = memo(function(props: BookmarkDetailProps) {
@@ -121,29 +97,7 @@ export const BookmarkCreation = memo(function(props: BookmarkCreationProps) {
 })
 
 const BookmarkDetailOfBookmark = memo(function(props: BookmarkProps) {
-    const generateForm = (additional: Partial<BookmarkForm>): BookmarkForm => {
-        const form: BookmarkForm = {
-            name: props.bookmark.name, 
-            otherNames: props.bookmark.otherNames,
-            keywords: props.bookmark.keywords,
-            description: props.bookmark.description,
-            groups: props.bookmark.groups,
-            score: props.bookmark.score
-        }
-        return {...form, ...additional}
-    }
-
-    const setName = (name: string) => props.bookmark.name !== name.trim() && props.updateBookmark(generateForm({name: name.trim()}))
-
-    const setOtherNames = (otherNames: string[]) => !objects.deepEquals(props.bookmark.otherNames, otherNames) && props.updateBookmark(generateForm({otherNames}))
-    
-    const setScore = (score: number | undefined) => props.bookmark.score !== score && props.updateBookmark(generateForm({score}))
-
-    const setKeywords = (keywords: string[]) => !objects.deepEquals(props.bookmark.keywords, keywords) && props.updateBookmark(generateForm({keywords}))
-
-    const setDescription = (description: string) => props.bookmark.description !== description && props.updateBookmark(generateForm({description}))
-
-    const setGroups = (groups: [string, string][]) => !objects.deepEquals(props.bookmark.groups, groups) && props.updateBookmark(generateForm({groups}))
+    const { setName, setOtherNames, setScore, setGroups, setKeywords, setDescription } = useBookmarkFormUpdater(props.bookmark, props.updateBookmark)
 
     return <BookmarkRootDiv>
         <div>
@@ -174,32 +128,7 @@ const BookmarkDetailOfBookmark = memo(function(props: BookmarkProps) {
 })
 
 const BookmarkDetailOfPage = memo(function(props: PageProps) {
-    const generateForm = (additional: Partial<PageForm>): PageForm => {
-        const form: PageForm = {
-            title: props.page.title,
-            url: props.page.url,
-            keywords: props.page.keywords,
-            description: props.page.description,
-            groups: props.page.groups,
-            lastCollect: props.page.lastCollect,
-            lastCollectTime: props.page.lastCollectTime
-        }
-        return {...form, ...additional}
-    }
-
-    const setTitle = (title: string) => props.page.title !== title.trim() && props.updatePage(generateForm({title: title.trim()}))
-
-    const setURL = (url: string) => props.page.url !== url.trim() && props.updatePage(generateForm({url: url.trim()}))
-
-    const setKeywords = (keywords: string[]) => !objects.deepEquals(props.page.keywords, keywords.length > 0 ? keywords : undefined) && props.updatePage(generateForm({keywords: keywords.length > 0 ? keywords : undefined}))
-
-    const setDescription = (description: string) => props.page.description !== (description.length > 0 ? description : undefined) && props.updatePage(generateForm({description: description.length > 0 ? description : undefined}))
-
-    const setGroups = (groups: [string, string][]) => !objects.deepEquals(props.page.groups, groups) && props.updatePage(generateForm({groups: groups.length ? groups : undefined}))
-
-    const setLastCollect = (lastCollect: string) => props.page.lastCollect !== lastCollect.trim() && props.updatePage(generateForm({lastCollect: lastCollect.trim() || undefined}))
-
-    const setLastCollectTime = (lastCollectTime: Date | undefined) => props.page.lastCollectTime?.getTime() !== lastCollectTime?.getTime() && props.updatePage(generateForm({lastCollectTime}))
+    const { setTitle, setURL, setDescription, setKeywords, setGroups, setLastCollect, setLastCollectTime } = usePageFormUpdater(props.page, props.updatePage)
 
     return <BookmarkRootDiv>
         <div>

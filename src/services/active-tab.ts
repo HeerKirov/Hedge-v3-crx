@@ -55,5 +55,5 @@ async function setActiveTabIcon(tabId: number, url: string) {
  * 直接为当前tab设置icon。
  */
 export function setActiveTabIconByBookmarked(tabId: number, bookmarked: boolean) {
-    chrome.action.setIcon({tabId, path: bookmarked ? "/icon-bookmarked.png" : "/icon-unbookmarked.png"}).finally()
+    chrome.action.setIcon({tabId, path: bookmarked ? "/icon-bookmarked.png" : "/icon-not-bookmarked.png"}).finally()
 }

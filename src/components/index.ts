@@ -1,6 +1,6 @@
 export { CheckBox, Radio, RadioGroup } from "./CheckBox"
 export { Button, SeparatorButton } from "./Button"
-export { Input } from "./Input"
+export { Input, DateInput } from "./Input"
 export { Select } from "./Select"
 export { Icon } from "./Icon"
 export { StandardSideLayout, MiddleLayout } from "./Layouts"

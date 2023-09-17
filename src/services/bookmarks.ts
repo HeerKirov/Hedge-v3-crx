@@ -81,7 +81,7 @@ export const bookmarks = {
             return {ok: false, err: "BOOKMARK_NOT_FOUND"}
         }
         const normalizedURL = normalizeURL(form.url)
-        if((await t.getPageReferenceByUrl(normalizedURL.url)) !== undefined) {
+        if(normalizedURL.url.length > 0 && (await t.getPageReferenceByUrl(normalizedURL.url)) !== undefined) {
             return {ok: false, err: "URL_ALREADY_EXISTS"}
         }
         const now = new Date()
@@ -99,7 +99,7 @@ export const bookmarks = {
         }
         const { t, bookmarkModel, page, pageIndex } = queryPageRes.value
         const normalizedURL = normalizeURL(form.url)
-        if(normalizedURL.url !== page.url && (await t.getPageReferenceByUrl(normalizedURL.url)) !== undefined) {
+        if(normalizedURL.url !== page.url && normalizedURL.url.length > 0 && (await t.getPageReferenceByUrl(normalizedURL.url)) !== undefined) {
             return {ok: false, err: "URL_ALREADY_EXISTS"}
         }
         const fieldChanged = form.title !== page.title || normalizedURL.url !== page.url || form.description !== page.description || !objects.deepEquals(form.keywords, page.keywords) || !objects.deepEquals(form.groups, page.groups)
@@ -284,15 +284,19 @@ async function internalGetPage(bookmarkId: number, pageId: number): Promise<Resu
 
 /**
  * 直接被用户输入的URL可能不太标准，例如没有Protocol，或者单独的hostname后面没加斜线(这可能导致页面URL与写入值匹配不上)。
- * 因此使用此函数将URL标准化处理。
+ * 因此使用此函数将URL标准化处理。对于空串，直接返回空；对于无法解析的URL，添加http://前缀再解析。
  */
 function normalizeURL(url: string): {url: string, host: string} {
-    try {
-        const u = new URL(url)
-        return {url: u.href, host: u.host}
-    }catch(e) {
-        const u = new URL(`http://${url}`)
-        return {url: u.href, host: u.host}
+    if(url.trim()) {
+        try {
+            const u = new URL(url.trim())
+            return {url: u.href, host: u.host}
+        }catch(e) {
+            const u = new URL(`http://${url.trim()}`)
+            return {url: u.href, host: u.host}
+        }
+    }else{
+        return {url: "", host: ""}
     }
 }
 

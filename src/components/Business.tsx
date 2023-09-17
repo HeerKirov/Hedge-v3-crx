@@ -1,8 +1,8 @@
 import React, { memo, useCallback, useMemo, useState } from "react"
 import { css, styled } from "styled-components"
 import { GroupModel } from "@/functions/database"
-import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, LIGHT_MODE_COLORS, SPACINGS } from "@/styles"
-import { DraggableEditList, FormattedText, Icon, Input, LayouttedDiv } from "."
+import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, SPACINGS } from "@/styles"
+import { DateInput, DraggableEditList, FormattedText, Icon, Input, LayouttedDiv } from "."
 
 interface DynamicInputListProps {
     values?: string[]
@@ -24,6 +24,7 @@ interface KeywordListProps {
     keywords?: string[]
     onUpdateKeywords?(keywords: string[]): void
     editable?: boolean
+    display?: "inline" | "inline-block" | "block"
 }
 
 interface GroupPickerProps {
@@ -94,10 +95,8 @@ export const KeywordList = memo(function (props: KeywordListProps) {
         }
     }
 
-    return <KeywordInputDiv>
-        <DraggableEditList editable={props.editable} items={props.keywords} onUpdateItems={props.onUpdateKeywords} child={keyword => (<KeywordSpan><span>[</span>{keyword}<span>]</span></KeywordSpan>)}>
-            {props.editable && <Input width="10em" size="small" placeholder="添加新的关键词" value={addText} onUpdateValue={setAddText} onEnter={onEnter} updateOnInput/>}
-        </DraggableEditList>
+    return <KeywordInputDiv $display={props.display} editable={props.editable} items={props.keywords} onUpdateItems={props.onUpdateKeywords} child={(keyword: string) => (<KeywordSpan><span>[</span>{keyword}<span>]</span></KeywordSpan>)}>
+        {props.editable && <Input width="10em" size="small" placeholder="添加新的关键词" value={addText} onUpdateValue={setAddText} onEnter={onEnter} updateOnInput/>}
     </KeywordInputDiv>
 })
 
@@ -216,50 +215,11 @@ export const CollectTimePicker = memo(function (props: CollectTimePickerProps) {
     const edit = useCallback(() => setEditMode(true), [])
 
     return editMode ? <FormattedText>
-        <CollectTimePickerEditMode value={props.value} onUpdateValue={updateValue}/>
+        <DateInput size="small" autoFocus value={props.value} onUpdateValue={updateValue}/>
+        {/*<CollectTimePickerEditMode value={props.value} onUpdateValue={updateValue}/>*/}
     </FormattedText> : <FormattedText userSelect="text" onClick={edit}>
         {props.value?.toLocaleString() ?? "未记录上次收集时间"}
     </FormattedText>
-})
-
-const CollectTimePickerEditMode = memo(function (props: CollectTimePickerProps) {
-    const [value, setValue] = useState(() => {
-        const fmt = (n: number) => n >= 10 ? n : `0${n}`
-        return props.value !== undefined ? `${props.value.getFullYear()}/${props.value.getMonth() + 1}/${props.value.getDate()} ${fmt(props.value.getHours())}:${fmt(props.value.getMinutes())}:${fmt(props.value.getSeconds())}` : ""
-    })
-
-    const [error, setError] = useState(false)
-
-    const submitValue = () => {
-        const trimed = value.trim()
-        if("today".startsWith(trimed.toLowerCase())) {
-            props.onUpdateValue?.(new Date())
-            if(error) setError(false)
-        }else if(trimed) {
-            const d = new Date(trimed)
-            if(isNaN(d.getTime())) {
-                if(!error) setError(true)
-            }else{
-                props.onUpdateValue?.(d)
-                if(error) setError(false)
-            }
-        }else{
-            props.onUpdateValue?.(undefined)
-        }
-    }
-
-    const onKeydown = (e: React.KeyboardEvent<HTMLElement>) => {
-        if(e.code === "Enter" && !e.altKey && !e.ctrlKey) {
-            submitValue()
-        }
-    }
-
-    return <Input size="small" borderColor={error ? "danger" : undefined} 
-        placeholder="YYYY/MM/DD HH:mm:SS" 
-        value={value} onUpdateValue={setValue} 
-        onBlur={submitValue} onKeydown={onKeydown} 
-        updateOnInput autoFocus
-    />
 })
 
 const STARLIGHT_COLOR_PICKS = ["text", "secondary", "info", "success", "warning", "danger"] as const
@@ -301,12 +261,9 @@ const StarlightSpan = styled.span<{ $editable: boolean, $value: number | undefin
     }
 `
 
-const KeywordInputDiv = styled.div`
-    display: flex;
-    align-items: center;
-    gap: ${SPACINGS[1]};
+const KeywordInputDiv = styled(DraggableEditList)<{ $display?: "inline" | "inline-block" | "block" }>`
     overflow-y: auto;
-    line-height: ${ELEMENT_HEIGHTS["small"]};
+    ${p => p.$display && css`display: ${p.$display};`};
     &::-webkit-scrollbar {
         display: none;
     }

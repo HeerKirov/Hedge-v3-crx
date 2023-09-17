@@ -1,5 +1,5 @@
 import { useTabSourceInfo } from "@/hooks/active-tab"
-import { Button, FormattedText, Icon, LayouttedDiv, SecondaryText, Separator } from "@/components"
+import { Button, FormattedText, Icon, SecondaryText } from "@/components"
 import { SourceDataPath } from "@/functions/server/api-all"
 import { SourceDataCollectStatus, SourceEditStatus } from "@/functions/server/api-source-data"
 import { styled } from "styled-components"
@@ -16,7 +16,7 @@ export function SourceInfoNotice() {
             {collectStatus !== null && <CollectStatusNotice {...collectStatus}/>}
             <Button size="small" onClick={manualCollectSourceData}><Icon icon="cloud-arrow-down" mr={1}/>{collectStatus?.collected ? "重新" : ""}收集来源数据</Button>
         </>}
-    </TabInfoDiv> : <LayouttedDiv pl={2} pr={2}><Separator/></LayouttedDiv>
+    </TabInfoDiv> : undefined
 }
 
 function SourceDataPathNotice(path: SourceDataPath) {

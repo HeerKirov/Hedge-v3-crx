@@ -25,6 +25,10 @@ const RootDiv = styled.div`
     width: 300px;
     max-height: 600px;
     user-select: none;
+    overflow-y: auto;
+    &::-webkit-scrollbar {
+        display: none;
+    }
 `
 
 const HealthDiv = styled.div<{ $status: "NOT_INITIALIZED" | "INITIALIZING" | "LOADING" | "READY" | "DISCONNECTED" | "UNKNOWN" }>`

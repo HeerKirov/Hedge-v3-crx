@@ -60,7 +60,13 @@ const StyledButton = styled.button<{
     font-size: ${p => FONT_SIZES[p.$size ?? "std"]};
     height: ${p => ELEMENT_HEIGHTS[p.$size ?? "std"]};
     line-height: ${p => ELEMENT_HEIGHTS[p.$size ?? "std"]};
-    ${p => p.$square ? css`width: ${ELEMENT_HEIGHTS[p.$size ?? "std"]};` : p.$width ? css`width: ${p.$width};` : null}
+    ${p => p.$square ? css`
+        width: ${ELEMENT_HEIGHTS[p.$size ?? "std"]};
+        flex-shrink: 0;
+        flex-grow: 0;
+    ` : p.$width ? css`
+        width: ${p.$width};
+    ` : null}
     ${p => p.$mode === "filled" ? css`
         color: ${LIGHT_MODE_COLORS["text-inverted"]};
         background-color: ${p.$type ? LIGHT_MODE_COLORS[p.$type] : "default"};
@@ -90,7 +96,7 @@ const StyledButton = styled.button<{
             color: ${LIGHT_MODE_COLORS["secondary-text"]};
         ` : p.$type ? css`
             color: ${LIGHT_MODE_COLORS[p.$type]};
-        ` : null}
+        ` : null};
         @media (prefers-color-scheme: dark) {
             ${p.disabled ? css`
                 color: ${DARK_MODE_COLORS["secondary-text"]};

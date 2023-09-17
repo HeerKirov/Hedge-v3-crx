@@ -23,6 +23,7 @@ interface Formatted {
 
 interface Layoutted {
     display?: "block" | "inline-block" | "inline" | "flex"
+    position?: "relative" | "absolute" | "fixed"
     margin?: number | [number, number] | [number, number, number, number]
     padding?: number | [number, number] | [number, number, number, number]
     border?: boolean, radius?: RadiusSizes, borderColor?: ThemeColors | FunctionalColors
@@ -60,13 +61,13 @@ export function FormattedText(props: FormattedTextProps) {
 export function LayouttedDiv(props: LayouttedDivProps) {
     const {
         backgroundColor, color, display, radius, border, borderColor, float, whiteSpace,
-        bold, size, lineHeight, elementHeight, textAlign, userSelect, monospace,
+        bold, size, lineHeight, elementHeight, textAlign, userSelect, monospace, position,
         margin, padding, mr, ml, mt, mb, pr, pl, pt, pb,
         children, ...attrs
     } = props
 
     return <StyledLayouttedDiv {...attrs}
-        $backgroundColor={backgroundColor} $display={display}
+        $backgroundColor={backgroundColor} $display={display} $position={position}
         $radius={radius} $border={border} $borderColor={borderColor}
         $bold={bold} $color={color} $size={size}  $textAlign={textAlign} $float={float} $whiteSpace={whiteSpace}
         $lineHeight={lineHeight} $elementHeight={elementHeight} $userSelect={userSelect} $monospace={monospace}
@@ -76,8 +77,9 @@ export function LayouttedDiv(props: LayouttedDivProps) {
     >{children}</StyledLayouttedDiv>
 }
 
-export function Separator(props: SeparatorProps) {
-    return <StyledSeparator $direction={props.direction} $spacing={props.spacing}/>
+export function Separator(props: SeparatorProps & React.HTMLAttributes<HTMLDivElement>) {
+    const { direction, spacing, ...attrs } = props
+    return <StyledSeparator $direction={direction} $spacing={spacing} {...attrs}/>
 }
 
 export function WrappedText(props: WrappedTextProps) {
@@ -112,7 +114,8 @@ const FormattedCSS = css<StyledFormattedProps>`
 `
 
 const LayouttedCSS = css<StyledLayouttedProps>`
-    display: ${p => p.$display ?? "block"};
+    ${p => p.$display && css`display: ${p.$display};`}
+    ${p => p.$position && css`position: ${p.$position};`}
     ${p => p.$radius && css`border-radius: ${RADIUS_SIZES[p.$radius]};`}
     ${p => p.$border && css`
         border: solid 1px ${LIGHT_MODE_COLORS[p.$borderColor ?? "border"]};

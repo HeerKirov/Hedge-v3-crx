@@ -9,6 +9,9 @@ interface InputProps {
     type?: "text" | "password" | "number" | "textarea"
     size?: "small" | "std" | "large"
     textAlign?: "left" | "center" | "right"
+    maxHeight?: string
+    minHeight?: string
+    rows?: number
     borderColor?: ThemeColors | FunctionalColors
     width?: string
     placeholder?: string
@@ -20,6 +23,19 @@ interface InputProps {
     onEnter?(e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>): void
     onBlur?(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>): void
     onFocus?(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>): void
+}
+
+interface DateInputProps {
+    value?: Date
+    onUpdateValue?(value: Date | undefined): void
+    size?: "small" | "std" | "large"
+    textAlign?: "left" | "center" | "right"
+    borderColor?: ThemeColors | FunctionalColors
+    errorBorderColor?: ThemeColors | FunctionalColors
+    width?: string
+    placeholder?: string
+    disabled?: boolean
+    autoFocus?: boolean
 }
 
 export const Input = React.forwardRef(function (props: InputProps, ref: React.ForwardedRef<HTMLElement>) {
@@ -61,6 +77,7 @@ export const Input = React.forwardRef(function (props: InputProps, ref: React.Fo
         if(type === "textarea") {
             return <StyledTextarea ref={setRef} 
                 $size={size ?? "std"} $width={width} $textAlign={textAlign} $borderColor={borderColor}
+                $maxHeight={props.maxHeight} $minHeight={props.minHeight} rows={props.rows}
                 disabled={disabled} placeholder={placeholder} value={value ?? undefined} 
                 onChange={onChange} onKeyDown={onKeydown} onBlur={props.onBlur} onFocus={props.onFocus}
                 onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
@@ -99,6 +116,7 @@ export const Input = React.forwardRef(function (props: InputProps, ref: React.Fo
         if(type === "textarea") {
             return <StyledTextarea ref={setRef} 
                 $size={size ?? "std"} $width={width} $textAlign={textAlign} $borderColor={borderColor}
+                $maxHeight={props.maxHeight} $minHeight={props.minHeight} rows={props.rows}
                 disabled={disabled} placeholder={placeholder} value={text} 
                 onChange={onChange} onBlur={onBlur} onKeyDown={onKeydown} 
                 onCompositionStart={onCompositionstart} onCompositionEnd={onCompositionend}/>
@@ -112,11 +130,48 @@ export const Input = React.forwardRef(function (props: InputProps, ref: React.Fo
     }
 })
 
+export const DateInput = React.memo(function (props: DateInputProps) {
+    const { value, onUpdateValue, placeholder = "YYYY/MM/DD HH:mm:SS", borderColor, errorBorderColor = "danger", ...attrs } = props
+
+    const fmt = (n: number) => n >= 10 ? n : `0${n}`
+
+    const [text, setText] = useState(() => value !== undefined ? `${value.getFullYear()}/${value.getMonth() + 1}/${value.getDate()} ${fmt(value.getHours())}:${fmt(value.getMinutes())}:${fmt(value.getSeconds())}` : "")
+
+    const [error, setError] = useState(false)
+
+    useWatch(() => setText(value !== undefined ? `${value.getFullYear()}/${value.getMonth() + 1}/${value.getDate()} ${fmt(value.getHours())}:${fmt(value.getMinutes())}:${fmt(value.getSeconds())}` : ""), [value])
+
+    const submitValue = () => {
+        const trimed = text.trim()
+        if("today".startsWith(trimed.toLowerCase())) {
+            props.onUpdateValue?.(new Date())
+            if(error) setError(false)
+        }else if(trimed) {
+            const d = new Date(trimed)
+            if(isNaN(d.getTime())) {
+                if(!error) setError(true)
+            }else{
+                props.onUpdateValue?.(d)
+                if(error) setError(false)
+            }
+        }else{
+            props.onUpdateValue?.(undefined)
+        }
+    }
+
+    return <Input {...attrs} placeholder={placeholder} borderColor={error ? errorBorderColor : borderColor} value={text} onUpdateValue={setText} onBlur={submitValue} onEnter={submitValue} updateOnInput/>
+})
+
 interface StyledCSSProps {
     $size: "small" | "std" | "large"
     $width?: string
     $textAlign?: "left" | "center" | "right"
     $borderColor?: ThemeColors | FunctionalColors
+}
+
+interface TextareaProps {
+    $maxHeight?: string
+    $minHeight?: string
 }
 
 const StyledCSS = css<StyledCSSProps>`
@@ -166,15 +221,17 @@ const StyledInput = styled.input<StyledCSSProps>`
     }
 `
 
-const StyledTextarea = styled.textarea<StyledCSSProps>`
+const StyledTextarea = styled.textarea<StyledCSSProps & TextareaProps>`
     ${StyledCSS};
     padding: calc(0.6em - 1px) calc(0.85em - 1px);
     resize: vertical;
     &:not([rows]) {
-        max-height: 40em;
-        min-height: 6em;
+        max-height: ${p => p.$maxHeight ?? "40em"};
+        min-height: ${p => p.$minHeight ?? "6em"};
     }
     &[rows] {
         height: initial;
+        ${p => p.$maxHeight && css`max-height: ${p.$maxHeight};`}
+        ${p => p.$minHeight && css`min-height: ${p.$minHeight};`}
     }
 `
