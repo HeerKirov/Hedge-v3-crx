@@ -18,6 +18,13 @@ export const strings = {
     }
 }
 
+export const dates = {
+    toFormatDate(date: Date): string {
+        function fmt(n: number) { return n > 0 ? n : `0${n}`}
+        return `${date.getFullYear()}-${fmt(date.getMonth() + 1)}-${fmt(date.getDate())}`
+    }
+}
+
 export const arrays = {
     equals<T>(a: T[], b: T[], eq: (a: T, b: T) => boolean = (a, b) => a === b): boolean {
         if (a.length !== b.length) {

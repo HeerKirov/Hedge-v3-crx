@@ -281,6 +281,69 @@ export const storedQueries = {
     }
 }
 
+export const backups = {
+    async export(): Promise<string> {
+        const t = await databases.transaction(["bookmark", "group", "query"], "readonly")
+        const groups: GroupModel[] = await t.cursorGroup().toList()
+        const storedQueries: BackupStoredQuery[] = (await t.cursorStoredQuery().toList()).map(sq => ({
+            name: sq.name, search: sq.search, groups: sq.groups, order: sq.order, orderDirection: sq.orderDirection
+        }))
+        const bookmarks: BackupBookmark[] = (await t.cursorBookmark().toList()).map(b => ({
+            name: b.name, otherNames: b.otherNames, groups: b.groups, keywords: b.keywords, description: b.description, score: b.score,
+            lastCollectTime: b.lastCollectTime?.toISOString(), createTime: b.createTime.toISOString(), updateTime: b.updateTime.toISOString(),
+            pages: b.pages.map(p => ({
+                title: p.title, url: p.url, groups: p.groups, keywords: p.keywords, description: p.description, lastCollect: p.lastCollect,
+                lastCollectTime: p.lastCollectTime?.toISOString(), createTime: p.createTime.toISOString(), updateTime: p.updateTime.toISOString()
+            }))
+        }))
+
+        const backup: Backup = {groups, storedQueries, bookmarks}
+        return JSON.stringify(backup)
+    },
+    async import(backup: string): Promise<Result<undefined, any>> {
+        let json: Backup
+        try { json = JSON.parse(backup) }catch(e) {
+            return {ok: false, err: e}
+        }
+
+        const t = await databases.transaction(["bookmark", "pageReference", "group", "query"], "readwrite")
+
+        for(const g of json.groups) {
+            await t.putGroup(g)
+        }
+
+        if(json.storedQueries.length > 0) {
+            const count = await t.cursorStoredQuery().count()
+            for(let i = 0; i < json.storedQueries.length; ++i) {
+                const sq = json.storedQueries[i]
+                await t.addStoredQuery({...sq, ordinal: count + i})
+            }
+        }
+
+        for(const b of json.bookmarks) {
+            const bookmark = await t.addBookmark({
+                name: b.name, otherNames: b.otherNames, groups: b.groups, keywords: b.keywords, score: b.score, description: b.description,
+                lastCollectTime: b.lastCollectTime !== undefined ? new Date(b.lastCollectTime) : undefined, createTime: new Date(b.createTime), updateTime: new Date(b.updateTime),
+                pages: []
+            })
+            if(b.pages.length > 0) {
+                const pages: Page[] = []
+                for(const p of b.pages) {
+                    const pageReference = await t.addPageReference({bookmarkId: bookmark.bookmarkId, url: p.url})
+                    const { host } = normalizeURL(p.url)
+                    pages.push({
+                        pageId: pageReference.pageId, title: p.title, url: p.url, keywords: p.keywords, description: p.description, groups: p.groups, host, lastCollect: p.lastCollect,
+                        lastCollectTime: p.lastCollectTime !== undefined ? new Date(p.lastCollectTime) : undefined, createTime: new Date(p.createTime), updateTime: new Date(p.updateTime)
+                    })
+                }
+                await t.putBookmark({...bookmark, pages})
+            }
+        }
+
+        return {ok: true, value: undefined}
+    }
+}
+
 async function internalGetPage(bookmarkId: number, pageId: number): Promise<Result<{t: Transaction, bookmarkModel: BookmarkModel, page: Page, pageIndex: number}, "BOOKMARK_NOT_FOUND" | "PAGE_NOT_FOUND">> {
     const t = await databases.transaction(["bookmark", "pageReference"], "readwrite")
     const bookmarkModel = await t.getBookmark(bookmarkId)
@@ -347,4 +410,43 @@ export interface StoredQueryForm {
     groups: [string, string][] | undefined
     order: "createTime" | "updateTime" | "lastCollectTime" | "score" | undefined
     orderDirection: "asc" | "desc" | undefined
+}
+
+export interface Backup {
+    groups: GroupModel[]
+    storedQueries: BackupStoredQuery[]
+    bookmarks: BackupBookmark[]
+}
+
+interface BackupStoredQuery {
+    name: string
+    search: string | undefined
+    groups: [string, string][] | undefined
+    order: "createTime" | "updateTime" | "lastCollectTime" | "score" | undefined
+    orderDirection: "asc" | "desc" | undefined
+}
+
+interface BackupBookmark {
+    name: string
+    otherNames: string[]
+    description: string
+    keywords: string[]
+    groups: [string, string][]
+    score: number | undefined
+    lastCollectTime: string | undefined
+    createTime: string
+    updateTime: string
+    pages: BackupPage[]
+}
+
+interface BackupPage {
+    url: string
+    title: string
+    description: string | undefined
+    keywords: string[] | undefined
+    groups: [string, string][] | undefined
+    lastCollect: string | undefined
+    lastCollectTime: string | undefined
+    createTime: string
+    updateTime: string
 }

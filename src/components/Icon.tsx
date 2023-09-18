@@ -70,8 +70,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faArrowDownWideShort, faArrowUpShortWide, faBookBookmark, faBookmark, faCloudArrowDown, faCopy,
     faCalendar, faCalendarCheck, faCalendarDay, faCalendarPlus, faCalendarWeek, faCaretDown, faCaretRight, faCaretUp, faCheck, faClose,
-    faDownload, faFile, faFileInvoice, faFolder, faPlus,
-    faRecordVinyl, faSave, faSearch, faServer, faStar, faToolbox, faTrash
+    faDownload, faFile, faFileExport, faFileImport, faFileInvoice, faFolder, faPlus,
+    faRecordVinyl, faSave, faSearch, faServer, faStar, faToolbox, faTrash, faUpload
 } from "@fortawesome/free-solid-svg-icons"
 import {
     faStar as faStarRegular, faSave as faSaveRegular
@@ -80,7 +80,7 @@ import {
 library.add(
     faArrowDownWideShort, faArrowUpShortWide, faBookBookmark, faBookmark, faCloudArrowDown, faCopy,
     faCalendar, faCalendarCheck, faCalendarDay, faCalendarPlus, faCalendarWeek, faCaretDown, faCaretRight, faCaretUp, faCheck, faClose,
-    faDownload, faFile, faFileInvoice, faFolder, faPlus, 
-    faRecordVinyl, faSave, faSearch, faServer, faStar, faToolbox, faTrash
+    faDownload, faFile, faFileExport, faFileImport, faFileInvoice, faFolder, faPlus,
+    faRecordVinyl, faSave, faSearch, faServer, faStar, faToolbox, faTrash, faUpload
 )
 library.add(faStarRegular, faSaveRegular)
