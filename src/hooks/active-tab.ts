@@ -10,6 +10,7 @@ import { setActiveTabBadgeByStatus, setActiveTabIconByBookmarked } from "@/servi
 import { collectSourceData } from "@/services/source-data"
 import { sendMessageToTab } from "@/services/messages"
 import { useAsyncLoading } from "@/utils/reactivity"
+import { strings } from "@/utils/primitives"
 
 export interface SourceInfo {
     tabId: number
@@ -18,9 +19,10 @@ export interface SourceInfo {
     sourceDataPath: SourceDataPath | null
 }
 
-export type BookmarkState = {tabId: number, state: "UNSUPPORTED"}
+export type BookmarkState
+    = {tabId: number, state: "UNSUPPORTED"}
     | {tabId: number, state: "NOT_BOOKMARKED"}
-    | {tabId: number, state: "BOOKMARKED", bookmark: BookmarkModel, page: Page}
+    | {tabId: number, state: "BOOKMARKED", bookmark: BookmarkModel, page: Page, newAddedBookmark?: boolean, newAddedPage?: boolean}
 
 /**
  * 解析当前页面是否属于受支持的网站，提供网站host，以及解析来源数据ID。
@@ -68,7 +70,6 @@ export function useTabSourceInfo() {
 
     return {sourceInfo, collectStatus, manualCollectSourceData}
 }
-
 
 /**
  * 解析URL，分析它属于哪个来源网站，并获取其来源数据信息。
@@ -119,6 +120,8 @@ export function useTabBookmarkState() {
             const res = await bookmarks.updateBookmark(bookmarkState.bookmark.bookmarkId, bookmark)
             if(res.ok) {
                 setBookmarkState({tabId: bookmarkState.tabId, state: "BOOKMARKED", bookmark: res.value, page: bookmarkState.page})
+            }else{
+                console.error(`[BookmarkState/updateBookmark] (bookmarkId=${bookmarkState.bookmark.bookmarkId}): ${res.err}`)
             }
         }
     }, [bookmarkState, setBookmarkState])
@@ -128,9 +131,201 @@ export function useTabBookmarkState() {
             const res = await bookmarks.updatePage(bookmarkState.bookmark.bookmarkId, bookmarkState.page.pageId, page)
             if(res.ok) {
                 setBookmarkState({tabId: bookmarkState.tabId, state: "BOOKMARKED", bookmark: res.value.bookmark, page: res.value.page})
+            }else{
+                console.error(`[BookmarkState/updatePage] (bookmarkId=${bookmarkState.bookmark.bookmarkId}, pageId=${bookmarkState.page.pageId}): ${res.err}`)
             }
         }
     }, [bookmarkState, setBookmarkState])
 
-    return {bookmarkState, updateBookmark, updatePage}
+    const addPage = useCallback(async (targetBookmark: number | string) => {
+        if(bookmarkState?.state === "NOT_BOOKMARKED") {
+            let bookmarkId: number
+            if(typeof targetBookmark === "string") {
+                const b = await bookmarks.addBookmark({name: targetBookmark, otherNames: [], keywords: [], groups: [], description: "", score: undefined})
+                bookmarkId = b.bookmarkId
+            }else{
+                bookmarkId = targetBookmark
+            }
+            const tab = await chrome.tabs.get(bookmarkState.tabId)
+            if(!tab.url || tab.title === undefined) {
+                console.error(`[BookmarkState/addPage]: url or title is empty. (url=[${tab.url}], title=[${tab.title}])`)
+                return
+            }
+            const form: PageForm = {
+                url: tab.url, title: tab.title,
+                description: undefined, keywords: undefined, groups: undefined, lastCollect: undefined, lastCollectTime: undefined
+            }
+            const res = await bookmarks.addPage(bookmarkId, null, form)
+            if(res.ok) {
+                setBookmarkState({tabId: bookmarkState.tabId, state: "BOOKMARKED", bookmark: res.value.bookmark, page: res.value.page, newAddedBookmark: typeof targetBookmark === "string", newAddedPage: true})
+                setActiveTabIconByBookmarked(bookmarkState.tabId, true)
+            }else{
+                if(typeof targetBookmark === "string") bookmarks.deleteBookmark(bookmarkId).finally()
+                if(res.err === "URL_ALREADY_EXISTS") {
+                    setBookmarkState()
+                    console.warn(`[BookmarkState/addPage] (bookmarkId=${bookmarkId}): URL already exists.`)
+                }else{
+                    console.error(`[BookmarkState/addPage] (bookmarkId=${bookmarkId}): ${res.err}`)
+                }
+            }
+        }
+    }, [bookmarkState, setBookmarkState])
+
+    const changeBookmarkOfPage = useCallback(async (newBookmark: number | string) => {
+        if(bookmarkState?.state === "BOOKMARKED") {
+            if(typeof newBookmark === "number") {
+                const res = await bookmarks.movePage(bookmarkState.bookmark.bookmarkId, bookmarkState.page.pageId, newBookmark, null)
+                if(res.ok) {
+                    setBookmarkState({tabId: bookmarkState.tabId, state: "BOOKMARKED", bookmark: res.value.target, page: bookmarkState.page})
+                }else{
+                    console.error(`[BookmarkState/changeBookmarkOfPage] (bookmarkId=${bookmarkState.bookmark.bookmarkId}, pageId=${bookmarkState.page.pageId}, to=${newBookmark}): ${res.err}`)
+                }
+            }else{
+                const b = await bookmarks.addBookmark({name: newBookmark, otherNames: [], keywords: [], groups: [], description: "", score: undefined})
+                const res = await bookmarks.movePage(bookmarkState.bookmark.bookmarkId, bookmarkState.page.pageId, b.bookmarkId, null)
+                if(res.ok) {
+                    setBookmarkState({tabId: bookmarkState.tabId, state: "BOOKMARKED", bookmark: res.value.target, page: bookmarkState.page})
+                }else{
+                    console.error(`[BookmarkState/changeBookmarkOfPage] (bookmarkId=${bookmarkState.bookmark.bookmarkId}, pageId=${bookmarkState.page.pageId}, to=${b.bookmarkId}): ${res.err}`)
+                }
+            }
+        }
+    }, [bookmarkState, setBookmarkState])
+
+    const deleteBookmark = useCallback(async () => {
+        if(bookmarkState?.state === "BOOKMARKED") {
+            const res = await bookmarks.deleteBookmark(bookmarkState.bookmark.bookmarkId)
+            if(res.ok) {
+                setBookmarkState({tabId: bookmarkState.tabId, state: "NOT_BOOKMARKED"})
+                setActiveTabIconByBookmarked(bookmarkState.tabId, false)
+            }else{
+                console.error(`[BookmarkState/deleteBookmark] (bookmarkId=${bookmarkState.bookmark.bookmarkId}): ${res.err}`)
+            }
+        }
+    }, [bookmarkState, setBookmarkState])
+
+    const deletePage = useCallback(async () => {
+        if(bookmarkState?.state === "BOOKMARKED") {
+            const res = await bookmarks.deletePage(bookmarkState.bookmark.bookmarkId, bookmarkState.page.pageId)
+            if(res.ok) {
+                setBookmarkState({tabId: bookmarkState.tabId, state: "NOT_BOOKMARKED"})
+                setActiveTabIconByBookmarked(bookmarkState.tabId, false)
+            }else{
+                console.error(`[BookmarkState/deletePage] (bookmarkId=${bookmarkState.bookmark.bookmarkId}): ${res.err}`)
+            }
+        }
+    }, [bookmarkState, setBookmarkState])
+
+    return {bookmarkState, updateBookmark, updatePage, addPage, changeBookmarkOfPage, deleteBookmark, deletePage}
+}
+
+/**
+ * 根据页面标题，得出一个建议搜索或使用的书签名。
+ * TODO 需要测试各个站点下的命名建议是否正确
+ */
+export async function getSuggestedBookmarkNameByTab(tabId: number): Promise<string | null> {
+    const tab = await chrome.tabs.get(tabId)
+    if(tab.url !== undefined && tab.title !== undefined) {
+        const url = new URL(tab.url)
+        const site = SUGGESTED_SITES.find(site => site.hosts.includes(url.host))
+        if(site !== undefined) {
+            const suggestName = site.suggest(url, tab.title)
+            if(suggestName !== undefined) {
+                return suggestName
+            }
+        }
+        return tab.title
+    }
+    return null
+}
+
+const SUGGESTED_SITES: SuggestedSite[] = [
+    {
+        hosts: ["chan.sankakucomplex.com"],
+        suggest(url, title) {
+            if(/^\/post\/show/.test(url.pathname)) {
+                // 图像页，尝试提取artist name，且替换下划线
+                const matched = title.match(/.* by (.+) | Sankaku Channel/)
+                if(matched) {
+                    return matched[1].replace("_", " ")
+                }
+            }else if((url.pathname === "/" || url.pathname === "/post" || /^\/.*\/post/.test(url.pathname)) && url.searchParams.has("tags")) {
+                // 一般搜索页，尝试从中提取artist name，且替换下划线
+                const matched = title.match(/(.+) | Sankaku Channel/)
+                if(matched) {
+                    const artist = matched[1].split("+", 1)[0]
+                    if(artist) {
+                        return artist.replace("_", " ")
+                    }
+                }
+                const artist = url.searchParams.get("tags")!.split("+", 1)[0]
+                if(artist) {
+                    return artist.replace("_", " ")
+                }
+            }
+        }
+    },
+    {
+        hosts: ["beta.sankakucomplex.com"],
+        suggest(url, _) {
+            if(url.pathname === "/" || (/^\/(books|posts)/.test(url.pathname)) && url.searchParams.has("tags")) {
+                const artist = url.searchParams.get("tags")!.split("+", 1)[0]
+                if(artist) {
+                    return artist.replace("_", " ")
+                }
+            }
+        }
+    },
+    {
+        hosts: ["e-hentai.org", "exhentai.org"],
+        suggest(url, title) {
+            if(/^\/g\/(?<GID>\d+)\/(?<TOKEN>[a-zA-Z0-9]+)/.test(url.pathname)) {
+                // gallery画廊页面，取画廊标题
+                const matched = title.match(/(.+) - E-Hentai Galleries/)
+                if(matched) {
+                    return matched[1]
+                }
+            }else if(/^\/tag\/.*/.test(url.pathname)) {
+                //tag搜索页，按照正在搜索的tag，取tag name，且替换下划线
+                const matched = title.match(/.*:(.+) - .*/)
+                if(matched) {
+                    return matched[1].replace("_", " ")
+                }
+                const matched2 = url.pathname.match(/^\/tag\/.*:(.+)/)
+                if(matched2) {
+                    return matched2[1].replace("_", " ")
+                }
+            }else if(url.pathname === "/" && url.searchParams.has("f_search")) {
+                //一般搜索页，尝试找出正在搜索的tag，取tag name，且替换下划线
+                const matched = url.searchParams.get("f_search")!.match(/([^:]+:)?(.+)\$?/)
+                if(matched) {
+                    return matched[2].replace("_", " ")
+                }
+            }
+        }
+    },
+    {
+        hosts: ["www.pixiv.net"],
+        suggest(url, title) {
+            if(/^\/users\/\d+(\/(artworks|illustrations|manga))?/.test(url.pathname)) {
+                // users作者相关页面，取名为username
+                const matched = title.match(/(.*) - pixiv$/)
+                if(matched) {
+                    const artist = matched[1]
+                    return strings.removeSuffix(artist, ["的插图・漫画", "的插画", "的漫画"])
+                }
+            }else if(/^\/artworks\/\d+/.test(url.pathname)) {
+                // artworks作品页面，取名为作者的username
+                const matched = title.match(/(.*) - (.*) - pixiv$/)
+                if(matched) {
+                    const artist = matched[2]
+                    return strings.removeSuffix(artist, ["的插图・漫画", "的插画", "的漫画"])
+                }
+            }
+        }
+    }
+]
+interface SuggestedSite {
+    hosts: string[]
+    suggest(url: URL, title: string): string | void
 }

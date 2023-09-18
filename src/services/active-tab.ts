@@ -7,8 +7,8 @@ export function tabCreated(tab: chrome.tabs.Tab) {
     if(tab.id !== undefined && tab.id !== chrome.tabs.TAB_ID_NONE && tab.url !== undefined) setActiveTabIcon(tab.id, tab.url).finally()
 }
 
-export function tabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo) {
-    if(changeInfo.url !== undefined) setActiveTabIcon(tabId, changeInfo.url).finally()
+export function tabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) {
+    if(changeInfo.url !== undefined || (changeInfo.status !== undefined && tab.url !== undefined)) setActiveTabIcon(tabId, changeInfo.url ?? tab.url!).finally()
 }
 
 /**

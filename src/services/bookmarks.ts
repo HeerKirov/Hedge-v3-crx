@@ -45,18 +45,16 @@ export const bookmarks = {
         return {ok: true, value: res}
     },
     async deleteBookmark(bookmarkId: number): Promise<Result<undefined, "NOT_FOUND">> {
-        const t = await databases.transaction("bookmark", "readwrite")
+        const t = await databases.transaction(["bookmark", "pageReference"], "readwrite")
         const model = await t.getBookmark(bookmarkId)
         if(model === undefined) {
             return {ok: false, err: "NOT_FOUND"}
         }
         await t.deleteBookmark(bookmarkId)
-        await Promise.all(model.pages.map(p => t.deletePageReference(p.pageId)))
+        for(const page of model.pages) {
+            await t.deletePageReference(page.pageId)
+        }
         return {ok: true, value: undefined}
-    },
-    async getPageReferences(): Promise<PageReferenceModel[]> {
-        const t = await databases.transaction("pageReference", "readonly")
-        return await t.cursorPageReference().toList()
     },
     async queryPageByURL(url: PageReferenceModel["url"]): Promise<{bookmark: BookmarkModel, page: Page} | undefined> {
         const t = await databases.transaction(["bookmark", "pageReference"], "readonly")
@@ -158,6 +156,21 @@ export const bookmarks = {
         await t.deletePageReference(pageId)
         return {ok:true, value: undefined}
     },
+    async getPageReferences(): Promise<PageReferenceModel[]> {
+        const t = await databases.transaction("pageReference", "readonly")
+        return await t.cursorPageReference().toList()
+    },
+    async clearOutdatedPage(): Promise<void> {
+        const t = await databases.transaction(["bookmark", "pageReference"], "readwrite")
+        const bookmarks = await t.cursorBookmark().toList()
+        const pageReferences = await t.cursorPageReference().toList()
+        const pageIds = bookmarks.flatMap(b => b.pages).map(p => p.pageId)
+        const outdated = pageReferences.filter(r => !pageIds.includes(r.pageId)).map(r => r.pageId)
+        for(const pageId of outdated) {
+            await t.deletePageReference(pageId)
+            console.log("Clear outdated page reference", pageId)
+        }
+    }
 }
 
 export const groups = {

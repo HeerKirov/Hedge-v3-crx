@@ -1,6 +1,23 @@
 
 export type Result<T, E> = {ok: true, value: T} | {ok: false, err: E}
 
+export const strings = {
+    removeSuffix(str: string, suffix: string | string[]): string {
+        if(typeof suffix === "string") {
+            if(str.endsWith(suffix)) {
+                return str.slice(0, str.length - suffix.length)
+            }
+        }else{
+            for(const s of suffix) {
+                if(str.endsWith(s)) {
+                    return str.slice(0, str.length - s.length)
+                }
+            }
+        }
+        return str
+    }
+}
+
 export const arrays = {
     equals<T>(a: T[], b: T[], eq: (a: T, b: T) => boolean = (a, b) => a === b): boolean {
         if (a.length !== b.length) {

@@ -23,7 +23,7 @@ function ServerStatusNotice() {
 
 const RootDiv = styled.div`
     width: 300px;
-    max-height: 600px;
+    max-height: 720px;
     user-select: none;
     overflow-y: auto;
     &::-webkit-scrollbar {
