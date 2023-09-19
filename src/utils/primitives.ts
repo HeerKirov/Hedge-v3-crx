@@ -19,6 +19,19 @@ export const strings = {
 }
 
 export const dates = {
+    parseInLocalDate(str: string): Date | null {
+        const matched = str.match(/(\d+)-|\/(\d+)-|\/(\d+)/)
+        if(matched) {
+            const d = new Date(parseInt(matched[1]), parseInt(matched[2]), parseInt(matched[3]))
+            if(isNaN(d.getTime())) {
+                return null
+            }else{
+                return d
+            }
+        }else{
+            return null
+        }
+    },
     toFormatDate(date: Date): string {
         function fmt(n: number) { return n > 0 ? n : `0${n}`}
         return `${date.getFullYear()}-${fmt(date.getMonth() + 1)}-${fmt(date.getDate())}`

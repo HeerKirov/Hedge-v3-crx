@@ -4,10 +4,12 @@ import { Button, CheckBox, RadioGroup, FormattedText, Icon, Input, Label, Layout
 import { GroupModel } from "@/functions/database"
 import { useGroupList } from "@/hooks/bookmarks"
 import { useCreator, useEditor } from "@/utils/reactivity"
-import { JSON_TYPE, readFile, saveFile } from "@/utils/file-system"
+import { HTML_TYPE, JSON_TYPE, readFile, saveFile } from "@/utils/file-system"
 import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, RADIUS_SIZES, SPACINGS } from "@/styles"
 import { backups } from "@/services/bookmarks"
 import { dates } from "@/utils/primitives"
+import { analyseHTMLBookmarkFile } from "@/utils/html-bookmark"
+import { analyseHTMLBookmarks } from "@/utils/html-bookmark-parser"
 
 export function OptionsBookmarkPanel() {
     const { groupList, errorMessage, addGroup, updateGroup, deleteGroup, clearErrorMessage } = useGroupList()
@@ -32,6 +34,7 @@ export function OptionsBookmarkPanel() {
         </p>
         <Label>导入/导出</Label>
         <Backup/>
+        <HTMLBackup/>
         <Label>组配置</Label>
         {groupList?.map((group, index) => selectedIndex !== index 
             ? <GroupListItem key={group.groupKeyPath} group={group} onSelect={() => setSelectedIndexWithAOP(index)}/> 
@@ -51,9 +54,11 @@ export function OptionsBookmarkPanel() {
 const Backup = memo(function () {
     const importFromBackup = async () => {
         const text = await readFile({types: [JSON_TYPE]})
-        const res = await backups.import(text)
-        if(res.ok) {
-            alert("备份数据已导入。")
+        if(text !== undefined) {
+            const res = await backups.import(text)
+            if(res.ok) {
+                alert("备份数据已导入。")
+            }
         }
     }
 
@@ -64,22 +69,34 @@ const Backup = memo(function () {
         alert("备份数据已生成。")
     }
 
-    return <>
-        <LayouttedDiv mt={1}>
-            <Group>
-                <Button onClick={importFromBackup}><Icon icon="upload" mr={2}/>读取备份数据</Button>
-                <Button onClick={exportToBackup}><Icon icon="download" mr={2}/>生成备份数据</Button>
-                <FormattedText color="secondary" size="small">将数据库生成为备份文件，或从已有的备份文件还原数据库。</FormattedText>
-            </Group>
-        </LayouttedDiv>
-        <LayouttedDiv mt={1}>
-            <Group>
-                <Button><Icon icon="file-import" mr={2}/>从书签备份文件导入</Button>
-                <Button><Icon icon="file-import" mr={2}/>导出为书签备份文件</Button>
-                <FormattedText color="secondary" size="small">将书签生成为通用格式，以导入浏览器书签，或从浏览器书签导入。</FormattedText>
-            </Group>
-        </LayouttedDiv>
-    </>
+    return <LayouttedDiv mt={1}>
+        <Group>
+            <Button onClick={importFromBackup}><Icon icon="upload" mr={2}/>读取备份数据</Button>
+            <Button onClick={exportToBackup}><Icon icon="download" mr={2}/>生成备份数据</Button>
+            <FormattedText color="secondary" size="small">将数据库生成为备份文件，或从已有的备份文件还原数据库。</FormattedText>
+        </Group>
+    </LayouttedDiv>
+})
+
+const HTMLBackup = memo(function () {
+    const importHTML = async () => {
+        const text = await readFile({types: [HTML_TYPE]})
+        if(text !== undefined) {
+            const bm = analyseHTMLBookmarkFile(text)
+            console.log(bm)
+            analyseHTMLBookmarks(bm, {
+                keywordProperties: [],
+                directoryProperties: {}
+            })
+        }
+    }
+
+    return <LayouttedDiv mt={1}>
+        <Group>
+            <Button onClick={importHTML}><Icon icon="file-import" mr={2}/>从书签备份文件导入</Button>
+            <FormattedText color="secondary" size="small">从通用格式的浏览器书签导入，并生成为专有格式。</FormattedText>
+        </Group>
+    </LayouttedDiv>
 })
 
 const GroupListNew = memo(function ({ onSelect }: {onSelect?(): void}) {

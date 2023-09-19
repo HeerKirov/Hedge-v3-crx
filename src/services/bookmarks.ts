@@ -426,7 +426,7 @@ interface BackupStoredQuery {
     orderDirection: "asc" | "desc" | undefined
 }
 
-interface BackupBookmark {
+export interface BackupBookmark {
     name: string
     otherNames: string[]
     description: string
@@ -439,7 +439,7 @@ interface BackupBookmark {
     pages: BackupPage[]
 }
 
-interface BackupPage {
+export interface BackupPage {
     url: string
     title: string
     description: string | undefined
