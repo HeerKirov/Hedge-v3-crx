@@ -13,6 +13,28 @@ export function analyseHTMLBookmarkFile(html: string): HTMLBookmark[] {
     return []
 }
 
+/**
+ * 统计数量。
+ */
+export function getStatistics(htmlBookmark: HTMLBookmark[]): {bookmarkCount: number, dirCount: number} {
+    let bookmarkCount = 0, dirCount = 0
+
+    function search(htmlBookmark: HTMLBookmark[]) {
+        for(const bm of htmlBookmark) {
+            if(bm.type === "bookmark") {
+                bookmarkCount += 1
+            }else{
+                dirCount += 1
+                search(bm.children)
+            }
+        }
+    }
+
+    search(htmlBookmark)
+
+    return {bookmarkCount, dirCount}
+}
+
 function analyseDList(dl: HTMLDListElement): HTMLBookmark[] {
     const ret: HTMLBookmark[] = []
     for(const dt of dl.childNodes) {
@@ -52,10 +74,10 @@ function parseDateString(date: string | null): number | null {
 
 export type HTMLBookmark = HTMLBookmarkNode | HTMLBookmarkItem
 
-export interface HTMLBookmarkNode {
+export interface HTMLBookmarkNode<C extends HTMLBookmark = HTMLBookmark> {
     type: "node"
     name: string
-    children: HTMLBookmark[]
+    children: C[]
 }
 
 export interface HTMLBookmarkItem {

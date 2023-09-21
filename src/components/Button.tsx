@@ -2,7 +2,8 @@ import React, { ReactNode } from "react"
 import { css, styled } from "styled-components"
 import { IconProp } from "@fortawesome/fontawesome-svg-core"
 import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, FONT_SIZES, LIGHT_MODE_COLORS, MarginCSS, RADIUS_SIZES, SPACINGS, ThemeColors } from "@/styles"
-import { Icon, Separator } from "."
+import { Icon } from "./Icon"
+import { Separator } from "./Styled"
 
 interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
     mode?: "transparent" | "filled"
@@ -26,6 +27,12 @@ interface SeparatorButton extends React.HTMLAttributes<HTMLButtonElement> {
     onClick?: () => void
 }
 
+interface AnchorProps {
+    disabled?: boolean
+    onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void
+    children?: ReactNode
+}
+
 export function Button(props: ButtonProps) {
     const { mode, type, size, square, round, width, disabled, onClick, onContextMenu, children, ...attrs } = props
     return <StyledButton {...attrs} $mode={mode} $type={type} $size={size} $square={square} $round={round} $width={width} disabled={disabled} onClick={onClick} onContextMenu={onContextMenu}>
@@ -43,6 +50,11 @@ export function SeparatorButton(props: SeparatorButton) {
         </span>
         <Separator direction="horizontal"/>
     </StyledSeparatorButton>
+}
+
+export function Anchor(props: AnchorProps) {
+    const { onClick, disabled, children } = props
+    return <StyledAnchor $disabled={disabled} onClick={!disabled ? onClick : undefined}>{children}</StyledAnchor>
 }
 
 const StyledButton = styled.button<{
@@ -127,5 +139,14 @@ const StyledSeparatorButton = styled(Button)<{ $spacing: number, $margin?: numbe
         > svg {
             transform: translateY(1px);
         }
+    }
+`
+
+export const StyledAnchor = styled.a<{ $disabled?: boolean }>`
+    user-select: none;
+    cursor: ${p => p.$disabled ? "default" : "pointer"};
+    color: ${p => LIGHT_MODE_COLORS[p.$disabled ? "secondary" : "primary"]};
+    @media (prefers-color-scheme: dark) {
+        color: ${p => DARK_MODE_COLORS[p.$disabled ? "secondary" : "primary"]};
     }
 `

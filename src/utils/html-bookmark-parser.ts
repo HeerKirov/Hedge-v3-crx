@@ -1,25 +1,27 @@
-import { BackupBookmark } from "@/services/bookmarks"
-import { HTMLBookmark, HTMLBookmarkItem } from "@/utils/html-bookmark"
-import { dates, Result } from "@/utils/primitives"
+import { GroupModel } from "@/functions/database"
+import { BackupBookmark, BackupPage } from "@/services/bookmarks"
+import { HTMLBookmark } from "@/utils/html-bookmark"
+import { arrays, dates, numbers } from "@/utils/primitives"
 
 export interface AnalyseHTMLBookmarksOptions {
     directoryProperties: DirectoryProperty
     keywordProperties: KeywordProperty[]
+    allGroups: GroupModel[]
 }
 
-interface DirectoryProperty {
-    asBookmark?: boolean
+export interface DirectoryProperty {
+    asBookmark?: string
     groups?: [string, string][]
     score?: number
     exclude?: boolean
     children?: NamedDirectoryProperty[]
 }
 
-interface NamedDirectoryProperty extends DirectoryProperty {
+export interface NamedDirectoryProperty extends DirectoryProperty {
     name: string
 }
 
-interface KeywordProperty {
+export interface KeywordProperty {
     keyword: string
     groups?: [string, string][]
     score?: number
@@ -29,7 +31,7 @@ interface KeywordProperty {
 /**
  * 解析HTML书签，结合配置选项，将其转换至适合HedgeBookmark的书签。
  */
-export function analyseHTMLBookmarks(htmlBookmark: HTMLBookmark[], options: AnalyseHTMLBookmarksOptions): Result<BackupBookmark[], any> {
+export function analyseHTMLBookmarks(htmlBookmark: HTMLBookmark[], options: AnalyseHTMLBookmarksOptions): BackupBookmark[] {
     function processDirectory(items: HTMLBookmark[], property: DirectoryProperty, urls: Record<string, BookmarkMetadata> = {}): Record<string, BookmarkMetadata> {
         if(!property?.exclude) {
             for(const item of items) {
@@ -37,13 +39,26 @@ export function analyseHTMLBookmarks(htmlBookmark: HTMLBookmark[], options: Anal
                     const { plains, words } = splitTitleToKeywords(item.title)
                     const baseMetadata = generateBookmarkMetadata(plains, words)
                     const metadata = generateMetadataByProperty(baseMetadata, item.url, item.addDate, property, options.keywordProperties)
-                    //TODO 处理URL重复的问题
-                    urls[item.url] = metadata
+                    if(item.url in urls) {
+                        const existMetadata = urls[item.url]
+                        urls[item.url] = {
+                            names: arrays.distinct([...existMetadata.names, ...metadata.names]),
+                            url: metadata.url,
+                            score: existMetadata.score !== undefined && metadata.score !== undefined ? (existMetadata.score > metadata.score ? existMetadata.score : metadata.score) : (metadata.score ?? existMetadata.score),
+                            descriptions: arrays.distinct([...existMetadata.descriptions, ...metadata.descriptions]),
+                            keywords: arrays.distinct([...existMetadata.keywords, ...metadata.keywords]),
+                            groups: arrays.distinct([...existMetadata.groups, ...metadata.groups]),
+                            lastCollect: existMetadata.lastCollect !== undefined && metadata.lastCollect !== undefined ? `${existMetadata.lastCollect}, ${metadata.lastCollect}` : (metadata.lastCollect ?? existMetadata.lastCollect),
+                            lastCollectTime: existMetadata.lastCollectTime !== undefined && metadata.lastCollectTime !== undefined ? (dates.compareTo(existMetadata.lastCollectTime, metadata.lastCollectTime) > 0 ? existMetadata.lastCollectTime : metadata.lastCollectTime) : (metadata.lastCollectTime ?? existMetadata.lastCollectTime),
+                            createTime: existMetadata.createTime !== undefined && metadata.createTime !== undefined ? (dates.compareTo(existMetadata.createTime, metadata.createTime) > 0 ? existMetadata.createTime : metadata.createTime) : (metadata.createTime ?? existMetadata.createTime),
+                        }
+                    }else{
+                        urls[item.url] = metadata
+                    }
                 }else{
-                    //TODO asBookmark
                     const childProperty = property?.children?.find(p => p.name === item.name)
                     processDirectory(item.children, {
-                        asBookmark: property.asBookmark || (childProperty?.asBookmark ?? false),
+                        asBookmark: childProperty?.asBookmark ?? property.asBookmark,
                         groups: [...(property.groups ?? []), ...(childProperty?.groups ?? [])],
                         score: childProperty?.score ?? property.score,
                         exclude: childProperty?.exclude ?? false,
@@ -59,7 +74,7 @@ export function analyseHTMLBookmarks(htmlBookmark: HTMLBookmark[], options: Anal
         const ret: Record<string, string[]> = {}
         for(const bookmark of bookmarks) {
             for(const name of bookmark.names) {
-                if(name !== "Pixiv" && name !== "Book" && name !== "Books" && name !== "Sankaku") {
+                if(name !== "Pixiv" && name !== "Book" && name !== "Books" && name !== "Sankaku" && name !== "artist" && name !== "uncensored") {
                     const li = ret[name] ?? (ret[name] = [])
                     li.push(bookmark.url)
                 }
@@ -68,57 +83,98 @@ export function analyseHTMLBookmarks(htmlBookmark: HTMLBookmark[], options: Anal
         return ret
     }
 
-    function deDuplicate(nameToUrls: Record<string, string[]>): Record<string, string[]> {
+    function deDuplicate(urlToMetadata: Record<string, BookmarkMetadata>, nameToUrls: Record<string, string[]>): Record<string, string[]> {
         //该函数将保证每个url只会聚集到一个name。
-
-        const urlToNames: Record<string, string[]> = {}
-        Object.entries(nameToUrls).filter(([_, urls]) => urls.length > 1).forEach(([name, urls]) => {
-            //将name-url[]的映射反过来，构成url-names[]映射，不过在这过程中，只取url[]映射数量>1的name。
-            urls.forEach(url => {
-                const li = urlToNames[url] ?? (urlToNames[url] = [])
-                li.push(name)
-            })
-        })
-
-        const nameRedirects: Record<string, string> = {}
-        Object.entries(urlToNames).filter(([_, names]) => names.length > 1).forEach(([url, names]) => {
-            //从一组names中选出一个name作为主要name，然后将其他所有的name都重定向到它
-            names.slice(1).forEach(n => {
-                if(n !== names[0]) nameRedirects[n] = names[0]
-            })
-        })
+        //每个url对应多个name,这相当于每个url都加入了多个群组。现在，需要根据群组的连接性质，连接所有连通的群组。
+        //所以正确的算法其实是图的遍历算法。从第一个name节点出发，将url作为边访问所有连通的name，然后将一个连通分量作为一个群组。
 
         const ret: Record<string, string[]> = {}
-        Object.entries(nameToUrls).filter(([name, urls]) => {
-            const finalName = nameRedirects[name] ?? name
-            if(finalName in ret) {
-                const li = ret[finalName]
-                urls.forEach(url => { if(!li.includes(url)) li.push(url) })
-            }else{
-                ret[finalName] = [...urls]
+        const accessed: Set<string> = new Set()
+
+        for(const [name, urls] of Object.entries(nameToUrls)) {
+            if(!accessed.has(name)) {
+                accessed.add(name)
+
+                const currentNameGroup = [name]
+
+                const queue = [...urls]
+                while(queue.length > 0) {
+                    const url = queue.shift()!
+                    const namesOfURL = urlToMetadata[url].names
+                    for(const oneName of namesOfURL) {
+                        if(!accessed.has(oneName)) {
+                            accessed.add(oneName)
+                            const urls = nameToUrls[oneName]
+                            //urls确实有可能是undefined，因为有些name并没有加入nameToUrls，属于要被排除的部分
+                            if(urls !== undefined) {
+                                currentNameGroup.push(oneName)
+                                queue.push(...urls)
+                            }
+                        }
+                    }
+                }
+
+                //选取持有最多URL引用的name，作为此组的公共name
+                const nameWithMaxUrls = arrays.maxOf(currentNameGroup, n => nameToUrls[n].length)!
+                ret[nameWithMaxUrls] = arrays.distinct(currentNameGroup.flatMap(n => nameToUrls[n]))
             }
-        })
+        }
 
         return ret
     }
 
-    function generateBackupBookmarks(urlToMetadata: Record<string, BookmarkMetadata>, urlGroups: string[][]): BackupBookmark[] {
-        return urlGroups.map(urls => {
+    function generateBackupBookmarks(urlToMetadata: Record<string, BookmarkMetadata>, nameToUrls: Record<string, string[]>): BackupBookmark[] {
+        return Object.entries(nameToUrls).map(([primaryName, urls]) => {
             const metaList = urls.map(u => urlToMetadata[u])
 
-            //TODO
+            //所有page的names取并集作为bm的names，去掉primaryName后作为otherNames
+            const otherNames = arrays.distinct(metaList.flatMap(m => m.names).filter(n => n !== primaryName))
+
+            //所有page的keywords取并集作为bm的keywords
+            const keywords = arrays.distinct(metaList.flatMap(m => m.keywords))
+            //所有page的descriptions取交集合成bm的description
+            const descriptions = arrays.intersect(...metaList.map(m => m.descriptions))
+            //所有page的groups中，availableFor=bookmark的直接提取，both的则提取各个page的交集
+            const groupsForBookmark = metaList.flatMap(m => m.groups).filter(gi => options.allGroups.find(g => g.groupKeyPath === gi[0])?.availableFor === "bookmark")
+            const groupsForIntersect = arrays.intersectBy(metaList.map(m => m.groups.filter(gi => (options.allGroups.find(g => g.groupKeyPath === gi[0])?.availableFor ?? "both") === "both")), (a, b) => a[0] === b[0] && a[1] === b[1])
+            const groups = arrays.distinctBy([...groupsForBookmark, ...groupsForIntersect], (a, b) => a[0] === b[0] && a[1] === b[1])
+
+            //所有page的score取最高值作为bm的score
+            const score = arrays.maxBy(metaList.map(m => m.score), (a, b) => a !== undefined && b !== undefined ? numbers.compareTo(a, b) : a !== undefined ? 1 : -1)
+            //所有page的createTime取最小值作为bm的createTime
+            const createTime = arrays.minOf(metaList.map(m => m.createTime).filter(c => c !== undefined) as Date[], a => a.getTime()) ?? new Date()
+            //所有page的createTime取最大值作为bm的updateTime
+            const updateTime = arrays.maxOf(metaList.map(m => m.createTime).filter(c => c !== undefined) as Date[], a => a.getTime()) ?? new Date()
+            //lastCollectTime采取标准算法
+            const lastCollectTime = arrays.maxOf(metaList.map(m => m.lastCollectTime).filter(c => c !== undefined) as Date[], a => a.getTime())
+
+            const pages: BackupPage[] = metaList.map(m => {
+                //只取names中的第一项
+                const title = m.names.length > 0 ? m.names[0] : ""
+                //取交集之外的部分作为description
+                const description = m.descriptions.filter(i => !descriptions.includes(i)).join("\n")
+                //选取availableFor为page的部分，以及交集之外的部分作为groups
+                const pageGroups = m.groups.filter(([gn, gk]) => {
+                    const availableFor = (options.allGroups.find(g => g.groupKeyPath === gn)?.availableFor ?? "both")
+                    if(availableFor === "page") return true
+                    else if(availableFor === "bookmark") return false
+                    else return !groups.some(g => g[0] === gn && g[1] === gk)
+                })
+                return {
+                    url: m.url, title, description, groups: pageGroups,
+                    keywords: [], lastCollect: m.lastCollect,
+                    lastCollectTime: m.lastCollectTime?.toISOString(),
+                    createTime: (m.createTime ?? new Date()).toISOString(),
+                    updateTime: (m.createTime ?? new Date()).toISOString()
+                }
+            })
 
             return {
-                name: "",
-                otherNames: [],
-                keywords: [],
-                description: "",
-                score: undefined,
-                groups: [],
-                pages: [],
-                lastCollectTime: undefined,
-                createTime: "",
-                updateTime: "",
+                name: primaryName, otherNames, keywords, score, groups, pages,
+                description: descriptions.join("\n"),
+                lastCollectTime: lastCollectTime?.toISOString(),
+                createTime: createTime.toISOString(),
+                updateTime: updateTime.toISOString(),
             }
         })
     }
@@ -127,11 +183,26 @@ export function analyseHTMLBookmarks(htmlBookmark: HTMLBookmark[], options: Anal
 
     const nameToUrls = groupUrlByName(Object.values(urls))
 
-    const deDuplicatedNameToUrls = deDuplicate(nameToUrls)
+    const deDuplicatedNameToUrls = deDuplicate(urls, nameToUrls)
 
-    const value = generateBackupBookmarks(urls, Object.values(deDuplicatedNameToUrls))
+    return generateBackupBookmarks(urls, deDuplicatedNameToUrls)
+}
 
-    return {ok: true, value}
+/**
+ * 从HTML书签中提取出目录树结构，生成对应的DirectoryProperty结构。
+ */
+export function generateDirectoryProperty(htmlBookmark: HTMLBookmark[]): DirectoryProperty {
+    function search(htmlBookmark: HTMLBookmark[]) {
+        const ret: NamedDirectoryProperty[] = []
+        for(const bm of htmlBookmark) {
+            if(bm.type === "node") {
+                ret.push({name: bm.name, children: search(bm.children), exclude: bm.name === "回收站"})
+            }
+        }
+        return ret
+    }
+
+    return {children: search(htmlBookmark)}
 }
 
 /**
@@ -154,7 +225,10 @@ function generateMetadataByProperty(metadata: BookmarkBaseMetadata, url: string,
         }
     }
 
-    return {names: metadata.names, descriptions: metadata.descriptions, lastCollect: metadata.lastCollect, lastCollectTime: metadata.lastCollectTime, score, keywords, groups, createTime, url}
+    //当对目录勾选asBookmark时，会将该目录作为bookmark的单位，下属的所有页面都作为此bookmark的page。其实现方式是将该目录的name添加到下属的所有页面的names中。
+    const names = directoryProperty.asBookmark !== undefined ? arrays.distinct([...metadata.names, directoryProperty.asBookmark]) : metadata.names
+
+    return {names, descriptions: metadata.descriptions, lastCollect: metadata.lastCollect, lastCollectTime: metadata.lastCollectTime, score, keywords, groups, createTime, url}
 }
 
 /**
@@ -166,7 +240,16 @@ function generateMetadataByProperty(metadata: BookmarkBaseMetadata, url: string,
  */
 function generateBookmarkMetadata(plains: string[], words: [Brackets, string][]): BookmarkBaseMetadata {
     const names: string[] = []
-    plains.forEach(t => { if(!names.includes(t)) names.push(t) })
+    plains.forEach(t => {
+        const bracketMatched = t.match(/(?<T1>\S+?)[_\s]+\((?<T2>\S+)\)/)
+        if(bracketMatched && bracketMatched.groups) {
+            const t1 = bracketMatched.groups["T1"], t2 = bracketMatched.groups["T2"]
+            if(!names.includes(t1)) names.push(t1)
+            if(!names.includes(t2)) names.push(t2)
+        }else{
+            if(!names.includes(t)) names.push(t)
+        }
+    })
     words.filter(([b]) => b === "<>" || b === "「」").map(([, t]) => t).forEach(t => { if(!names.includes(t)) names.push(t) })
 
     const keywords: string[] = []
@@ -178,7 +261,7 @@ function generateBookmarkMetadata(plains: string[], words: [Brackets, string][])
     let lastCollect: string | undefined
     let lastCollectTime: Date | undefined
     words.filter(([b]) => b === "{}").map(([, t]) => t).forEach(t => {
-        const matchUpTo = t.match(/up\s+to\s+(?<UpTo>\S+)(\/(?<Date>\d+-|\/\d+-|\/\d+))?/)
+        const matchUpTo = t.match(/up\s+to\s+(?<UpTo>[^\s\/\-&]+)(\/(?<Date>[-\d\/]+))?/)
         if(matchUpTo && matchUpTo.groups) {
             const upTo = matchUpTo.groups["UpTo"]?.trim() || undefined
             const upToDate = matchUpTo.groups["Date"] ? dates.parseInLocalDate(matchUpTo.groups["Date"]) ?? undefined : undefined
@@ -191,7 +274,7 @@ function generateBookmarkMetadata(plains: string[], words: [Brackets, string][])
                 descriptions.push(`UPTO:${strings.join(" | ")}`)
             }
         }else{
-            const matchBkTo = t.match(/bk\s+to\s+(?<UpTo>.*)(\/(?<Date>.*))?/)
+            const matchBkTo = t.match(/bk\s+to\s+(?<UpTo>[^\s\/\-&]+)(\/(?<Date>[-\d\/]+))?/)
             if(matchBkTo && matchBkTo.groups) {
                 const upTo = matchBkTo.groups["UpTo"]?.trim() || undefined
                 const upToDate = matchBkTo.groups["Date"] ? dates.parseInLocalDate(matchBkTo.groups["Date"]) ?? undefined : undefined

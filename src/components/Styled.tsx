@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react"
+import React, { ForwardedRef, forwardRef, ReactNode } from "react"
 import { styled, css } from "styled-components"
 import { DARK_MODE_COLORS, ELEMENT_HEIGHTS, ElementHeights, FONT_SIZES, FontSizes, LIGHT_MODE_COLORS, ThemeColors, FunctionalColors, SPACINGS, RadiusSizes, RADIUS_SIZES, MarginCSS } from "@/styles"
 
@@ -58,7 +58,7 @@ export function FormattedText(props: FormattedTextProps) {
     >{children}</StyledFormattedText>
 }
 
-export function LayouttedDiv(props: LayouttedDivProps) {
+export const LayouttedDiv = forwardRef(function (props: LayouttedDivProps, ref: ForwardedRef<HTMLDivElement>) {
     const {
         backgroundColor, color, display, radius, border, borderColor, float, whiteSpace,
         bold, size, lineHeight, elementHeight, textAlign, userSelect, monospace, position,
@@ -66,16 +66,16 @@ export function LayouttedDiv(props: LayouttedDivProps) {
         children, ...attrs
     } = props
 
-    return <StyledLayouttedDiv {...attrs}
-        $backgroundColor={backgroundColor} $display={display} $position={position}
-        $radius={radius} $border={border} $borderColor={borderColor}
-        $bold={bold} $color={color} $size={size}  $textAlign={textAlign} $float={float} $whiteSpace={whiteSpace}
-        $lineHeight={lineHeight} $elementHeight={elementHeight} $userSelect={userSelect} $monospace={monospace}
-        $margin={margin} $padding={padding} 
-        $mr={mr} $ml={ml} $mt={mt} $mb={mb} 
-        $pt={pt} $pb={pb} $pl={pl} $pr={pr}
+    return <StyledLayouttedDiv {...attrs} ref={ref}
+                               $backgroundColor={backgroundColor} $display={display} $position={position}
+                               $radius={radius} $border={border} $borderColor={borderColor}
+                               $bold={bold} $color={color} $size={size}  $textAlign={textAlign} $float={float} $whiteSpace={whiteSpace}
+                               $lineHeight={lineHeight} $elementHeight={elementHeight} $userSelect={userSelect} $monospace={monospace}
+                               $margin={margin} $padding={padding}
+                               $mr={mr} $ml={ml} $mt={mt} $mb={mb}
+                               $pt={pt} $pb={pb} $pl={pl} $pr={pr}
     >{children}</StyledLayouttedDiv>
-}
+})
 
 export function Separator(props: SeparatorProps & React.HTMLAttributes<HTMLDivElement>) {
     const { direction, spacing, ...attrs } = props

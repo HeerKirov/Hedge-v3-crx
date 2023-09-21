@@ -300,10 +300,14 @@ export const backups = {
         const backup: Backup = {groups, storedQueries, bookmarks}
         return JSON.stringify(backup)
     },
-    async import(backup: string): Promise<Result<undefined, any>> {
+    async import(backup: string | Backup): Promise<Result<undefined, any>> {
         let json: Backup
-        try { json = JSON.parse(backup) }catch(e) {
-            return {ok: false, err: e}
+        if(typeof backup === "string") {
+            try { json = JSON.parse(backup) }catch(e) {
+                return {ok: false, err: e}
+            }
+        }else{
+            json = backup
         }
 
         const t = await databases.transaction(["bookmark", "pageReference", "group", "query"], "readwrite")

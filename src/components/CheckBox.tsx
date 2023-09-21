@@ -46,7 +46,6 @@ export function RadioGroup<T>(props: RadioGroupProps<T>) {
 const StyledCheckBoxLabel = styled.label<{ $disabled: boolean }>`
     cursor: ${p => p.$disabled ? "default" : "pointer"};
     display: inline-block;
-    line-height: 1;
     position: relative;
     input[type=checkbox], input[type=radio] {
         cursor: ${p => p.$disabled ? "default" : "pointer"};

@@ -46,18 +46,21 @@ export function useShortcut(shortcut: string, callback: (e: KeyboardEvent) => vo
     }, [callback])
 }
 
-export function useOutsideClick(ref: React.RefObject<HTMLElement | null>, event: (e: MouseEvent) => void) {
+export function useOutsideClick(ref: React.RefObject<HTMLElement | null>, event: (e: MouseEvent) => void, active?: boolean) {
     useEffect(() => {
-        const clickDocument = (e: MouseEvent) => {
-            const target = e.target
-            if(ref.current && !(ref.current === target || ref.current.contains(target as Node))) {
-                event(e)
+        if(active) {
+            const clickDocument = (e: MouseEvent) => {
+                const target = e.target
+                if(ref.current && !(ref.current === target || ref.current.contains(target as Node))) {
+                    event(e)
+                }
             }
+
+            //需要从上至下查阅事件。一般的冒泡事件顺序可能导致DOM结构已经变化，将点击元素移出当前区域，造成误判
+            document.addEventListener("click", clickDocument, true)
+
+            return () => document.removeEventListener("click", clickDocument, true)
         }
-
-        document.addEventListener("click", clickDocument)
-
-        return () => document.removeEventListener("click", clickDocument)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [event])
+    }, [event, active])
 }

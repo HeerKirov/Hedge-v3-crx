@@ -1,7 +1,7 @@
 import { memo, useMemo } from "react"
 import { styled } from "styled-components"
 import { GroupModel } from "@/functions/database"
-import { FormattedText, LayouttedDiv, WrappedText } from "."
+import { FormattedText, LayouttedDiv, WrappedText } from "./Styled"
 
 interface GroupTagProps {
     item: [string, string]

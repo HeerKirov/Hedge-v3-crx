@@ -1,17 +1,8 @@
-import React, {
-    ForwardedRef,
-    forwardRef,
-    memo,
-    ReactNode,
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState
-} from "react"
+import React, { ForwardedRef, forwardRef, memo, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { styled, css } from "styled-components"
 import { useWatch } from "@/utils/reactivity"
-import { Input, LayouttedDiv } from "."
+import { Input } from "./Input"
+import { LayouttedDiv } from "./Styled"
 import { useOutsideClick } from "@/utils/sensors"
 
 interface SearchListProps<T> {

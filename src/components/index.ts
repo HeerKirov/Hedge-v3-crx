@@ -1,5 +1,5 @@
 export { CheckBox, Radio, RadioGroup } from "./CheckBox"
-export { Button, SeparatorButton } from "./Button"
+export { Button, SeparatorButton, Anchor } from "./Button"
 export { Input, DateInput } from "./Input"
 export { SearchList } from "./SearchList"
 export { Select } from "./Select"

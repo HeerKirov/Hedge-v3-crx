@@ -20,9 +20,9 @@ export const strings = {
 
 export const dates = {
     parseInLocalDate(str: string): Date | null {
-        const matched = str.match(/(\d+)-|\/(\d+)-|\/(\d+)/)
+        const matched = str.match(/(\d+)[-\/](\d+)[-\/](\d+)/)
         if(matched) {
-            const d = new Date(parseInt(matched[1]), parseInt(matched[2]), parseInt(matched[3]))
+            const d = new Date(parseInt(matched[1]), parseInt(matched[2]) - 1, parseInt(matched[3]))
             if(isNaN(d.getTime())) {
                 return null
             }else{
@@ -35,6 +35,9 @@ export const dates = {
     toFormatDate(date: Date): string {
         function fmt(n: number) { return n > 0 ? n : `0${n}`}
         return `${date.getFullYear()}-${fmt(date.getMonth() + 1)}-${fmt(date.getDate())}`
+    },
+    compareTo(a: Date, b: Date): -1 | 0 | 1 {
+        return numbers.compareTo(a.getTime(), b.getTime())
     }
 }
 
@@ -58,6 +61,85 @@ export const arrays = {
             }
         }
         return ret
+    },
+    distinct<T>(arr: T[]): T[] {
+        const ret: T[] = []
+        for(const item of arr) {
+            if(!ret.includes(item)) {
+                ret.push(item)
+            }
+        }
+        return ret
+    },
+    maxBy<T>(arr: T[], compare: (a: T, b: T) => number): T | undefined {
+        if(arr.length <= 0) {
+            return undefined
+        }
+        let max: T | undefined
+        for(const n of arr) {
+            if(max === undefined || compare(n, max) > 0) {
+                max = n
+            }
+        }
+        return max
+    },
+    maxOf<T>(arr: T[], valueOf: (a: T) => number): T | undefined {
+        if(arr.length <= 0) {
+            return undefined
+        }
+        let max: T | undefined
+        let maxValue: number | undefined
+        for(const n of arr) {
+            const value = valueOf(n)
+            if(maxValue === undefined || value > maxValue) {
+                max = n
+                maxValue = value
+            }
+        }
+        return max
+    },
+    max(arr: number[]): number | undefined {
+        if(arr.length <= 0) {
+            return undefined
+        }
+        let max: number | undefined
+        for(const n of arr) {
+            if(max === undefined || n > max) max = n
+        }
+        return max
+    },
+    minOf<T>(arr: T[], valueOf: (a: T) => number): T | undefined {
+        if(arr.length <= 0) {
+            return undefined
+        }
+        let min: T | undefined
+        let minValue: number | undefined
+        for(const n of arr) {
+            const value = valueOf(n)
+            if(minValue === undefined || value < minValue) {
+                min = n
+                minValue = value
+            }
+        }
+        return min
+    },
+    intersect<T>(...arr: T[][]): T[] {
+        if(arr.length <= 0) return []
+        let [first, ...then] = arr
+        for(const set of then) {
+            if(first.length <= 0) return []
+            first = first.filter(i => set.includes(i))
+        }
+        return first
+    },
+    intersectBy<T>(arr: T[][], eq: (a: T, b: T) => boolean): T[] {
+        if(arr.length <= 0) return []
+        let [first, ...then] = arr
+        for(const set of then) {
+            if(first.length <= 0) return []
+            first = first.filter(i => set.some(j => eq(i, j)))
+        }
+        return first
     }
 }
 

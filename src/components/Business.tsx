@@ -2,7 +2,10 @@ import React, { memo, useCallback, useMemo, useState } from "react"
 import { css, styled } from "styled-components"
 import { GroupModel } from "@/functions/database"
 import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, SPACINGS } from "@/styles"
-import { DateInput, DraggableEditList, FormattedText, Icon, Input, LayouttedDiv } from "."
+import { DateInput, Input } from "./Input"
+import { DraggableEditList } from "./Data"
+import { FormattedText, LayouttedDiv } from "./Styled"
+import { Icon } from "./Icon"
 
 interface DynamicInputListProps {
     values?: string[]
@@ -31,7 +34,7 @@ interface GroupPickerProps {
     groups?: [string, string][]
     onUpdateGroups?(groups: [string, string][]): void
     allGroups: GroupModel[]
-    mode: "page" | "bookmark"
+    mode: "page" | "bookmark" | "both"
 }
 
 interface CollectTimePickerProps {
