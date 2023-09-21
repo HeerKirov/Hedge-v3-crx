@@ -42,56 +42,54 @@ function loadActiveTabInfo(setting: Setting) {
 /**
  * 功能：评论区屏蔽机制。
  * 在给出banList时，将对评论区包含这些屏蔽字的评论进行屏蔽。
- * 在开启forbidden时，将按照一定的规则展开整体屏蔽。主要是用来针对CN用户的。
+ * 在开启forbidden时，将开展更多屏蔽规则，包括：
+ * - 屏蔽Vote过低的评论；
+ * - 存在Vote过低的评论/至少2条banList中的评论，且同时存在至少2条Vote较高的评论，且这些评论都包含中文时，屏蔽评论区的所有中文评论
  */
 function enableCommentFilter(forbidden: boolean, banList: string[]) {
-    const chineseRegex = /.*[\u4e00-\u9fa5]+.*$/
+    const divs = document.querySelectorAll<HTMLDivElement>("div#cdiv > div.c1")
 
-    function anyBanned(text: string): boolean {
-        return banList.some(b => text.includes(b))
+    const chinese: boolean[] = []
+    const lowVote: boolean[] = []
+    const highVote: boolean[] = []
+    const banned: boolean[] = []
+
+    for(let i = 0; i < divs.length; ++i) {
+        const div = divs[i]
+        if(div.querySelector("a[name=ulcomment]")) continue
+
+        const c5 = div.querySelector<HTMLSpanElement>("div.c5 > span")
+        if(c5?.textContent) {
+            const vote = parseInt(c5.textContent)
+            //低Vote评论
+            if(vote <= -20) lowVote[i] = true
+            //高Vote评论
+            if(vote >= 20) highVote[i] = true
+        }
+        const c6 = div.querySelector<HTMLDivElement>("div.c6")
+        if(c6?.textContent) {
+            //中文评论
+            if(/.*[\u4e00-\u9fa5]+.*$/.test(c6.textContent)) chinese[i] = true
+            //包含被ban的关键词
+            if(banList.some(b => c6.textContent!.includes(b))) banned[i] = true
+        }
     }
-    
-    const divs = document.querySelectorAll("div#cdiv > div.c1")
-    if(forbidden) {
-        const chineseUser = []
-        const lowScore = []
-        const banned = []
-    
-        for(let i = 0; i < divs.length; ++i) {
-            const div = divs[i]
-            if(div.querySelector("a[name=ulcomment]")) continue
 
-            const c5 = div.querySelector("div.c5 > span")
-            if(c5?.textContent && parseInt(c5.textContent) < -10) {
-                lowScore.push(i)
+    const forbiddenAnyChinese = (lowVote.some((_, i) => chinese[i]) || banned.filter((_, i) => chinese[i]).length >= 2) && (highVote.filter((_, i) => chinese[i]).length >= 2)
+
+    for(let i = 0; i < divs.length; ++i) {
+        const div = divs[i]
+        if(banned[i] || lowVote[i]) {
+            const c6 = div.querySelector<HTMLDivElement>("div.c6")
+            if(c6) {
+                c6.style.color = "black"
+                c6.style.backgroundColor = "black"
             }
-            const c6 = div.querySelector("div.c6")
-            if(c6?.textContent) {
-                if(chineseRegex.test(c6.textContent)) {
-                    chineseUser.push(i)
-                }
-                if(anyBanned(c6.textContent)) {
-                    banned.push(i)
-                }
-            }
-        }
-        //当: 评论区出现任意一条屏蔽词时；
-        //  或评论区出现至少一条低分评论，且CN评论多于2时,
-        //  都会对所有的评论展开屏蔽。
-        if((chineseUser.length >= 2 && lowScore.length >= 1) || banned.length >= 1) {
-            const list = [...new Set([...chineseUser, ...lowScore, ...banned]).values()]
-            for(const idx of list) {
-                const div = divs[idx]
-                const c6 = div.querySelector("div.c6")!
-                c6.textContent = "<FORBIDDEN>"
-            }
-        }
-    }else{
-        for(const div of divs) {
-            if(div.querySelector("a[name=ulcomment]")) continue
-            const c6 = div.querySelector("div.c6")
-            if(c6?.textContent && anyBanned(c6.textContent)) {
-                c6.textContent = "<BANNED>"
+        }else if(forbiddenAnyChinese && chinese[i]) {
+            const c6 = div.querySelector<HTMLDivElement>("div.c6")
+            if(c6) {
+                c6.style.color = "grey"
+                c6.style.backgroundColor = "grey"
             }
         }
     }

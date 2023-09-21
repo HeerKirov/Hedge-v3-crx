@@ -39,7 +39,7 @@ export type ContentScriptCallbackTypes = Extract<ContentScriptMessagesList, MsgT
 
 export type ServiceSenderMessagesList = Test | ReportSourceData | ReportSourceDataPath
 
-export type ContentScriptMessagesList = SetActiveTabBadge
+export type ContentScriptMessagesList = SetActiveTabBadge | DownloadURL
 
 //== service worker发送至content script的消息类型定义 ==
 
@@ -53,3 +53,4 @@ type ReportSourceDataPath = MsgTemplateWithCallback<"REPORT_SOURCE_DATA_PATH", u
 
 type SetActiveTabBadge = MsgTemplate<"SET_ACTIVE_TAB_BADGE", {path: SourceDataPath}>
 
+type DownloadURL = MsgTemplate<"DOWNLOAD_URL", {url: string, referrer: string}>

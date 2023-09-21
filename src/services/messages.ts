@@ -21,6 +21,11 @@ function onMessage<T extends ContentScriptMessagesList>(msg: T, sender: chrome.r
         if(sender.tab?.id) {
             setActiveTabBadge(sender.tab.id, msg.msg.path).finally()
         }
+    }else if(msg.type === "DOWNLOAD_URL") {
+        chrome.downloads.download({
+            url: msg.msg.url,
+            headers: [{name: "Referrer", value: msg.msg.referrer}]
+        })
     }
     return false
 }

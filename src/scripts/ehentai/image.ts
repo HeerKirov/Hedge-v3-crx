@@ -10,6 +10,7 @@ settings.get().then(setting => {
 document.addEventListener("DOMContentLoaded", () => {
     console.log("[Hedge v3 Helper] ehentai/image script loaded.")
     loadGalleryPageHash()
+    enableImageDownloadAnchor()
 })
 
 chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callback }) => {
@@ -42,6 +43,39 @@ function loadGalleryPageHash() {
         const gid = res.groups["GID"]
         const page = res.groups["PAGE"]
         sessions.reflect.ehentaiGalleryImageHash.set({gid, page}, {imageHash})
+    }
+}
+
+/**
+ * 功能：添加图片下载链接。
+ * 有些图像没有最下方的图像下载链接，因为加载的图像就是它们的原图像。为保持操作统一，添加了一个下载链接，用扩展API实现其下载操作。
+ */
+function enableImageDownloadAnchor() {
+    const i7 = document.querySelector("#i7")
+    if(!i7) {
+        console.warn("[enableImageDownloadAnchor] Cannot find div#i7.")
+        return
+    }
+
+    if(!i7.querySelector("a")) {
+        const img = document.querySelector<HTMLImageElement>("#img")
+        if(!img) {
+            console.warn("[enableImageDownloadAnchor] Cannot find #img.")
+            return
+        }
+
+        const i = document.createElement("img")
+        i.src = "https://ehgt.org/g/mr.gif"
+        i.className = "mr"
+
+        const anchor = document.createElement("a")
+        anchor.textContent = "(Download original from img link)"
+        anchor.style.cursor = "pointer"
+        anchor.onclick = () => sendMessage("DOWNLOAD_URL", {url: img.src, referrer: document.URL})
+
+        i7.appendChild(i)
+        i7.appendChild(document.createTextNode(" "))
+        i7.appendChild(anchor)
     }
 }
 

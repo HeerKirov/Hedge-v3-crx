@@ -220,6 +220,10 @@ const DOWNLOAD_RENAME_RULES: Readonly<MatchRule[]> = [
         processor: "ehentai-save-image"
     },
     {
+        siteName: "ehentai",
+        referrer: /https:\/\/e-hentai.org\/s\/(?<PHASH>[a-zA-Z0-9]+)\/(?<GID>\d+)-(?<PAGE>\d+)/
+    },
+    {
         siteName: "pixiv",
         referrer: /https:\/\/www.pixiv.net\/$/,
         filename: /(?<PID>\d+)_p(?<PAGE>\d+)/

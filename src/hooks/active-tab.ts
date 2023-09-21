@@ -221,7 +221,6 @@ export function useTabBookmarkState() {
 
 /**
  * 根据页面标题，得出一个建议搜索或使用的书签名。
- * TODO 需要测试各个站点下的命名建议是否正确
  */
 export async function getSuggestedBookmarkNameByTab(tabId: number): Promise<string | null> {
     const tab = await chrome.tabs.get(tabId)
