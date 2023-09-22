@@ -63,14 +63,12 @@ export const SearchList = memo(forwardRef(function<T>(props: SearchListProps<T>,
     }, [text, props.query])
 
     const clearQuery = useCallback(() => {
-        console.log("clearQuery")
         if(queryTimer.current !== undefined) clearTimeout(queryTimer.current)
         setItems(undefined)
         setSelectedIndex(null)
     }, [])
 
     const select = useCallback((item: T) => {
-        console.log("select", item)
         props.onUpdateValue?.(item, text.trim())
         clearQuery()
     // eslint-disable-next-line react-hooks/exhaustive-deps

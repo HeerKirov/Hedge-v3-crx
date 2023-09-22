@@ -29,7 +29,12 @@ export const sessions = {
          * 最近收集的source data identity。
          * 在downloaded created时被用于节流，避免重复下载同一个identity的来源数据。
          */
-        sourceDataCollected: createSetEndpoint<{site: string, sourceId: number}>("session", "cache/source-data/collected", p => `${p.site}-${p.sourceId}`)
+        sourceDataCollected: createSetEndpoint<{site: string, sourceId: number}>("session", "cache/source-data/collected", p => `${p.site}-${p.sourceId}`),
+        /**
+         * 最近手动下载的文件的一些附加信息。
+         * 这些附加信息在手动下载时被写入，并在determining过程中被提取出来，代替从下载项获得的信息来使用。
+         */
+        downloadItemInfo: createDictEndpoint<number, {url: string, referrer: string}>("session", "cache/download/info", p => p.toString())
     }
 }
 

@@ -3,20 +3,27 @@ import { sessions } from "@/functions/storage"
 import { DOWNLOAD_EXTENSIONS, DOWNLOAD_RENAME_SITES } from "@/functions/sites"
 import { collectSourceData } from "@/services/source-data"
 
+export async function downloadURL(options: {url: string, referrer?: string}) {
+    const downloadId = await chrome.downloads.download({url: options.url})
+    await sessions.cache.downloadItemInfo.set(downloadId, {url: options.url, referrer: options.referrer ?? ""})
+}
+
 /**
  * 功能：文件下载重命名建议模块。
  * 按照既定的规则解析某些来源的下载，然后给出建议的重命名。
  */
 export function determiningFilename(downloadItem: chrome.downloads.DownloadItem, suggest: (suggestion?: chrome.downloads.DownloadFilenameSuggestion) => void): boolean | void {
-    const { filename, url, referrer } = downloadItem
-    const [ filenameWithoutExt, extension ] = splitNameAndExtension(filename)
+    const [ filenameWithoutExt, extension ] = splitNameAndExtension(downloadItem.filename)
 
     settings.get().then(async setting => {
         if(!extension || !getFinalExtensions(setting).includes(extension)) {
             suggest()
             return
         }
-    
+
+        const info = await sessions.cache.downloadItemInfo.get(downloadItem.id)
+        const { referrer, url } = info ?? downloadItem
+
         const result = matchRulesAndArgs(referrer, url, filenameWithoutExt, setting)
         if(result === null) {
             suggest()

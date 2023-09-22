@@ -4,15 +4,13 @@ import { Setting, settings } from "@/functions/setting"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
 import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { Result } from "@/utils/primitives"
+import { onDOMContentLoaded } from "@/utils/document"
 
-settings.get().then(setting => {
-    loadActiveTabInfo(setting)
-})
-
-document.addEventListener("DOMContentLoaded", async () => {
+onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] ehentai/gallery script loaded.")
     const setting = await settings.get()
-    if(setting.tool.ehentai.enableCommentForbidden || setting.tool.ehentai.enableCommentBanned) enableCommentFilter(setting.tool.ehentai.enableCommentForbidden, setting.tool.ehentai.enableCommentBanned ? setting.tool.ehentai.commentBannedList : []) 
+    loadActiveTabInfo(setting)
+    if(setting.tool.ehentai.enableCommentForbidden || setting.tool.ehentai.enableCommentBanned) enableCommentFilter(setting.tool.ehentai.enableCommentForbidden, setting.tool.ehentai.enableCommentBanned ? setting.tool.ehentai.commentBannedList : [])
 })
 
 chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callback }) => {

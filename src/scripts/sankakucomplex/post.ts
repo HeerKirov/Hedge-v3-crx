@@ -5,14 +5,13 @@ import { sessions } from "@/functions/storage"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
 import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { Result } from "@/utils/primitives"
+import { onDOMContentLoaded } from "@/utils/document"
 
-settings.get().then(setting => {
-    loadActiveTabInfo(setting)
-})
-document.addEventListener("DOMContentLoaded", async () => {
+onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] sankakucomplex/post script loaded.")
     const pid = loadPostMD5()
     const setting = await settings.get()
+    loadActiveTabInfo(setting)
     if(setting.tool.sankakucomplex.enableAddPostId) enableAddPostId(pid)
     if(setting.tool.sankakucomplex.enableBookEnhancement) enableBookEnhancement()
     if(setting.tool.sankakucomplex.enableImageLinkReplacement) enableImageLinkReplacement()

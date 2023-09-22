@@ -1,4 +1,5 @@
+import { onDOMContentLoaded } from "@/utils/document"
 
-document.addEventListener("DOMContentLoaded", () => {
+onDOMContentLoaded(() => {
     console.log("[Hedge v3 Helper] fanbox/post script loaded.")
 })

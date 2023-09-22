@@ -3,13 +3,12 @@ import { SourceDataUpdateForm, SourceTagForm } from "@/functions/server/api-sour
 import { Setting, settings } from "@/functions/setting"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
 import { Result } from "@/utils/primitives"
+import { onDOMContentLoaded } from "@/utils/document"
 
-settings.get().then(setting => {
-    loadActiveTabInfo(setting)
-})
-
-document.addEventListener("DOMContentLoaded", () => {
+onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] pixiv/artworks script loaded.")
+    const setting = await settings.get()
+    loadActiveTabInfo(setting)
 })
 
 chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callback }) => {

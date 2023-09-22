@@ -2,14 +2,14 @@ import { SourceDataPath } from "@/functions/server/api-all"
 import { Setting, settings } from "@/functions/setting"
 import { sessions } from "@/functions/storage"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
+import { onDOMContentLoaded } from "@/utils/document"
 
-settings.get().then(setting => {
-    loadActiveTabInfo(setting)
-})
-
-document.addEventListener("DOMContentLoaded", () => {
+onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] ehentai/image script loaded.")
+    const setting = await settings.get()
+    loadActiveTabInfo(setting)
     loadGalleryPageHash()
+    //TODO 加选项
     enableImageDownloadAnchor()
 })
 

@@ -1,6 +1,7 @@
 import { settings } from "@/functions/setting"
+import { onDOMContentLoaded } from "@/utils/document"
 
-document.addEventListener("DOMContentLoaded", async () => {
+onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] sankakucomplex/global script loaded.")
     const setting = await settings.get()
     if(setting.tool.sankakucomplex.enableShortcutForbidden) enableShortcutForbidden()
