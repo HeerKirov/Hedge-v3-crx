@@ -4,6 +4,7 @@ import { onDOMContentLoaded } from "@/utils/document"
 onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] sankakucomplex/global script loaded.")
     const setting = await settings.get()
+    if(setting.tool.sankakucomplex.enableBlockAds) enableBlockAds()
     if(setting.tool.sankakucomplex.enableShortcutForbidden) enableShortcutForbidden()
     if(setting.tool.sankakucomplex.enablePaginationEnhancement) enablePaginationEnhancement()
     if(setting.tool.sankakucomplex.enableTagListEnhancement) enableTagListEnhancement()
@@ -22,6 +23,21 @@ function enableShortcutForbidden() {
             e.stopImmediatePropagation()
         }
     }, true)
+}
+
+/**
+ * 功能：屏蔽部分广告和弹窗。
+ */
+function enableBlockAds() {
+    const contentDiv = document.querySelector("#content")
+    if(contentDiv) {
+        for(let i = contentDiv.children.length - 1; i >= contentDiv.children.length - 3; --i) {
+            const child = contentDiv.children[i]
+            if(child.nodeName === "DIV" && [...child.attributes].map(k => k.name.length).some(k => k === 7)) {
+                (child as HTMLDivElement).style.visibility = "hidden"
+            }
+        }
+    }
 }
 
 /**

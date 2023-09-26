@@ -9,8 +9,7 @@ onDOMContentLoaded(async () => {
     const setting = await settings.get()
     loadActiveTabInfo(setting)
     loadGalleryPageHash()
-    //TODO 加选项
-    enableImageDownloadAnchor()
+    if(setting.tool.ehentai.enableImageDownloadAnchor) enableImageDownloadAnchor()
 })
 
 chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callback }) => {

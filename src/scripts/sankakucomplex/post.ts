@@ -13,7 +13,7 @@ onDOMContentLoaded(async () => {
     const setting = await settings.get()
     loadActiveTabInfo(setting)
     if(setting.tool.sankakucomplex.enableAddPostId) enableAddPostId(pid)
-    if(setting.tool.sankakucomplex.enableBookEnhancement) enableBookEnhancement()
+    if(setting.tool.sankakucomplex.enableBookNoticeEnhancement) enableBookEnhancement()
     if(setting.tool.sankakucomplex.enableImageLinkReplacement) enableImageLinkReplacement()
 })
 

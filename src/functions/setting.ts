@@ -50,7 +50,7 @@ interface Tool {
         /**
          * 增强pool列表。
          */
-        enableBookEnhancement: boolean
+        enableBookNoticeEnhancement: boolean
         /**
          * 替换图像链接。
          */
@@ -58,24 +58,29 @@ interface Tool {
         /**
          * 在URL添加PID标识。
          */
-        enableAddPostId: boolean
+        enableAddPostId: boolean,
+        /**
+         * 屏蔽广告和烦人的窗口。
+         */
+        enableBlockAds: boolean
     }
     /**
      * ehentai的扩展工具。
      */
     ehentai: {
+        enableImageDownloadAnchor: boolean
         /**
          * 启用评论区智能屏蔽机制。
          */
-        enableCommentForbidden: boolean
+        enableCommentBlock: boolean
         /**
          * 启用评论区关键字屏蔽。
          */
-        enableCommentBanned: boolean
+        enableCommentKeywordBlock: boolean
         /**
          * 评论区屏蔽关键字列表。
          */
-        commentBannedList: string[]
+        commentBlockKeywords: string[]
     }
 }
 
@@ -154,7 +159,7 @@ interface SourceData {
     }
 }
 
-function defaultSetting(): Setting {
+export function defaultSetting(): Setting {
     return {
         version,
         server: {
@@ -166,14 +171,16 @@ function defaultSetting(): Setting {
                 enableShortcutForbidden: true,
                 enableTagListEnhancement: true,
                 enablePaginationEnhancement: true,
-                enableBookEnhancement: true,
+                enableBookNoticeEnhancement: true,
                 enableImageLinkReplacement: true,
-                enableAddPostId: true
+                enableAddPostId: true,
+                enableBlockAds: true
             },
             ehentai: {
-                enableCommentForbidden: true,
-                enableCommentBanned: true,
-                commentBannedList: []
+                enableImageDownloadAnchor: true,
+                enableCommentBlock: true,
+                enableCommentKeywordBlock: true,
+                commentBlockKeywords: []
             }
         },
         download: {

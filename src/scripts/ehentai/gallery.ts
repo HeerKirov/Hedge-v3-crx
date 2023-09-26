@@ -10,7 +10,7 @@ onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] ehentai/gallery script loaded.")
     const setting = await settings.get()
     loadActiveTabInfo(setting)
-    if(setting.tool.ehentai.enableCommentForbidden || setting.tool.ehentai.enableCommentBanned) enableCommentFilter(setting.tool.ehentai.enableCommentForbidden, setting.tool.ehentai.enableCommentBanned ? setting.tool.ehentai.commentBannedList : [])
+    if(setting.tool.ehentai.enableCommentBlock || setting.tool.ehentai.enableCommentKeywordBlock) enableCommentFilter(setting.tool.ehentai.enableCommentBlock, setting.tool.ehentai.enableCommentKeywordBlock ? setting.tool.ehentai.commentBlockKeywords : [])
 })
 
 chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callback }) => {
