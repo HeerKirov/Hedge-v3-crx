@@ -63,7 +63,7 @@ export function useTabSourceInfo() {
         if(sourceInfo !== null && sourceInfo.sourceDataPath !== null) {
             const setting = await settings.get()
             const { siteName, sourceDataPath: { sourceId } } = sourceInfo
-            const ok = await collectSourceData({siteName, sourceId, setting, skipCheckingCache: true})
+            const ok = await collectSourceData({siteName, sourceId, setting})
             if(ok) refreshCollectStatus(sourceInfo).finally()
         }
     }

@@ -8,7 +8,6 @@ import { NOTIFICATIONS } from "@/services/notification"
 type CollectSourceDataOptions = ({sourceId: number, args?: undefined} | {args: Record<string, string>, sourceId?: undefined}) & {
     siteName: string
     setting: Setting
-    skipCheckingCache?: boolean
     autoCollect?: boolean
 }
 
@@ -51,7 +50,7 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
         }
     }
 
-    if(!options.skipCheckingCache) {
+    if(options.autoCollect) {
         if(await sessions.cache.sourceDataCollected.get({site: sourceSite, sourceId})) {
             console.log(`[collectSourceData] ${sourceSite}-${sourceId} cached, skip.`)
             //该条数据近期被保存过，因此跳过
@@ -91,7 +90,7 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
                 iconUrl: "/public/favicon.png",
                 title: "核心服务连接失败",
                 message: "未能成功连接到核心服务。",
-                buttons: options.autoCollect ? [{title: "暂时关闭自动收集"}] : undefined
+                buttons: [{title: "暂时关闭自动收集"}]
             })
             console.error(`[collectSourceData] Connect error: ${retrieve.exception}`)
             return false
@@ -154,10 +153,46 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
             console.error(`[collectSourceData] Connect error: ${res.exception}`)
         }
         return false
+    }else if(res.data.failed > 0) {
+        for(const e of res.data.errors) {
+            const [type, info] = e.error.info
+            if(type === "site") {
+                chrome.notifications.create({
+                    type: "basic",
+                    iconUrl: "/public/favicon.png",
+                    title: "来源数据写入失败",
+                    message: `来源站点${info}不存在，因此写入被拒绝。请在Hedge中创建此站点。`
+                })
+            }else if(type === "additionalInfo") {
+                chrome.notifications.create({
+                    type: "basic",
+                    iconUrl: "/public/favicon.png",
+                    title: "来源数据写入失败",
+                    message: `来源附加信息字段${info}不存在，因此写入被拒绝。请在Hedge中为站点添加此字段。`
+                })
+            }else if(type === "sourceTagType") {
+                chrome.notifications.create({
+                    type: "basic",
+                    iconUrl: "/public/favicon.png",
+                    title: "来源数据写入失败",
+                    message: `标签类型${info.join("、")}未注册，因此写入被拒绝。请在Hedge中为站点添加这些标签类型。`
+                })
+            }
+        }
+        console.error(`[collectSourceData] Source data ${sourceSite}-${sourceId} upload failed: ${res.data.errors.map(e => `${e.error.message}`).join("/")}`)
+        return false
     }
 
     await sessions.cache.sourceDataCollected.set({site: sourceSite, sourceId}, true)
 
+    if(!options.autoCollect) {
+        chrome.notifications.create({
+            type: "basic",
+            iconUrl: "/public/favicon.png",
+            title: "来源数据已收集",
+            message: `${sourceSite} ${sourceId}已收集完成。`
+        })
+    }
     console.log(`[collectSourceData] Source data ${sourceSite}-${sourceId} collected.`)
     return true
 }

@@ -1,6 +1,6 @@
-import { Fragment } from "react"
+import { Fragment, ReactNode, useState } from "react"
 import { styled } from "styled-components"
-import { Button, CheckBox, FormattedText, Icon, Input, Label, SecondaryText } from "@/components"
+import { Anchor, Button, CheckBox, FormattedText, Icon, Input, Label, LayouttedDiv, SecondaryText } from "@/components"
 import { Setting } from "@/functions/setting"
 import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { maps, objects } from "@/utils/primitives"
@@ -93,7 +93,9 @@ interface CollectRuleItemProps extends CollectRule {
 }
 
 function CollectRuleItem({ onUpdate, ...rule }: CollectRuleItemProps) {
-    return <p>
+    const [showDetails, setShowDetails] = useState(false)
+
+    return <LayouttedDiv mt={1}>
         <CheckBox checked={rule.enable} onUpdateChecked={v => onUpdate({...rule, enable: v})}/>
         <StyledFixedRuleName>{rule.siteName}</StyledFixedRuleName>
         <Input disabled={!rule.enable} value={rule.sourceSite} placeholder="对应site名称" onUpdateValue={v => onUpdate({...rule, sourceSite: v})}/>
@@ -101,7 +103,96 @@ function CollectRuleItem({ onUpdate, ...rule }: CollectRuleItemProps) {
             <StyledFixedAdditionalKey>{additionalInfo.key}</StyledFixedAdditionalKey>
             <Input width="100px" disabled={!rule.enable} placeholder="对应附加数据字段名" value={additionalInfo.additionalField} onUpdateValue={v => onUpdate({...rule, additionalInfo: [...rule.additionalInfo.slice(0, i), {key: additionalInfo.key, additionalField: v}, ...rule.additionalInfo.slice(i + 1)]})}/>
         </Fragment>)}
-    </p>
+        <LayouttedDiv display="inline-block" ml={2}><Anchor onClick={() => setShowDetails(v => !v)}><Icon icon={showDetails ? "caret-down" : "caret-right"} mr={1}/>收集内容详情</Anchor></LayouttedDiv>
+        {showDetails && <LayouttedDiv border radius="std" padding={2} margin={1}>{RULE_ITEM_DESCRIPTION[rule.siteName]}</LayouttedDiv>}
+    </LayouttedDiv>
+}
+
+const RULE_ITEM_DESCRIPTION: Record<string, ReactNode> = {
+    "sankakucomplex": <table>
+        <tbody>
+            <tr>
+                <td><i>Post</i></td><td>作为</td>
+                <td>来源数据项</td><td>(<i>PostId</i> 作为 来源ID)</td>
+            </tr>
+            <tr>
+                <td><i>Tag</i></td><td><Icon icon="arrow-right"/></td>
+                <td>来源标签</td><td>(<i>TagType</i> <Icon icon="arrow-right"/> 类型，<i>TagName</i> <Icon icon="arrow-right"/> 标识编码/显示名称，<i>JPName</i> <Icon icon="arrow-right"/> 别名)</td>
+            </tr>
+            <tr>
+                <td><i>Book</i></td><td><Icon icon="arrow-right"/></td>
+                <td>来源集合</td><td>(<i>BookId</i> <Icon icon="arrow-right"/> 标识编码，<i>BookTitle</i> <Icon icon="arrow-right"/> 标题)</td>
+            </tr>
+            <tr>
+                <td><i>Children</i>&<i>Parent</i></td><td><Icon icon="arrow-right"/></td>
+                <td>来源关联项</td><td>(<i>PostId</i> <Icon icon="arrow-right"/> 关联项)</td>
+            </tr>
+            <tr>
+                <td><i>MD5</i></td><td><Icon icon="arrow-right"/></td>
+                <td>附加信息</td><td>(md5)</td>
+            </tr>
+        </tbody>
+    </table>,
+    "pixiv": <table>
+        <tbody>
+        <tr>
+            <td><i>Artwork</i></td><td>作为</td>
+            <td>来源数据项</td><td>(<i>ArtworkID</i> 作为 来源ID，其中的项作为分页)</td>
+        </tr>
+        <tr>
+            <td><i>Artwork Page</i></td><td>作为</td>
+            <td>分页</td><td>(<i>Page Num</i> 作为 分页，从0开始)</td>
+        </tr>
+        <tr>
+            <td><i>Artist</i></td><td><Icon icon="arrow-right"/></td>
+            <td>来源标签</td><td>(固定类型<code>artist</code>，<i>UserId</i> <Icon icon="arrow-right"/> 标识编码，<i>UserName</i> <Icon icon="arrow-right"/> 显示名称)</td>
+        </tr>
+        <tr>
+            <td><i>Tag</i></td><td><Icon icon="arrow-right"/></td>
+            <td>来源标签</td><td>(固定类型<code>tag</code>，<i>TagName</i> <Icon icon="arrow-right"/> 标识名称/显示名称)，<i>SecondaryName</i> <Icon icon="arrow-right"/> 别名)</td>
+        </tr>
+        <tr>
+            <td><i>Title</i></td><td><Icon icon="arrow-right"/></td>
+            <td>标题</td><td></td>
+        </tr>
+        <tr>
+            <td><i>Description</i></td><td><Icon icon="arrow-right"/></td>
+            <td>描述</td><td></td>
+        </tr>
+        </tbody>
+    </table>,
+    "ehentai": <table>
+        <tbody>
+        <tr>
+            <td><i>Gallery</i></td><td>作为</td>
+            <td>来源数据项</td><td>(<i>GalleryID</i> 作为 来源ID，其中的项作为分页，<i>Image Hash</i>作为分页页名)</td>
+        </tr>
+        <tr>
+            <td><i>Gallery Image</i></td><td>作为</td>
+            <td>分页</td><td>(<i>Page Num</i> 作为 分页，从1开始，<i>Image Hash</i> 作为 分页页名)</td>
+        </tr>
+        <tr>
+            <td><i>Tag</i></td><td><Icon icon="arrow-right"/></td>
+            <td>来源标签</td><td>(<i>TagType</i> <Icon icon="arrow-right"/> 类型，<i>TagName</i> <Icon icon="arrow-right"/> 标识编码/显示名称，<i>OtherName</i> <Icon icon="arrow-right"/> 别名)</td>
+        </tr>
+        <tr>
+            <td><i>Gallery Category</i></td><td><Icon icon="arrow-right"/></td>
+            <td>来源标签</td><td>(固定类型<code>category</code>，<i>Category Name</i> <Icon icon="arrow-right"/> 标识编码/显示名称</td>
+        </tr>
+        <tr>
+            <td><i>JP Title</i></td><td><Icon icon="arrow-right"/></td>
+            <td>标题</td><td>(<i>JP Title</i>不存在时，使用<i>EN Title</i>)</td>
+        </tr>
+        <tr>
+            <td><i>Uploader Comment</i>&<i>EN Title</i></td><td><Icon icon="arrow-right"/></td>
+            <td>描述</td><td></td>
+        </tr>
+        <tr>
+            <td><i>Gallery Token</i></td><td><Icon icon="arrow-right"/></td>
+            <td>附加信息</td><td>(token)</td>
+        </tr>
+        </tbody>
+    </table>
 }
 
 const StyledSaveButton = styled(Button)`

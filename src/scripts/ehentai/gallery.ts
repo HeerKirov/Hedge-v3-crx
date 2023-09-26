@@ -124,11 +124,11 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, string
         return {ok: false, err: `Tag: cannot find '#taglist'.`}
     }
 
-    //画廊的类型(doujinshi, image set)也会被作为tag写入，类型固定为"category"，code为"category/{category-}"
+    //画廊的类型(doujinshi, image set)也会被作为tag写入，类型固定为"category"，code为"{category-}"
     const categoryDiv = document.querySelector<HTMLDivElement>(".gm .cs")
     if(categoryDiv) {
         const category = categoryDiv.textContent!
-        tags.push({code: `category/${category.toLowerCase().replace(" ", "-")}`, name: category, type: "category"})
+        tags.push({code: category.toLowerCase().replace(" ", "-"), name: category, type: "category"})
     }else{
         return {ok: false, err: `Category: cannot find '.cs'.`}
     }

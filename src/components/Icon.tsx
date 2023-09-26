@@ -68,7 +68,7 @@ const StyledIcon = styled(FontAwesomeIcon)<{ $mr?: number, $ml?: number }>`
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
-    faArrowDownWideShort, faArrowUpShortWide, faBookBookmark, faBookmark, faCloudArrowDown, faCopy, faCloudUpload, faCloudDownload,
+    faArrowRight, faArrowDownWideShort, faArrowUpShortWide, faBookBookmark, faBookmark, faCloudArrowDown, faCopy, faCloudUpload, faCloudDownload,
     faCalendar, faCalendarCheck, faCalendarDay, faCalendarPlus, faCalendarWeek, faCaretDown, faCaretRight, faCaretUp, faCheck, faClose, faCircle,
     faDownload, faEdit, faFile, faFileExport, faFileImport, faFileInvoice, faFolder, faPlus,
     faRecordVinyl, faSave, faSearch, faServer, faStar, faToolbox, faTrash, faUpload, faWarning, faToggleOn
@@ -78,7 +78,7 @@ import {
 } from "@fortawesome/free-regular-svg-icons"
 
 library.add(
-    faArrowDownWideShort, faArrowUpShortWide, faBookBookmark, faBookmark, faCloudArrowDown, faCopy, faCloudUpload, faCloudDownload,
+    faArrowRight, faArrowDownWideShort, faArrowUpShortWide, faBookBookmark, faBookmark, faCloudArrowDown, faCopy, faCloudUpload, faCloudDownload,
     faCalendar, faCalendarCheck, faCalendarDay, faCalendarPlus, faCalendarWeek, faCaretDown, faCaretRight, faCaretUp, faCheck, faClose, faCircle,
     faDownload, faEdit, faFile, faFileExport, faFileImport, faFileInvoice, faFolder, faPlus,
     faRecordVinyl, faSave, faSearch, faServer, faStar, faToolbox, faTrash, faUpload, faWarning, faToggleOn

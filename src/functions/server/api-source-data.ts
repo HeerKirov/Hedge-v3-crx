@@ -1,13 +1,13 @@
 import { LimitAndOffsetFilter, ListResult, OrderList, SimpleIllust, SourceDataPath, mapFromOrderList } from "./api-all"
 import { createDataRequest, createPathDataRequest, createPathRequest, createQueryRequest } from "./impl"
-import { AlreadyExists, NotFound, ResourceNotExist } from "./exceptions"
+import { AlreadyExists, BasicException, NotFound, ResourceNotExist } from "./exceptions"
 
 export const sourceData = {
     list: createQueryRequest<SourceDataFilter, ListResult<SourceData>, never>("/api/source-data", "GET", {
         parseQuery: mapFromSourceDataFilter
     }),
     create: createDataRequest<SourceDataCreateForm, null, ResourceNotExist<"site", string> | AlreadyExists<"SourceData", "sourceId", number>>("/api/source-data", "POST"),
-    bulk: createDataRequest<SourceDataCreateForm[], null, ResourceNotExist<"site", string>>("/api/source-data/bulk", "POST"),
+    bulk: createDataRequest<SourceDataCreateForm[], BulkResult<SourceDataIdentity, ResourceNotExist<"site", string> | ResourceNotExist<"additionalInfo", string> | ResourceNotExist<"sourceTagType", string[]>>, ResourceNotExist<"site", string> | ResourceNotExist<"additionalInfo", string> | ResourceNotExist<"sourceTagType", string[]>>("/api/source-data/bulk", "POST"),
     get: createPathRequest<SourceDataIdentity, DetailSourceData, NotFound>(({ sourceSite, sourceId }) => `/api/source-data/${encodeURIComponent(sourceSite)}/${encodeURIComponent(sourceId)}`, "GET"),
     update: createPathDataRequest<SourceDataIdentity, SourceDataUpdateForm, null, NotFound>(({ sourceSite, sourceId }) => `/api/source-data/${encodeURIComponent(sourceSite)}/${encodeURIComponent(sourceId)}`, "PATCH"),
     delete: createPathRequest<SourceDataIdentity, null, NotFound>(({ sourceSite, sourceId }) => `/api/source-data/${encodeURIComponent(sourceSite)}/${encodeURIComponent(sourceId)}`, "DELETE"),
@@ -85,6 +85,7 @@ export interface SourceMark {
 export interface SourceDataCollectStatus {
     source: SourceDataPath
     imageCount: number
+    imageInDiffIdCount: number
     collected: boolean
     collectStatus: SourceEditStatus | null
     collectTime: string | null
@@ -129,6 +130,12 @@ export interface SourceMarkPartialForm {
     sourceSite: string
     sourceId: number
     markType?: SourceMarkType
+}
+
+export interface BulkResult<I, E extends BasicException> {
+    success: number
+    failed: number
+    errors: {target: I, error: E}[]
 }
 
 export type SourceDataFilter = SourceDataQueryFilter & LimitAndOffsetFilter

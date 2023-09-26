@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { styled } from "styled-components"
-import { Button, CheckBox, Group, Icon, Input, Label, SecondaryText } from "@/components"
+import { Button, CheckBox, Group, Icon, Input, Label, LayouttedDiv, SecondaryText } from "@/components"
 import { DOWNLOAD_RENAME_SITES, DOWNLOAD_EXTENSIONS } from "@/functions/sites"
 import { Setting } from "@/functions/setting"
 import { useEditor } from "@/utils/reactivity"
@@ -107,21 +107,23 @@ interface StandardRuleProps extends StandardRule {
 }
 
 function StandardRuleItem({ onUpdate, ...rule }: StandardRuleProps) {
-    return <p>
+    return <LayouttedDiv mt={1}>
         <CheckBox checked={rule.enable} onUpdateChecked={v => onUpdate({...rule, enable: v})}/>
         <StyledFixedRuleName>{rule.siteName}</StyledFixedRuleName>
         <Input width="300px" placeholder="重命名模板" disabled={!rule.enable} value={rule.rename} onUpdateValue={v => onUpdate({...rule, rename: v})}/>
-    </p>
+    </LayouttedDiv>
 }
 
 function CustomRuleItem({ onUpdate, onRemove, ...rule }: CustomRuleItemProps) {
-    return <Group>
-        <Input placeholder="referrer" value={rule.referrer} onUpdateValue={v => onUpdate({...rule, referrer: v})}/>
-        <Input placeholder="url" value={rule.url} onUpdateValue={v => onUpdate({...rule, url: v})}/>
-        <Input placeholder="filename" value={rule.filename} onUpdateValue={v => onUpdate({...rule, filename: v})}/>
-        <Input placeholder="重命名模板" value={rule.rename} onUpdateValue={v => onUpdate({...rule, rename: v})}/>
-        <Button onClick={onRemove}>删除</Button>
-    </Group>
+    return <LayouttedDiv mt={1}>
+        <Group>
+            <Input placeholder="referrer" value={rule.referrer} onUpdateValue={v => onUpdate({...rule, referrer: v})}/>
+            <Input placeholder="url" value={rule.url} onUpdateValue={v => onUpdate({...rule, url: v})}/>
+            <Input placeholder="filename" value={rule.filename} onUpdateValue={v => onUpdate({...rule, filename: v})}/>
+            <Input placeholder="重命名模板" value={rule.rename} onUpdateValue={v => onUpdate({...rule, rename: v})}/>
+            <Button onClick={onRemove}>删除</Button>
+        </Group>
+    </LayouttedDiv>
 }
 
 function CustomRuleAddItem({ onAdd }: {onAdd(item: CustomRule): void}) {

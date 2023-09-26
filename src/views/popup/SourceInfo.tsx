@@ -29,15 +29,27 @@ function SourceDataPathNotice(path: SourceDataPath) {
 }
 
 function CollectStatusNotice(props: SourceDataCollectStatus) {
+    const collectStatusColor = props.collectStatus === "EDITED" ? "success" : props.collectStatus === "ERROR" ? "danger" : props.collectStatus === "IGNORED" ? "secondary" : undefined
+
+    const imageCountColor = (props.imageCount > 0 || props.imageInDiffIdCount > 0) ? "success" : undefined
+
     const collectStatusText = props.collectStatus !== null ? COLLECT_STATUS_DESCRIBE[props.collectStatus] : "无记录"
 
     const collectTimeText = props.collectTime !== null ? new Date(props.collectTime).toLocaleDateString() : null
 
+    const imageCountText = props.imageCount > 0 && props.imageInDiffIdCount > 0 ? (
+        `已收集${props.imageCount > 1 ? `(${props.imageCount}项)` : ""}，已在其他位置收集${props.imageInDiffIdCount > 1 ? `(${props.imageInDiffIdCount}项)` : ""}`
+    ) : props.imageCount > 0 ? (
+        `已收集${props.imageCount > 1 ? `(${props.imageCount}项)` : ""}`
+    ) : props.imageInDiffIdCount > 0 ? (
+        `已在其他位置收集${props.imageInDiffIdCount > 1 ? `(${props.imageInDiffIdCount}项)` : ""}`
+    ) : "未收集"
+
     return <CollectStatusDiv>
         图像:
-        <FormattedText color={props.imageCount > 0 ? "success" : undefined}>{props.imageCount > 1 ? `已收集(${props.imageCount}项)` : props.imageCount === 1 ? "已收集" : "未收集"}</FormattedText>
+        <FormattedText color={imageCountColor}>{imageCountText}</FormattedText>
         /来源数据:
-        <FormattedText color={props.collectStatus === "EDITED" ? "success" : props.collectStatus === "ERROR" ? "danger" : props.collectStatus === "IGNORED" ? "secondary" : undefined}>{collectStatusText}</FormattedText>
+        <FormattedText color={collectStatusColor}>{collectStatusText}</FormattedText>
         {collectTimeText && <SecondaryText>收集时间: {collectTimeText}</SecondaryText>}
     </CollectStatusDiv>
 }

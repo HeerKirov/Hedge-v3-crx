@@ -41,7 +41,7 @@ function loadActiveTabInfo(setting: Setting) {
 function reportSourceData(_: Setting): Result<SourceDataUpdateForm, string> {
     const tags: SourceTagForm[] = []
 
-    //查找作者，作为tag写入。作者的type固定为"artist"，code为"users/{UID}"
+    //查找作者，作为tag写入。作者的type固定为"artist"，code为"{UID}"
     const artistAnchor = document.querySelector<HTMLAnchorElement>("aside > section > h2 > div > div > a")
     if(artistAnchor !== null) {
         const artistName = artistAnchor.querySelector("div")?.textContent
@@ -51,7 +51,7 @@ function reportSourceData(_: Setting): Result<SourceDataUpdateForm, string> {
         const match = artistAnchor.href.match(/\/users\/(?<UID>\d+)/)
         if(match && match.groups) {
             const userId = match.groups["UID"]
-            tags.push({code: `users/${userId}`, name: artistName, type: "artist"})
+            tags.push({code: userId, name: artistName, type: "artist"})
         }else{
             return {ok: false, err: `Artist: cannot analyse artist anchor href.`}
         }
