@@ -26,6 +26,10 @@ export const sessions = {
      */
     cache: {
         /**
+         * 临时关闭了自动收集。
+         */
+        closeAutoCollect: createEndpointWithDefault<boolean>("session", "cache/source-data/close-auto-collect", false),
+        /**
          * 最近收集的source data identity。
          * 在downloaded created时被用于节流，避免重复下载同一个identity的来源数据。
          */
@@ -35,18 +39,31 @@ export const sessions = {
          * 这些附加信息在手动下载时被写入，并在determining过程中被提取出来，代替从下载项获得的信息来使用。
          */
         downloadItemInfo: createDictEndpoint<number, {url: string, referrer: string}>("session", "cache/download/info", p => p.toString())
-    }
+    },
 }
 
 function createEndpoint<T>(type: "local" | "session", key: string) {
+    const f = type === "local" ? chrome.storage.local : chrome.storage.session
     return async function(newValue?: T): Promise<T | undefined> {
-        const f = type === "local" ? chrome.storage.local : chrome.storage.session
         if(newValue !== undefined) {
             await f.set({ [key]: newValue })
             return newValue
         }else{
             const res = await f.get([key])
             return res[key]
+        }
+    }
+}
+
+function createEndpointWithDefault<T>(type: "local" | "session", key: string, defaultValue: T) {
+    const f = type === "local" ? chrome.storage.local : chrome.storage.session
+    return async function(newValue?: T): Promise<T> {
+        if(newValue !== undefined) {
+            await f.set({ [key]: newValue })
+            return newValue
+        }else{
+            const res = await f.get([key])
+            return res[key] ?? defaultValue
         }
     }
 }

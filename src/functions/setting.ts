@@ -130,6 +130,10 @@ interface Download {
  */
 interface SourceData {
     /**
+     * 在下载文件时，自动收集来源数据。
+     */
+    autoCollectWhenDownload: boolean
+    /**
      * 覆盖固有规则。默认情况下，启用全部固有规则，在这里可以覆盖一部分设置。
      */
     overrideRules: {
@@ -178,6 +182,7 @@ function defaultSetting(): Setting {
             customExtensions: []
         },
         sourceData: {
+            autoCollectWhenDownload: false,
             overrideRules: {}
         }
     }

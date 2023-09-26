@@ -1,7 +1,7 @@
 import { Setting, settings } from "@/functions/setting"
 import { sessions } from "@/functions/storage"
 import { DOWNLOAD_EXTENSIONS, DOWNLOAD_RENAME_SITES } from "@/functions/sites"
-import { collectSourceData } from "@/services/source-data"
+import { autoCollectSourceData } from "@/services/source-data"
 
 export async function downloadURL(options: {url: string, referrer?: string}) {
     const downloadId = await chrome.downloads.download({url: options.url})
@@ -36,10 +36,10 @@ export function determiningFilename(downloadItem: chrome.downloads.DownloadItem,
                 return
             }
             suggest({filename: replaceWithArgs(result.rename, finalArgs) + (extension ? "." + extension : "")})
-            collectSourceData({siteName: result.siteName, args: finalArgs, setting})
+            autoCollectSourceData({siteName: result.siteName, args: finalArgs, setting}).finally()
         }else{
             suggest({filename: replaceWithArgs(result.rename, result.args) + (extension ? "." + extension : "")})
-            collectSourceData({siteName: result.siteName, args: result.args, setting})
+            autoCollectSourceData({siteName: result.siteName, args: result.args, setting}).finally()
         }
     })
 

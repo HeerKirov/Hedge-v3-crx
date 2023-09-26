@@ -4,11 +4,14 @@ import { receiveMessage } from "@/services/messages"
 import { determiningFilename } from "@/services/downloads"
 import { tabCreated, tabUpdated } from "@/services/active-tab"
 import { clicked, installed } from "@/services/context-menu"
+import { buttonClicked } from "@/services/notification"
 import { command } from "@/services/commands"
 
 chrome.storage.session.setAccessLevel({accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS"}).finally()
 
 chrome.runtime.onMessage.addListener(receiveMessage)
+
+chrome.notifications.onButtonClicked.addListener(buttonClicked)
 
 chrome.downloads.onDeterminingFilename.addListener(determiningFilename)
 

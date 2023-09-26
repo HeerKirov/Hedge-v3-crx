@@ -3,11 +3,20 @@ import { server } from "@/functions/server"
 import { Setting } from "@/functions/setting"
 import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { sessions } from "@/functions/storage"
+import { NOTIFICATIONS } from "@/services/notification"
 
 type CollectSourceDataOptions = ({sourceId: number, args?: undefined} | {args: Record<string, string>, sourceId?: undefined}) & {
     siteName: string
     setting: Setting
     skipCheckingCache?: boolean
+    autoCollect?: boolean
+}
+
+/**
+ * 自动收集指定来源的数据的调用函数。包含开启条件判断。
+ */
+export async function autoCollectSourceData(options: CollectSourceDataOptions) {
+    if(options.setting.sourceData.autoCollectWhenDownload && !await sessions.cache.closeAutoCollect()) await collectSourceData({...options, autoCollect: true})
 }
 
 /**
@@ -77,13 +86,14 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
                 return false
             }
         }else{
-            chrome.notifications.create({
+            chrome.notifications.create(NOTIFICATIONS.AUTO_COLLECT_SERVER_DISCONNECTED, {
                 type: "basic",
                 iconUrl: "/public/favicon.png",
-                title: "来源数据未收集",
-                message: "未能成功连接到核心服务。"
+                title: "核心服务连接失败",
+                message: "未能成功连接到核心服务。",
+                buttons: options.autoCollect ? [{title: "暂时关闭自动收集"}] : undefined
             })
-            console.warn(`[collectSourceData] Source data ${sourceSite}-${sourceId} retrieve failed: ${retrieve.reason}`)
+            console.error(`[collectSourceData] Connect error: ${retrieve.exception}`)
             return false
         }
     }
@@ -134,11 +144,12 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
             })
             console.error(`[collectSourceData] Source data ${sourceSite}-${sourceId} upload failed: ${res.exception.message}`)
         }else{
-            chrome.notifications.create({
+            chrome.notifications.create(NOTIFICATIONS.AUTO_COLLECT_SERVER_DISCONNECTED, {
                 type: "basic",
                 iconUrl: "/public/favicon.png",
-                title: "来源数据收集异常",
-                message: `${sourceSite}-${sourceId}: 未能成功连接到核心服务。请查看扩展日志。`
+                title: "核心服务连接失败",
+                message: "未能成功连接到核心服务。",
+                buttons: options.autoCollect ? [{title: "暂时关闭自动收集"}] : undefined
             })
             console.error(`[collectSourceData] Connect error: ${res.exception}`)
         }

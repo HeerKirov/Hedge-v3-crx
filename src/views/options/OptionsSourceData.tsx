@@ -1,11 +1,12 @@
 import { Fragment } from "react"
 import { styled } from "styled-components"
-import { Button, CheckBox, Icon, Input, Label, SecondaryText } from "@/components"
+import { Button, CheckBox, FormattedText, Icon, Input, Label, SecondaryText } from "@/components"
 import { Setting } from "@/functions/setting"
 import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { maps, objects } from "@/utils/primitives"
-import { useEditor } from "@/utils/reactivity"
+import { useAsyncLoading, useEditor } from "@/utils/reactivity"
 import { SPACINGS } from "@/styles"
+import { sessions } from "@/functions/storage"
 
 interface OptionsSourceDataPanelProps {
     sourceData: Setting["sourceData"] | null | undefined
@@ -13,10 +14,20 @@ interface OptionsSourceDataPanelProps {
 }
 
 export function OptionsSourceDataPanel(props: OptionsSourceDataPanelProps) {
+    const [closeAutoCollect, refreshCloseAutoCollect] = useAsyncLoading({call: sessions.cache.closeAutoCollect, default: false})
+
+    const resetCloseAutoCollect = async () => {
+        if(closeAutoCollect) {
+            await sessions.cache.closeAutoCollect(false)
+            refreshCloseAutoCollect(false)
+        }
+    }
+
     const { editor, changed, setProperty, save } = useEditor({
         value: props.sourceData,
         updateValue: props.onUpdateSourceData,
         from: v => ({
+            autoCollectWhenDownload: v.autoCollectWhenDownload,
             rules: Object.entries(SOURCE_DATA_COLLECT_SITES).map(([siteName, rule]) => {
                 const overrideRule = v.overrideRules[siteName]
                 return {
@@ -28,6 +39,7 @@ export function OptionsSourceDataPanel(props: OptionsSourceDataPanelProps) {
             })
         }),
         to: f => ({
+            autoCollectWhenDownload: f.autoCollectWhenDownload,
             overrideRules: (() => {
                 const overrideRules: Record<string, {enable: boolean, sourceSite: string, additionalInfo: Record<string, string>}> = {}
                 for(let i = 0; i < f.rules.length; ++i) {
@@ -45,6 +57,7 @@ export function OptionsSourceDataPanel(props: OptionsSourceDataPanelProps) {
             })()
         }),
         default: () => ({
+            autoCollectWhenDownload: false,
             rules: []
         })
     })
@@ -55,6 +68,12 @@ export function OptionsSourceDataPanel(props: OptionsSourceDataPanelProps) {
 
     return <>
         <p>来源数据收集功能在提供文件重命名建议的同时收集该项目的来源数据，并保存到Hedge。</p>
+        <Label>设置</Label>
+        <CheckBox checked={editor.autoCollectWhenDownload} onUpdateChecked={v => setProperty("autoCollectWhenDownload", v)}>在下载文件时，自动收集来源数据</CheckBox>
+        {closeAutoCollect && <>
+            <FormattedText bold ml={4}><Icon icon="warning" mr={1}/>自动收集功能已临时关闭。</FormattedText>
+            <Button size="small" type="primary" onClick={resetCloseAutoCollect}><Icon icon="toggle-on" mr={1}/>重新打开</Button>
+        </>}
         <Label>来源数据收集规则</Label>
         <SecondaryText>为每一类来源数据收集指定其在Hedge中对应的site名称，以及每一种附加数据在Hedge中对应的附加数据字段名。</SecondaryText>
         {editor.rules.map((rule, i) => <CollectRuleItem key={rule.siteName} {...rule} onUpdate={v => updateCollectRuleAt(i ,v)}/>)}
