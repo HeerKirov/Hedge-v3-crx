@@ -68,19 +68,34 @@ interface Tool {
      * ehentai的扩展工具。
      */
     ehentai: {
+        /**
+         * 启用图像下载链接功能。
+         */
         enableImageDownloadAnchor: boolean
         /**
-         * 启用评论区智能屏蔽机制。
+         * 启用评论区中文智能屏蔽。
          */
-        enableCommentBlock: boolean
+        enableCommentCNBlock: boolean
+        /**
+         * 启用评论区低分屏蔽。
+         */
+        enableCommentVoteBlock: boolean
         /**
          * 启用评论区关键字屏蔽。
          */
         enableCommentKeywordBlock: boolean
         /**
+         * 启用评论区用户屏蔽。
+         */
+        enableCommentUserBlock: boolean
+        /**
          * 评论区屏蔽关键字列表。
          */
         commentBlockKeywords: string[]
+        /**
+         * 评论区屏蔽用户列表。
+         */
+        commentBlockUsers: string[]
     }
 }
 
@@ -178,9 +193,12 @@ export function defaultSetting(): Setting {
             },
             ehentai: {
                 enableImageDownloadAnchor: true,
-                enableCommentBlock: true,
+                enableCommentCNBlock: true,
+                enableCommentVoteBlock: true,
                 enableCommentKeywordBlock: true,
-                commentBlockKeywords: []
+                enableCommentUserBlock: true,
+                commentBlockKeywords: [],
+                commentBlockUsers: []
             }
         },
         download: {

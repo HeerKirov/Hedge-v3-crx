@@ -17,14 +17,16 @@ export function OptionsToolPanel(props: OptionsToolPanelProps) {
             sankakucomplex: v.sankakucomplex,
             ehentai: {
                 ...v.ehentai,
-                commentBlockKeywords: v.ehentai.commentBlockKeywords?.join(" ")
+                commentBlockKeywords: v.ehentai.commentBlockKeywords?.join(" "),
+                commentBlockUsers: v.ehentai.commentBlockUsers?.join(" ")
             }
         }),
         to: f => ({
             sankakucomplex: f.sankakucomplex,
             ehentai: {
                 ...f.ehentai,
-                commentBlockKeywords: f.ehentai.commentBlockKeywords?.split(" ").filter(s => !!s)
+                commentBlockKeywords: f.ehentai.commentBlockKeywords?.split(" ").filter(s => !!s),
+                commentBlockUsers: f.ehentai.commentBlockUsers?.split(" ").filter(s => !!s)
             }
         }),
         default: () => {
@@ -33,7 +35,8 @@ export function OptionsToolPanel(props: OptionsToolPanelProps) {
                 sankakucomplex: d.tool.sankakucomplex,
                 ehentai: {
                     ...d.tool.ehentai,
-                    commentBlockKeywords: d.tool.ehentai.commentBlockKeywords?.join(" ")
+                    commentBlockKeywords: d.tool.ehentai.commentBlockKeywords?.join(" "),
+                    commentBlockUsers: d.tool.ehentai.commentBlockUsers?.join(" ")
                 }
             }
         }
@@ -83,17 +86,30 @@ export function OptionsToolPanel(props: OptionsToolPanelProps) {
             <SecondaryText>此下载链接使用Extension API实现，与原链接的性状并不完全一致。</SecondaryText>
         </StyledDiv>
         <StyledDiv>
-            <CheckBox checked={editor.ehentai.enableCommentBlock} onUpdateChecked={v => setEHentaiProperty("enableCommentBlock", v)}>评论区整体屏蔽</CheckBox>
-            <SecondaryText>在评论区可能打起来时，屏蔽评论区的中文评论。</SecondaryText>
-            <SecondaryText>Vote较低的评论会被直接屏蔽；当存在Vote较低/至少2条被屏蔽的中文评论，还存在至少2条Vote较高的中文评论时，会连同其他中文评论一起屏蔽。</SecondaryText>
+            <CheckBox checked={editor.ehentai.enableCommentCNBlock} onUpdateChecked={v => setEHentaiProperty("enableCommentCNBlock", v)}>针对评论区的中文用户</CheckBox>
+            <SecondaryText>在评论区可能打起来时，屏蔽评论区的所有中文评论。</SecondaryText>
+            <SecondaryText>当存在Vote较低、被的屏蔽关键字/用户，还存在至少2条Vote较高的中文评论时，会连同其他中文评论一起屏蔽。</SecondaryText>
+            <SecondaryText>并且，在某些重点关照区域，屏蔽规则还会进一步增强。</SecondaryText>
         </StyledDiv>
         <StyledDiv>
-            <CheckBox checked={editor.ehentai.enableCommentKeywordBlock} onUpdateChecked={v => setEHentaiProperty("enableCommentKeywordBlock", v)}>评论关键字屏蔽</CheckBox>
+            <CheckBox checked={editor.ehentai.enableCommentVoteBlock} onUpdateChecked={v => setEHentaiProperty("enableCommentVoteBlock", v)}>评论区低Vote屏蔽</CheckBox>
+            <SecondaryText>屏蔽Vote数被踩得比较低的评论。</SecondaryText>
+        </StyledDiv>
+        <StyledDiv>
+            <CheckBox checked={editor.ehentai.enableCommentKeywordBlock} onUpdateChecked={v => setEHentaiProperty("enableCommentKeywordBlock", v)}>评论区关键字屏蔽</CheckBox>
             <SecondaryText>根据关键词屏蔽列表，屏蔽不想看到的评论。</SecondaryText>
         </StyledDiv>
         {editor.ehentai.enableCommentKeywordBlock && <StyledDiv>
             <LayouttedDiv size="small">关键词屏蔽列表 (以空格分隔多个关键词)</LayouttedDiv>
             <Input type="textarea" size="small" width="400px" value={editor.ehentai.commentBlockKeywords} onUpdateValue={v => setEHentaiProperty("commentBlockKeywords", v)}/>
+        </StyledDiv>}
+        <StyledDiv>
+            <CheckBox checked={editor.ehentai.enableCommentUserBlock} onUpdateChecked={v => setEHentaiProperty("enableCommentUserBlock", v)}>评论区用户屏蔽</CheckBox>
+            <SecondaryText>根据用户屏蔽列表，屏蔽不想看到的用户评论。</SecondaryText>
+        </StyledDiv>
+        {editor.ehentai.enableCommentUserBlock && <StyledDiv>
+            <LayouttedDiv size="small">用户屏蔽列表 (以空格分隔多个关键词)</LayouttedDiv>
+            <Input type="textarea" size="small" width="400px" value={editor.ehentai.commentBlockUsers} onUpdateValue={v => setEHentaiProperty("commentBlockUsers", v)}/>
         </StyledDiv>}
         {changed && <StyledSaveButton mode="filled" width="10em" type="primary" onClick={save}><Icon icon="save" mr={2}/>保存</StyledSaveButton>}
     </>

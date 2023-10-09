@@ -10,7 +10,14 @@ onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] ehentai/gallery script loaded.")
     const setting = await settings.get()
     loadActiveTabInfo(setting)
-    if(setting.tool.ehentai.enableCommentBlock || setting.tool.ehentai.enableCommentKeywordBlock) enableCommentFilter(setting.tool.ehentai.enableCommentBlock, setting.tool.ehentai.enableCommentKeywordBlock ? setting.tool.ehentai.commentBlockKeywords : [])
+    if(setting.tool.ehentai.enableCommentCNBlock || setting.tool.ehentai.enableCommentVoteBlock || setting.tool.ehentai.enableCommentKeywordBlock || setting.tool.ehentai.enableCommentUserBlock) {
+        enableCommentFilter(
+            setting.tool.ehentai.enableCommentCNBlock, 
+            setting.tool.ehentai.enableCommentVoteBlock,
+            setting.tool.ehentai.enableCommentKeywordBlock ? setting.tool.ehentai.commentBlockKeywords : [], 
+            setting.tool.ehentai.enableCommentUserBlock ? setting.tool.ehentai.commentBlockUsers : []
+        )
+    }
 })
 
 chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callback }) => {
@@ -39,51 +46,86 @@ function loadActiveTabInfo(setting: Setting) {
 
 /**
  * 功能：评论区屏蔽机制。
- * 在给出banList时，将对评论区包含这些屏蔽字的评论进行屏蔽。
- * 在开启forbidden时，将开展更多屏蔽规则，包括：
- * - 屏蔽Vote过低的评论；
- * - 存在Vote过低的评论/至少2条banList中的评论，且同时存在至少2条Vote较高的评论，且这些评论都包含中文时，屏蔽评论区的所有中文评论
+ * - 根据block keywords，屏蔽包含这些关键字的评论。
+ * - 根据block users，屏蔽这些用户发送的评论，包括这些用户的名字。
+ * - 开启block vote时，屏蔽Vote投票数过低的评论。
+ * - 开启中文智能屏蔽时，引入一系列更本地化的屏蔽规则。
+ *   - 存在Vote过低的评论，且存在block keyword/user的评论，且同时存在至少2条Vote较高的评论，且这些评论都包含中文时，遮蔽评论区的所有中文评论。
+ *   - 处于特别关照的parody下时，条件降低为vote/keyword/user其一 & 至少1条高vote & 包含中文，且遮蔽会进一步增强为直接删除所有中文评论。
  */
-function enableCommentFilter(forbidden: boolean, banList: string[]) {
+function enableCommentFilter(blockCN: boolean, blockVote: boolean, blockKeywords: string[], blockUsers: string[]) {
     const divs = document.querySelectorAll<HTMLDivElement>("div#cdiv > div.c1")
 
     const chinese: boolean[] = []
     const lowVote: boolean[] = []
     const highVote: boolean[] = []
-    const banned: boolean[] = []
+    const keywordBanned: boolean[] = []
+    const userBanned: boolean[] = []
 
     for(let i = 0; i < divs.length; ++i) {
         const div = divs[i]
         if(div.querySelector("a[name=ulcomment]")) continue
 
+        const c3 = div.querySelector<HTMLAnchorElement>("div.c3 > a")
+        if(c3?.textContent) {
+            //被ban的用户
+            if(blockUsers.includes(c3.textContent)) userBanned[i] = true
+        }
         const c5 = div.querySelector<HTMLSpanElement>("div.c5 > span")
         if(c5?.textContent) {
             const vote = parseInt(c5.textContent)
             //低Vote评论
-            if(vote <= -20) lowVote[i] = true
+            if(vote <= -25) lowVote[i] = true
             //高Vote评论
-            if(vote >= 20) highVote[i] = true
+            if(vote >= 25) highVote[i] = true
         }
         const c6 = div.querySelector<HTMLDivElement>("div.c6")
         if(c6?.textContent) {
             //中文评论
             if(/.*[\u4e00-\u9fa5]+.*$/.test(c6.textContent)) chinese[i] = true
             //包含被ban的关键词
-            if(banList.some(b => c6.textContent!.includes(b))) banned[i] = true
+            if(blockKeywords.some(b => c6.textContent!.includes(b))) keywordBanned[i] = true
         }
     }
 
-    const forbiddenAnyChinese = (lowVote.some((_, i) => chinese[i]) || banned.filter((_, i) => chinese[i]).length >= 2) && (highVote.filter((_, i) => chinese[i]).length >= 2)
+    let cnBanned: "MARK" | "FORBIDDEN" | undefined
+    if(blockCN) {
+        //当gallery包含以下任意tag，且parody tag数量不超过5时，将评论区标记为"特别关照"
+        const warnTags = ["genshin impact", "honkai star rail"]
+        const tags = [...document.querySelectorAll<HTMLAnchorElement>("#taglist a")]
+        const parodyCount = tags.filter(a => a.id.startsWith("ta_parody")).length
+        const warning = tags.some(a => a.textContent && warnTags.includes(a.textContent)) && parodyCount < 5
+        if(warning) {
+            if((lowVote.some((_, i) => chinese[i]) || keywordBanned.some((_, i) => chinese[i]) || userBanned.some((_, i) => chinese[i])) && highVote.some((_, i) => chinese[i])) {
+                cnBanned = "FORBIDDEN"
+            }
+        }else{
+            if(lowVote.some((_, i) => chinese[i]) && (keywordBanned.some((_, i) => chinese[i]) || userBanned.some((_, i) => chinese[i])) && highVote.filter((_, i) => chinese[i]).length >= 2) {
+                cnBanned = "MARK"
+            }
+        }
+    }
 
     for(let i = 0; i < divs.length; ++i) {
         const div = divs[i]
-        if(banned[i] || lowVote[i]) {
+        if(userBanned[i]) {
+            //对于被block的用户，总是遮蔽其用户名
+            const c3 = div.querySelector<HTMLAnchorElement>("div.c3 > a")!
+            c3.style.color = "black"
+            c3.style.backgroundColor = "black"
+        }
+        if(cnBanned === "FORBIDDEN" && chinese[i]) {
+            //处于特别关注的CN遮蔽下，直接移除评论内容
+            div.querySelector<HTMLDivElement>("div.c6")?.remove()
+        }else if(keywordBanned[i] || userBanned[i] || (blockVote && lowVote[i])) {
+            //关键字屏蔽、用户屏蔽、低分屏蔽，将其评论内容遮蔽为黑色
             const c6 = div.querySelector<HTMLDivElement>("div.c6")
             if(c6) {
                 c6.style.color = "black"
                 c6.style.backgroundColor = "black"
             }
-        }else if(forbiddenAnyChinese && chinese[i]) {
+        }else if(cnBanned === "MARK" && chinese[i]) {
+            //处于CN遮蔽下的其他评论，将其评论内容遮蔽为灰色
             const c6 = div.querySelector<HTMLDivElement>("div.c6")
             if(c6) {
                 c6.style.color = "grey"
