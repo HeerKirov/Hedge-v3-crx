@@ -9,10 +9,10 @@ import { BookmarkForm, bookmarks, PageForm } from "@/services/bookmarks"
 import { getSuggestedBookmarkNameByTab, useTabBookmarkState } from "@/hooks/active-tab"
 import { useGroupList } from "@/hooks/bookmarks"
 import { useBookmarkFormUpdater, usePageFormUpdater } from "@/utils/business"
-import { objects } from "@/utils/primitives"
-import { SPACINGS } from "@/styles"
 import { useChromeExtensionShortcut, useShortcut } from "@/utils/sensors"
 import { useAsyncLoading } from "@/utils/reactivity"
+import { objects } from "@/utils/primitives"
+import { SPACINGS } from "@/styles"
 
 export function BookmarkNotice() {
     const { groupList } = useGroupList()

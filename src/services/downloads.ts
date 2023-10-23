@@ -1,6 +1,11 @@
 import { Setting, settings } from "@/functions/setting"
 import { sessions } from "@/functions/storage"
-import { DOWNLOAD_EXTENSIONS, DOWNLOAD_RENAME_SITES } from "@/functions/sites"
+import {
+    DOWNLOAD_EXTENSIONS,
+    DOWNLOAD_RENAME_SITES,
+    EHENTAI_CONSTANTS, GELBOORU_CONSTANTS, IDOL_SANKAKUCOMPLEX_CONSTANTS, PIXIV_CONSTANTS,
+    SANKAKUCOMPLEX_CONSTANTS
+} from "@/functions/sites"
 import { autoCollectSourceData } from "@/services/source-data"
 
 export async function downloadURL(options: {url: string, referrer?: string}) {
@@ -123,11 +128,11 @@ const MATCH_PROCESSORS: Readonly<Record<string, (args: Record<string, string>) =
             }
         }else{
             //如果session缓存没有数据，则自行尝试在tabs中搜索
-            const tabs = await chrome.tabs.query({currentWindow: true, url: `https://chan.sankakucomplex.com/post/show/${md5}`})
+            const tabs = await chrome.tabs.query({currentWindow: true, url: SANKAKUCOMPLEX_CONSTANTS.PATTERNS.ANY_URL})
             for(const tab of tabs) {
                 if(tab.url) {
                     const url = new URL(tab.url)
-                    const res = /\/post\/show\/(?<MD5>\S+)/.exec(url.pathname)
+                    const res = SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_PATHNAME.exec(url.pathname)
                     if(res && res.groups && res.groups["MD5"] === md5) {
                         const query = new URLSearchParams(url.hash)
                         const pid = query.get("PID")
@@ -137,14 +142,14 @@ const MATCH_PROCESSORS: Readonly<Record<string, (args: Record<string, string>) =
                                 "PID": pid
                             }
                         }else{
-                            console.log(`[sankakucomplexProcessor] Found chan.sankakucomplex.com/post/show/${md5} tab, but PID not exist in hash.`)
+                            console.log(`[sankakucomplexProcessor] Found Chan Sankakucomplex post ${md5} tab, but PID not exist in hash.`)
                             return null
                         }
                     }
                 }
             }
 
-            console.log(`[sankakucomplexProcessor] Cannot find chan.sankakucomplex.com/post/show/${md5} tab.`)
+            console.log(`[sankakucomplexProcessor] Cannot find Chan Sankakucomplex post ${md5} tab.`)
             return null
         }
     },
@@ -163,11 +168,11 @@ const MATCH_PROCESSORS: Readonly<Record<string, (args: Record<string, string>) =
             }
         }else{
             //如果session缓存没有数据，则自行尝试在tabs中搜索
-            const tabs = await chrome.tabs.query({currentWindow: true, url: `https://e-hentai.org/s/*/${gid}-${page}*`})
-            const re = /https:\/\/e-hentai.org\/s\/(?<PHASH>\S+)\/(?<GID>\d+)-(?<PAGE>\d+)/
+            const tabs = await chrome.tabs.query({currentWindow: true, url: EHENTAI_CONSTANTS.PATTERNS.ANY_IMAGE_URL})
             for(const tab of tabs) {
                 if(tab.url) {
-                    const res = re.exec(tab.url)
+                    const url = new URL(tab.url)
+                    const res = EHENTAI_CONSTANTS.REGEXES.IMAGE_PATHNAME.exec(url.pathname)
                     if(res && res.groups && res.groups["GID"] === gid && res.groups["PAGE"] === page) {
                         const pHash = res.groups["PHASH"]
                         return {
@@ -179,7 +184,7 @@ const MATCH_PROCESSORS: Readonly<Record<string, (args: Record<string, string>) =
                 }
             }
 
-            console.log(`[ehentaiOriginalProcessor] Cannot find e-hentai.org/s/*/${gid}-${page} tab.`)
+            console.log(`[ehentaiOriginalProcessor] Cannot find EHentai image ${gid}-${page} tab.`)
             return null
         }
     },
@@ -187,10 +192,10 @@ const MATCH_PROCESSORS: Readonly<Record<string, (args: Record<string, string>) =
         //右键另存为图片，这种下载方式无法从下载项中获取任何有效信息。
         //解决思路是利用“下载时一定位于当前页面”的巧合，将当前激活页面当作原始页。因此，这也限制了在保存之前不能随意切换tab。
         //从URL就能获取所需的imageHash, galleryId, pageNum。
-        const tabs = await chrome.tabs.query({currentWindow: true, active: true, url: "https://e-hentai.org/s/*/*"})
+        const tabs = await chrome.tabs.query({currentWindow: true, active: true, url: EHENTAI_CONSTANTS.PATTERNS.ANY_IMAGE_URL})
         if(tabs.length > 0 && tabs[0].url !== undefined) {
-            const re = /https:\/\/e-hentai.org\/s\/(?<PHASH>\S+)\/(?<GID>\d+)-(?<PAGE>\d+)/
-            const res = re.exec(tabs[0].url)
+            const url = new URL(tabs[0].url)
+            const res = EHENTAI_CONSTANTS.REGEXES.IMAGE_PATHNAME.exec(url.pathname)
             if(res && res.groups) {
                 const gid = res.groups["GID"]
                 const page = res.groups["PAGE"]
@@ -204,7 +209,7 @@ const MATCH_PROCESSORS: Readonly<Record<string, (args: Record<string, string>) =
                 console.error(`[ehentaiSaveAsProcessor] Cannot analyse active tab url [${tabs[0].url}].`)
             }
         }else{
-            console.error("[ehentaiSaveAsProcessor] Cannot find active e-hentai.org/s tab.")
+            console.error("[ehentaiSaveAsProcessor] Cannot find active EHentai image tab.")
         }
         return null
     }
@@ -213,35 +218,35 @@ const MATCH_PROCESSORS: Readonly<Record<string, (args: Record<string, string>) =
 const DOWNLOAD_RENAME_RULES: Readonly<MatchRule[]> = [
     {
         siteName: "sankakucomplex",
-        referrer: /https:\/\/chan.sankakucomplex.com\/post\/show\/(?<MD5>\S+)/,
+        referrer: SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_URL,
         processor: "sankakucomplex"
     },
     {
         siteName: "ehentai",
-        url: /https:\/\/e-hentai.org\/fullimg.php\?gid=(?<GID>\d+)&page=(?<PAGE>\d+)/,
+        url: EHENTAI_CONSTANTS.REGEXES.FULLIMG_URL,
         processor: "ehentai-original"
     },
     {
         siteName: "ehentai",
-        referrer: /https:\/\/e-hentai.org\/$/,
+        referrer: EHENTAI_CONSTANTS.REGEXES.HOMEPAGE_URL,
         processor: "ehentai-save-image"
     },
     {
         siteName: "ehentai",
-        referrer: /https:\/\/e-hentai.org\/s\/(?<PHASH>[a-zA-Z0-9]+)\/(?<GID>\d+)-(?<PAGE>\d+)/
+        referrer: EHENTAI_CONSTANTS.REGEXES.IMAGE_URL
     },
     {
         siteName: "pixiv",
-        referrer: /https:\/\/www.pixiv.net\/$/,
+        referrer: PIXIV_CONSTANTS.REGEXES.HOMEPAGE_URL,
         filename: /(?<PID>\d+)_p(?<PAGE>\d+)/
     },
     {
         siteName: "gelbooru",
-        referrer: /https:\/\/gelbooru.com\/index.php\?.*id=(?<PID>\d+)/
+        referrer: GELBOORU_CONSTANTS.REGEXES.POST_URL
     },
     {
         siteName: "idolcomplex",
-        referrer: /https:\/\/idol.sankakucomplex.com\/post\/show\/(?<PID>\d+)/
+        referrer: IDOL_SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_URL
     },
 ]
 

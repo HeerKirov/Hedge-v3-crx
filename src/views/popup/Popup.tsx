@@ -1,8 +1,8 @@
 import { styled } from "styled-components"
 import { useServerHealth } from "@/functions/server"
-import { BookmarkNotice } from "./Bookmark"
-import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, FONT_SIZES, SPACINGS } from "@/styles"
 import { SourceInfoNotice } from "@/views/popup/SourceInfo"
+import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, FONT_SIZES, SPACINGS } from "@/styles"
+import { BookmarkNotice } from "./Bookmark"
 
 export function Popup() {
     return <RootDiv>

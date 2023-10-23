@@ -3,7 +3,7 @@ import { SourceAdditionalInfoForm, SourceBookForm, SourceDataUpdateForm, SourceT
 import { Setting, settings } from "@/functions/setting"
 import { sessions } from "@/functions/storage"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
-import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
+import { SANKAKUCOMPLEX_CONSTANTS, SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { Result } from "@/utils/primitives"
 import { onDOMContentLoaded } from "@/utils/document"
 
@@ -38,11 +38,13 @@ chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callb
  */
 function loadPostMD5(): number {
     const pid = getPID()
-    const res = /\/post\/show\/(?<MD5>\S+)/.exec(document.location.pathname)
+    const res = SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_PATHNAME.exec(document.location.pathname)
     if(res && res.groups) {
         const md5 = res.groups["MD5"]
         sessions.reflect.sankakuPostId.set({md5}, {pid: pid.toString()})
         sessions.reflect.sankakuPostMD5.set({pid: pid.toString()}, {md5})
+    }else{
+        console.warn("[loadPostMD5] MD5 value not matched.")
     }
     return pid
 }
@@ -74,7 +76,7 @@ function enableBookEnhancement() {
             if(sn.id.startsWith("pool")) {
                 const bookId = sn.id.slice("pool".length)
                 const legacyA = document.createElement("a")
-                legacyA.href = `https://chan.sankakucomplex.com/pool/show/${bookId}`
+                legacyA.href = SANKAKUCOMPLEX_CONSTANTS.PATTERNS.BOOK_URL(bookId)
                 legacyA.text = `Legacy pool: ${bookId}`
                 sn.append("(")
                 sn.appendChild(legacyA)
@@ -123,7 +125,7 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, string
         }
         const tagAnchor = tagLi.querySelector("div > a[itemprop=\"keywords\"]")
         if(tagAnchor !== null && tagAnchor.textContent) {
-            tag.name = tagAnchor.textContent.replace("_", " ")
+            tag.name = tagAnchor.textContent.replaceAll("_", " ")
             tag.code = tag.name
         }else{
             return {ok: false, err: `Tag[${i}]: Cannot find its anchor.`}
@@ -175,7 +177,7 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, string
     }
 
     const additionalInfo: SourceAdditionalInfoForm[] = []
-    const res = /\/post\/show\/(?<MD5>\S+)/.exec(document.location.pathname)
+    const res = SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_PATHNAME.exec(document.location.pathname)
     if(res && res.groups) {
         const value = res.groups["MD5"]
         const field = rule.additionalInfo["md5"]

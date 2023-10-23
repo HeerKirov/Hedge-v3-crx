@@ -4,6 +4,7 @@ import { Setting, settings } from "@/functions/setting"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
 import { Result } from "@/utils/primitives"
 import { onDOMContentLoaded } from "@/utils/document"
+import { PIXIV_CONSTANTS } from "@/functions/sites.ts"
 
 onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] pixiv/artworks script loaded.")
@@ -48,7 +49,7 @@ function reportSourceData(_: Setting): Result<SourceDataUpdateForm, string> {
         if(!artistName) {
             return {ok: false, err: `Artist: artist name is empty.`}
         }
-        const match = artistAnchor.href.match(/\/users\/(?<UID>\d+)/)
+        const match = artistAnchor.href.match(PIXIV_CONSTANTS.REGEXES.USER_PATHNAME)
         if(match && match.groups) {
             const userId = match.groups["UID"]
             tags.push({code: userId, name: artistName, type: "artist"})
@@ -121,7 +122,7 @@ function reportSourceDataPath(setting: Setting): SourceDataPath {
  * 获得PID。
  */
 function getPID(): number {
-    const match = document.location.pathname.match(/\/artworks\/(?<PID>\d+)/)
+    const match = document.location.pathname.match(PIXIV_CONSTANTS.REGEXES.ARTWORK_PATHNAME)
     if(match && match.groups) {
         return parseInt(match.groups["PID"])
     }else{

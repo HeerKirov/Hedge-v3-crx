@@ -1,8 +1,8 @@
+import { styled } from "styled-components"
 import { useTabSourceInfo } from "@/hooks/active-tab"
 import { Button, FormattedText, Icon, SecondaryText } from "@/components"
 import { SourceDataPath } from "@/functions/server/api-all"
 import { SourceDataCollectStatus, SourceEditStatus } from "@/functions/server/api-source-data"
-import { styled } from "styled-components"
 import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, RADIUS_SIZES, SPACINGS } from "@/styles"
 
 

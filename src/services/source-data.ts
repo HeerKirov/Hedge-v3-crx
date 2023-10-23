@@ -1,7 +1,12 @@
 import { sendMessageToTab } from "@/services/messages"
 import { server } from "@/functions/server"
 import { Setting } from "@/functions/setting"
-import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
+import {
+    EHENTAI_CONSTANTS,
+    PIXIV_CONSTANTS,
+    SANKAKUCOMPLEX_CONSTANTS,
+    SOURCE_DATA_COLLECT_SITES
+} from "@/functions/sites"
 import { sessions } from "@/functions/storage"
 import { NOTIFICATIONS } from "@/services/notification"
 
@@ -197,25 +202,28 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
     return true
 }
 
+/**
+ * 来源数据收集时的一些规则，包括：从args中的什么字段提取sourceId；根据sourceId如何匹配URL(用于chrome.tabs.query)，以找到要收集数据的页面。
+ */
 const SOURCE_DATA_RULES: Record<string, SourceDataRule> = {
     "sankakucomplex": {
         sourceId: "PID",
         pattern: async sourceId => {
             const md5 = await sessions.reflect.sankakuPostMD5.get({pid: sourceId.toString()})
-            return md5 ? `https://chan.sankakucomplex.com/post/show/${md5.md5}` : null
+            return md5 ? SANKAKUCOMPLEX_CONSTANTS.PATTERNS.POST_URL(md5.md5) : null
         }
     },
     "ehentai": {
         sourceId: "GID",
-        pattern: sourceId => `https://e-hentai.org/g/${sourceId}/*`
+        pattern: EHENTAI_CONSTANTS.PATTERNS.GALLERY_URL
     },
     "pixiv": {
         sourceId: "PID",
-        pattern: sourceId => `https://www.pixiv.net/artworks/${sourceId}`
+        pattern: PIXIV_CONSTANTS.PATTERNS.ARTWORK_URL
     }
 }
 
 interface SourceDataRule {
     sourceId: string
-    pattern(sourceId: number): string | null | Promise<string | null>
+    pattern(sourceId: number): string | string[] | null | Promise<string | string[] | null>
 }

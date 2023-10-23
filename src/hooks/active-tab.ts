@@ -3,7 +3,13 @@ import { Setting, settings } from "@/functions/setting"
 import { BookmarkModel, Page } from "@/functions/database"
 import { SourceDataPath } from "@/functions/server/api-all"
 import { SourceDataCollectStatus } from "@/functions/server/api-source-data"
-import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
+import {
+    BETA_SANKAKUCOMPLEX_CONSTANTS,
+    EHENTAI_CONSTANTS,
+    PIXIV_CONSTANTS,
+    SANKAKUCOMPLEX_CONSTANTS,
+    SOURCE_DATA_COLLECT_SITES
+} from "@/functions/sites"
 import { server } from "@/functions/server"
 import { BookmarkForm, bookmarks, PageForm } from "@/services/bookmarks"
 import { setActiveTabBadgeByStatus, setActiveTabIconByBookmarked } from "@/services/active-tab"
@@ -238,82 +244,85 @@ export async function getSuggestedBookmarkNameByTab(tabId: number): Promise<stri
     return null
 }
 
+/**
+ * active-tab功能中与Site相关的部分。在下列预定义的网站中，针对某些URL，支持分析其url/title并提取出bookmark中建议使用的名称。
+ */
 const SUGGESTED_SITES: SuggestedSite[] = [
     {
-        hosts: ["chan.sankakucomplex.com"],
+        hosts: SANKAKUCOMPLEX_CONSTANTS.HOSTS,
         suggest(url, title) {
-            if(/^\/post\/show/.test(url.pathname)) {
+            if(SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_PATHNAME.test(url.pathname)) {
                 // 图像页，尝试提取artist name，且替换下划线
                 const matched = title.match(/.* by (.+) | Sankaku Channel/)
                 if(matched) {
-                    return matched[1].replace("_", " ")
+                    return matched[1].replaceAll("_", " ")
                 }
-            }else if((url.pathname === "/" || url.pathname === "/post" || /^\/.*\/post/.test(url.pathname)) && url.searchParams.has("tags")) {
+            }else if(SANKAKUCOMPLEX_CONSTANTS.REGEXES.SEARCH_PATHNAME.test(url.pathname) && url.searchParams.has("tags")) {
                 // 一般搜索页，尝试从中提取artist name，且替换下划线
                 const matched = title.match(/(.+) | Sankaku Channel/)
                 if(matched) {
                     const artist = matched[1].split("+", 1)[0]
                     if(artist) {
-                        return artist.replace("_", " ")
+                        return artist.replaceAll("_", " ")
                     }
                 }
                 const artist = url.searchParams.get("tags")!.split("+", 1)[0]
                 if(artist) {
-                    return artist.replace("_", " ")
+                    return artist.replaceAll("_", " ")
                 }
             }
         }
     },
     {
-        hosts: ["beta.sankakucomplex.com"],
+        hosts: BETA_SANKAKUCOMPLEX_CONSTANTS.HOSTS,
         suggest(url, _) {
-            if(url.pathname === "/" || (/^\/(books|posts)/.test(url.pathname)) && url.searchParams.has("tags")) {
+            if(BETA_SANKAKUCOMPLEX_CONSTANTS.REGEXES.SEARCH_PATHNAME.test(url.pathname) && url.searchParams.has("tags")) {
                 const artist = url.searchParams.get("tags")!.split("+", 1)[0]
                 if(artist) {
-                    return artist.replace("_", " ")
+                    return artist.replaceAll("_", " ")
                 }
             }
         }
     },
     {
-        hosts: ["e-hentai.org", "exhentai.org"],
+        hosts: EHENTAI_CONSTANTS.HOSTS,
         suggest(url, title) {
-            if(/^\/g\/(?<GID>\d+)\/(?<TOKEN>[a-zA-Z0-9]+)/.test(url.pathname)) {
+            if(EHENTAI_CONSTANTS.REGEXES.GALLERY_PATHNAME.test(url.pathname)) {
                 // gallery画廊页面，取画廊标题
                 const matched = title.match(/(.+) - E-Hentai Galleries/)
                 if(matched) {
                     return matched[1]
                 }
-            }else if(/^\/tag\/.*/.test(url.pathname)) {
+            }else if(EHENTAI_CONSTANTS.REGEXES.TAG_PATHNAME.test(url.pathname)) {
                 //tag搜索页，按照正在搜索的tag，取tag name，且替换下划线
-                const matched = title.match(/.*:(.+) - .*/)
-                if(matched) {
-                    return matched[1].replace("_", " ")
+                const matched = title.match(/.*:(?<NAME>.+) - .*/)
+                if(matched && matched.groups) {
+                    return matched.groups["NAME"].replaceAll("_", " ")
                 }
-                const matched2 = url.pathname.match(/^\/tag\/.*:(.+)/)
-                if(matched2) {
-                    return matched2[1].replace("_", " ")
+                const matched2 = url.pathname.match(EHENTAI_CONSTANTS.REGEXES.TAG_PATHNAME)
+                if(matched2 && matched2.groups) {
+                    return matched2.groups["NAME"].replaceAll("_", " ")
                 }
             }else if(url.pathname === "/" && url.searchParams.has("f_search")) {
                 //一般搜索页，尝试找出正在搜索的tag，取tag name，且替换下划线
                 const matched = url.searchParams.get("f_search")!.match(/([^:]+:)?(.+)\$?/)
                 if(matched) {
-                    return matched[2].replace("_", " ")
+                    return matched[2].replaceAll("_", " ")
                 }
             }
         }
     },
     {
-        hosts: ["www.pixiv.net"],
+        hosts: PIXIV_CONSTANTS.HOSTS,
         suggest(url, title) {
-            if(/^\/users\/\d+(\/(artworks|illustrations|manga))?/.test(url.pathname)) {
+            if(PIXIV_CONSTANTS.REGEXES.USER_ABOUT_PATHNAME.test(url.pathname)) {
                 // users作者相关页面，取名为username
                 const matched = title.match(/(.*) - pixiv$/)
                 if(matched) {
                     const artist = matched[1]
                     return strings.removeSuffix(artist, ["的插图・漫画", "的插画", "的漫画"])
                 }
-            }else if(/^\/artworks\/\d+/.test(url.pathname)) {
+            }else if(PIXIV_CONSTANTS.REGEXES.ARTWORK_PATHNAME.test(url.pathname)) {
                 // artworks作品页面，取名为作者的username
                 const matched = title.match(/(.*) - (.*) - pixiv$/)
                 if(matched) {

@@ -2,7 +2,7 @@ import { SourceDataPath } from "@/functions/server/api-all"
 import { SourceAdditionalInfoForm, SourceDataUpdateForm, SourceTagForm } from "@/functions/server/api-source-data"
 import { Setting, settings } from "@/functions/setting"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
-import { SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
+import { EHENTAI_CONSTANTS, SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { Result } from "@/utils/primitives"
 import { onDOMContentLoaded } from "@/utils/document"
 
@@ -75,9 +75,9 @@ function enableCommentFilter(blockCN: boolean, blockVote: boolean, blockKeywords
         if(c5?.textContent) {
             const vote = parseInt(c5.textContent)
             //低Vote评论
-            if(vote <= -25) lowVote[i] = true
+            if(vote <= -30) lowVote[i] = true
             //高Vote评论
-            if(vote >= 25) highVote[i] = true
+            if(vote >= 20) highVote[i] = true
         }
         const c6 = div.querySelector<HTMLDivElement>("div.c6")
         if(c6?.textContent) {
@@ -90,11 +90,11 @@ function enableCommentFilter(blockCN: boolean, blockVote: boolean, blockKeywords
 
     let cnBanned: "MARK" | "FORBIDDEN" | undefined
     if(blockCN) {
-        //当gallery包含以下任意tag，且parody tag数量不超过5时，将评论区标记为"特别关照"
+        //当gallery包含以下任意tag，且parody tag数量不超过3时，将评论区标记为"特别关照"
         const warnTags = ["genshin impact", "honkai star rail"]
         const tags = [...document.querySelectorAll<HTMLAnchorElement>("#taglist a")]
         const parodyCount = tags.filter(a => a.id.startsWith("ta_parody")).length
-        const warning = tags.some(a => a.textContent && warnTags.includes(a.textContent)) && parodyCount < 5
+        const warning = tags.some(a => a.textContent && warnTags.includes(a.textContent)) && parodyCount < 3
         if(warning) {
             if((lowVote.some((_, i) => chinese[i]) || keywordBanned.some((_, i) => chinese[i]) || userBanned.some((_, i) => chinese[i])) && highVote.some((_, i) => chinese[i])) {
                 cnBanned = "FORBIDDEN"
@@ -170,13 +170,13 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, string
     const categoryDiv = document.querySelector<HTMLDivElement>(".gm .cs")
     if(categoryDiv) {
         const category = categoryDiv.textContent!
-        tags.push({code: category.toLowerCase().replace(" ", "-"), name: category, type: "category"})
+        tags.push({code: category.toLowerCase().replaceAll(" ", "-"), name: category, type: "category"})
     }else{
         return {ok: false, err: `Category: cannot find '.cs'.`}
     }
 
     const additionalInfo: SourceAdditionalInfoForm[] = []
-    const pathnameMatch = document.location.pathname.match(/\/g\/(?<GID>\d+)\/(?<TOKEN>[a-zA-Z0-9]+)/)
+    const pathnameMatch = document.location.pathname.match(EHENTAI_CONSTANTS.REGEXES.GALLERY_PATHNAME)
     if(pathnameMatch && pathnameMatch.groups) {
         const value = pathnameMatch.groups["TOKEN"]
         const field = rule.additionalInfo["token"]
@@ -226,7 +226,7 @@ function reportSourceDataPath(setting: Setting): SourceDataPath {
  * 获得GalleryId。
  */
 function getGalleryId(): number {
-    const match = document.location.pathname.match(/\/g\/(?<GID>\d+)\/[a-zA-Z0-9]+/)
+    const match = document.location.pathname.match(EHENTAI_CONSTANTS.REGEXES.GALLERY_PATHNAME)
     if(match && match.groups) {
         return parseInt(match.groups["GID"])
     }else{

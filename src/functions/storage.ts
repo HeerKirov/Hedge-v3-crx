@@ -11,15 +11,15 @@ export const sessions = {
         /**
          * E-Hentai: gallery id + page映射到image hash。
          */
-        ehentaiGalleryImageHash: createPathEndpoint<{gid: string, page: string}, {imageHash: string}>("session", p => `reflect/ehentai/gallery/image-hash/${p.gid}-${p.page}`),
+        ehentaiGalleryImageHash: createDictEndpoint<{gid: string, page: string}, {imageHash: string}>("session", "reflect/ehentai/gallery/image-hash",p => `${p.gid}-${p.page}`),
         /**
          * Sankaku: post MD5映射到post id。
          */
-        sankakuPostId: createPathEndpoint<{md5: string}, {pid: string}>("session", p => `reflect/sankaku/post-id/${p.md5}`),
+        sankakuPostId: createDictEndpoint<{md5: string}, {pid: string}>("session", "reflect/sankaku/post-id", p => p.md5),
         /**
          * Sankaku: post id映射到post MD5。
          */
-        sankakuPostMD5: createPathEndpoint<{pid: string}, {md5: string}>("session", p => `reflect/sankaku/post-md5/${p.pid}`)
+        sankakuPostMD5: createDictEndpoint<{pid: string}, {md5: string}>("session", "reflect/sankaku/post-md5", p => p.pid)
     },
     /**
      * 临时存储。
@@ -88,12 +88,12 @@ function createDictEndpoint<P, T>(type: "local" | "session", key: string, subKey
     return {
         async get(path: P): Promise<T | undefined> {
             const subKey = subKeyOf(path)
-            const res = await f.get([key])
-            return res[key] ? res[key][subKey] : undefined
+            const { [key]: res } = await f.get([key])
+            return res ? res[subKey] : undefined
         },
         async set(path: P, newValue: T): Promise<void> {
             const subKey = subKeyOf(path)
-            const res = await f.get([key])
+            const { [key]: res } = await f.get([key])
             if(res !== undefined) {
                 res[subKey] = newValue
                 await f.set({ [key]: res })

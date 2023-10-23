@@ -3,6 +3,7 @@ import { Setting, settings } from "@/functions/setting"
 import { sessions } from "@/functions/storage"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
 import { onDOMContentLoaded } from "@/utils/document"
+import { EHENTAI_CONSTANTS } from "@/functions/sites.ts"
 
 onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] ehentai/image script loaded.")
@@ -35,14 +36,8 @@ function loadActiveTabInfo(setting: Setting) {
  * 加载gallery page数据。将image hash信息保存到session。
  */
 function loadGalleryPageHash() {
-    const re = /\/s\/(?<PHASH>\S+)\/(?<GID>\d+)-(?<PAGE>\d+)/
-    const res = re.exec(document.location.pathname)
-    if(res && res.groups) {
-        const imageHash = res.groups["PHASH"]
-        const gid = res.groups["GID"]
-        const page = res.groups["PAGE"]
-        sessions.reflect.ehentaiGalleryImageHash.set({gid, page}, {imageHash})
-    }
+    const { gid, page, imageHash } = getIdentityInfo()
+    sessions.reflect.ehentaiGalleryImageHash.set({gid: gid.toString(), page: page.toString()}, {imageHash})
 }
 
 /**
@@ -92,7 +87,8 @@ function reportSourceDataPath(setting: Setting): SourceDataPath {
  * 获得GalleryId、Page和ImageHash。
  */
 function getIdentityInfo(): {gid: number, page: number, imageHash: string} {
-    const match = document.location.pathname.match(/\/s\/(?<PHASH>[a-zA-Z0-9]+)\/(?<GID>\d+)-(?<PAGE>\d+)/)
+    const re = EHENTAI_CONSTANTS.REGEXES.IMAGE_PATHNAME
+    const match = document.location.pathname.match(re)
     if(match && match.groups) {
         const gid = parseInt(match.groups["GID"])
         const page = parseInt(match.groups["PAGE"])
