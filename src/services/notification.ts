@@ -1,6 +1,6 @@
 import { sessions } from "@/functions/storage"
 
-export function buttonClicked(notificationId: string, buttonIndex: number) {
+export function notificationButtonClicked(notificationId: string, buttonIndex: number) {
     if(notificationId === "AUTO_COLLECT_SERVER_DISCONNECTED") {
         if(buttonIndex === 0) {
             sessions.cache.closeAutoCollect(true).finally()

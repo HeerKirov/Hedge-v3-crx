@@ -1,4 +1,4 @@
-import React, { memo, useState } from "react"
+import React, { memo, useCallback, useState } from "react"
 import { styled, css } from "styled-components"
 import { mix } from "polished"
 import { FormattedText, GroupTag, Icon, PopupMenu, PopupMenuItem, Starlight } from "@/components"
@@ -13,26 +13,27 @@ interface BookmarkListProps {
     creatingIndex: [number, number | null] | null
     onUpdateSelectedIndex?(idx: [number, number | null] | null): void
     onUpdateCreatingIndex?(idx: [number, number | null]): void
-    onDeleteBookmark?(index: number): void
-    onDeletePage?(index: number, pageIndex: number): void
-    onMovePage?(index: number, pageIndex: number, moveToIndex: number, moveToPageIndex: number | null): void
+    onDeleteBookmark?(bookmarkId: number): void
+    onDeletePage?(bookmarkId: number, pageId: number): void
+    onMovePage?(bookmarkId: number, pageId: number, moveToBookmarkId: number, moveToPageIndex: number | null): void
 }
 
 interface BookmarkListUnitProps {
     item: BookmarkModel
+    index: number
     selected: boolean
     allGroups: GroupModel[]
     selectedPageIndex: number | null
     creatingPageIndex: number | null
     clipboardPageIndex: number | null
     clipboardEnabled: boolean
-    onUpdateSelectedIndex(pageIndex: number | null): void
-    onUpdateCreatingIndex(pageIndex: number): void
-    onUpdateClipboardIndex(pageIndex: number): void
-    onPasteClipboard(pageIndex: number | null): void
-    onMovePage(pageIndex: number, moveToPageIndex: number): void
-    onDeleteBookmark(): void
-    onDeletePage(pageIndex: number): void
+    onUpdateSelectedIndex?(idx: [number, number | null] | null): void
+    onUpdateCreatingIndex?(idx: [number, number | null]): void
+    onUpdateClipboardIndex(index: number, pageIndex: number): void
+    onPasteClipboard(index: number, pageIndex: number | null): void
+    onMovePage(bookmarkId: number, pageIndex: number, moveToPageIndex: number): void
+    onDeleteBookmark?(bookmarkId: number): void
+    onDeletePage?(bookmarkId: number, pageId: number): void
 }
 
 interface BookmarkItemProps {
@@ -51,74 +52,62 @@ interface BookmarkItemProps {
 interface PageItemProps { 
     item: Page
     index: number
-    count: number
+    bookmark: BookmarkModel
+    bookmarkIndex: number
     allGroups: GroupModel[]
     selected: boolean
     clipboarded: boolean
     clipboardEnabled: boolean
-    onSelected(index: number): void
-    onCreating(index: number): void
-    onClip(index: number): void
-    onPaste(index: number): void
-    onMovePage(pageIndex: number, moveToIndex: number): void
-    onDelete(index: number): void
+    onUpdateSelectedIndex?(idx: [number, number | null] | null): void
+    onUpdateCreatingIndex?(idx: [number, number | null]): void
+    onUpdateClipboardIndex(index: number, pageIndex: number): void
+    onPasteClipboard(index: number, pageIndex: number | null): void
+    onMovePage(bookmarkId: number, pageIndex: number, moveToPageIndex: number): void
+    onDeletePage?(bookmarkId: number, pageId: number): void
 }
 
 export function BookmarkList(props: BookmarkListProps) {
+    const { selectedIndex, creatingIndex, onUpdateSelectedIndex, onUpdateCreatingIndex, onMovePage } = props
     const [pageClipboardIndex, setPageClipboardIndex] = useState<[number, number] | null>(null)
 
-    const updateSelectedIndex = (index: number, pageIndex: number | null) => {
-        if(props.selectedIndex === null || props.selectedIndex[0] !== index || props.selectedIndex[1] !== pageIndex) {
-            props.onUpdateSelectedIndex?.([index, pageIndex])
-        }
-    }
+    const movePage = useCallback((index: number, pageIndex: number, moveToPageIndex: number) => {
+        onMovePage?.(index, pageIndex, index, moveToPageIndex)
+    }, [onMovePage])
 
-    const updateCreatingIndex = (index: number, pageIndex: number | null) => {
-        if(props.creatingIndex === null || props.creatingIndex[0] !== index || props.creatingIndex[1] !== pageIndex) {
-            props.onUpdateCreatingIndex?.([index, pageIndex])
-        }
-    }
-
-    const movePage = (index: number, pageIndex: number, moveToPageIndex: number) => {
-        props.onMovePage?.(index, pageIndex, index, moveToPageIndex)
-    }
-
-    const setClipboard = (index: number, pageIndex: number) => {
+    const setClipboard = useCallback((index: number, pageIndex: number) => {
         setPageClipboardIndex([index, pageIndex])
-        if(props.selectedIndex !== null && props.selectedIndex[0] === index && props.selectedIndex[1] === pageIndex) {
-            props.onUpdateSelectedIndex?.(null)
-        }
-    }
+        onUpdateSelectedIndex?.(null)
+    }, [onUpdateSelectedIndex])
 
-    const pasteClipboard = (index: number, pageIndex: number | null) => {
+    const pasteClipboard = useCallback((index: number, pageIndex: number | null) => {
         if(pageClipboardIndex !== null) {
-            props.onMovePage?.(pageClipboardIndex[0], pageClipboardIndex[1], index, pageIndex)
+            onMovePage?.(pageClipboardIndex[0], pageClipboardIndex[1], index, pageIndex)
             setPageClipboardIndex(null)
         }
-    }
+    }, [pageClipboardIndex, onMovePage])
 
     return <RootDiv>
         {props.bookmarkList.map((bookmark, index) => <BookmarkListUnit 
-            key={bookmark.bookmarkId} item={bookmark} allGroups={props.allGroups}
-            selected={props.selectedIndex !== null && props.selectedIndex[0] === index} 
-            selectedPageIndex={props.selectedIndex !== null && props.selectedIndex[0] === index ? props.selectedIndex[1] : null}
-            creatingPageIndex={props.creatingIndex !== null && props.creatingIndex[0] === index ? props.creatingIndex[1] : null}
+            key={bookmark.bookmarkId} index={index} item={bookmark} allGroups={props.allGroups}
+            selected={selectedIndex !== null && selectedIndex[0] === index}
+            selectedPageIndex={selectedIndex !== null && selectedIndex[0] === index ? selectedIndex[1] : null}
+            creatingPageIndex={creatingIndex !== null && creatingIndex[0] === index ? creatingIndex[1] : null}
             clipboardPageIndex={pageClipboardIndex !== null && pageClipboardIndex[0] === index ? pageClipboardIndex[1] : null}
             clipboardEnabled={pageClipboardIndex !== null}
-            onUpdateSelectedIndex={p => updateSelectedIndex(index, p)}
-            onUpdateCreatingIndex={p => updateCreatingIndex(index, p)}
-            onUpdateClipboardIndex={p => setClipboard(index, p)}
-            onPasteClipboard={p => pasteClipboard(index, p)}
-            onMovePage={(p, t) => movePage(index, p, t)}
-            onDeleteBookmark={() => props.onDeleteBookmark?.(index)}
-            onDeletePage={p => props.onDeletePage?.(index, p)}
+            onUpdateSelectedIndex={onUpdateSelectedIndex}
+            onUpdateCreatingIndex={onUpdateCreatingIndex}
+            onUpdateClipboardIndex={setClipboard}
+            onPasteClipboard={pasteClipboard}
+            onMovePage={movePage}
+            onDeleteBookmark={props.onDeleteBookmark}
+            onDeletePage={props.onDeletePage}
         />)}
         {props.creatingIndex !== null && props.creatingIndex[0] >= props.bookmarkList.length && <BookmarkCreateItem/>}
     </RootDiv>
 }
 
 const BookmarkListUnit = memo(function (props: BookmarkListUnitProps) {
-    const [expanded, setExpanded] = useState(true)
+    const [expanded, setExpanded] = useState(props.item.pages.length <= 10)
 
     useWatch(() => {
         if(props.creatingPageIndex !== null && !expanded) {
@@ -133,24 +122,24 @@ const BookmarkListUnit = memo(function (props: BookmarkListUnitProps) {
             expanded={expanded}
             clipboardEnabled={props.clipboardEnabled}
             onUpdateExpanded={setExpanded}
-            onSelected={() => props.onUpdateSelectedIndex(null)} 
-            onCreating={props.onUpdateCreatingIndex} 
-            onPaste={() => props.onPasteClipboard(null)}
-            onDelete={props.onDeleteBookmark}
+            onSelected={() => props.onUpdateSelectedIndex?.([props.index, null])}
+            onCreating={pageIndex => props.onUpdateCreatingIndex?.([props.index, pageIndex])}
+            onPaste={() => props.onPasteClipboard?.(props.index, null)}
+            onDelete={() => props.onDeleteBookmark?.(props.item.bookmarkId)}
         />
         {expanded && props.item.pages.flatMap((page, index) => [
             props.creatingPageIndex === index && <PageCreateItem/>,
             <PageItem key={page.pageId} 
-                item={page} index={index} count={props.item.pages.length} allGroups={props.allGroups}
+                item={page} index={index} bookmark={props.item} bookmarkIndex={props.index} allGroups={props.allGroups}
                 selected={props.selected && props.selectedPageIndex === index} 
                 clipboarded={props.clipboardPageIndex === index}
                 clipboardEnabled={props.clipboardEnabled}
-                onSelected={props.onUpdateSelectedIndex}
-                onCreating={props.onUpdateCreatingIndex} 
-                onClip={props.onUpdateClipboardIndex}
-                onPaste={props.onPasteClipboard}
+                onUpdateSelectedIndex={props.onUpdateSelectedIndex}
+                onUpdateCreatingIndex={props.onUpdateCreatingIndex}
+                onUpdateClipboardIndex={props.onUpdateClipboardIndex}
+                onPasteClipboard={props.onPasteClipboard}
                 onMovePage={props.onMovePage}
-                onDelete={props.onDeletePage}
+                onDeletePage={props.onDeletePage}
             />
         ])}
         {props.creatingPageIndex !== null && props.creatingPageIndex >= props.item.pages.length && <PageCreateItem/>}
@@ -159,6 +148,7 @@ const BookmarkListUnit = memo(function (props: BookmarkListUnitProps) {
 
 const BookmarkItem = memo(function (props: BookmarkItemProps) {
     const description = props.item.description.split("\n", 1)[0]
+    const hasInfo = !!(props.item.groups?.length || props.item.keywords?.length || description)
 
     const deleteBookmark = () => {
         if(confirm("确认要删除此书签吗？")) {
@@ -179,22 +169,22 @@ const BookmarkItem = memo(function (props: BookmarkItemProps) {
         <Col $shrink={0} $width="1em">
             <CaretButton expanded={props.expanded} onUpdateExpanded={props.onUpdateExpanded}/>
         </Col>
-        <Col $width="33%" $overflow="ellipsis">
+        <Col $width={hasInfo ? "34%" : "100%"} $overflow="ellipsis">
             {props.item.name}
             {props.item.otherNames.length > 0 && <FormattedText color="secondary">{props.item.otherNames.map(n => ` / ${n}`)}</FormattedText>}
         </Col>
-        <Col $width="66%" $overflow="ellipsis">
+        {hasInfo && <Col $width="66%" $overflow="ellipsis">
             {props.item.groups.map(group => <GroupTag key={`${group[0]}-${group[1]}`} item={group} allGroups={props.allGroups} colored={!props.selected} bold/>)}
             {props.item.keywords.map(keyword => `[${keyword}]`)}
             {description}
-        </Col>
+        </Col>}
         <Col $shrink={0}>
             <Starlight colorMode={props.selected ? "inherit" : "std"} score={props.item.score}/>
         </Col>
         <Col $width="5.25em" $shrink={0}>
             {props.item.lastCollectTime?.toLocaleDateString()}
         </Col>
-        <Col $width="7em" $shrink={0}>
+        <Col $width="7.5em" $shrink={0}>
             <Icon icon="calendar-day" mr={1} ml={3}/>
             {props.item.updateTime.toLocaleDateString()}
         </Col>
@@ -203,8 +193,9 @@ const BookmarkItem = memo(function (props: BookmarkItemProps) {
 
 const PageItem = memo(function (props: PageItemProps) {
     const description = props.item.description?.split("\n", 1)[0]
+    const hasInfo = !!(props.item.groups?.length || props.item.keywords?.length || description)
 
-    const click = () => props.onSelected(props.index)
+    const click = () => props.onUpdateSelectedIndex?.([props.bookmarkIndex, props.index])
 
     const openURL = () => {
         if(props.item.url) chrome.tabs.create({url: props.item.url}).finally()
@@ -212,19 +203,19 @@ const PageItem = memo(function (props: PageItemProps) {
 
     const deletePage = () => {
         if(confirm("确认要删除此页面吗？")) {
-            props.onDelete(props.index)
+            props.onDeletePage?.(props.bookmark.bookmarkId, props.item.pageId)
         }
     }
 
     const popupMenu = (): PopupMenuItem[] => [
         {type: "normal", label: "打开链接", click: openURL},
         {type: "separator"},
-        {type: "normal", label: "在下一行添加页面", click: () => props.onCreating(props.index + 1)},
+        {type: "normal", label: "在下一行添加页面", click: () => props.onUpdateCreatingIndex?.([props.bookmarkIndex, props.index + 1])},
         {type: "separator"},
-        {type: "normal", label: "上移一行", disabled: props.index <= 0, click: () => props.onMovePage(props.index, props.index - 1)},
-        {type: "normal", label: "下移一行", disabled: props.index >= props.count - 1, click: () => props.onMovePage(props.index, props.index + 1)},
-        {type: "normal", label: "剪切", click: () => props.onClip(props.index)},
-        {type: "normal", label: "粘贴", disabled: !props.clipboardEnabled, click: () => props.onPaste(props.index)},
+        {type: "normal", label: "上移一行", disabled: props.index <= 0, click: () => props.onMovePage(props.bookmark.bookmarkId, props.index, props.index - 1)},
+        {type: "normal", label: "下移一行", disabled: props.index >= props.bookmark.pages.length - 1, click: () => props.onMovePage(props.bookmark.bookmarkId, props.index, props.index + 1)},
+        {type: "normal", label: "剪切", click: () => props.onUpdateClipboardIndex(props.bookmarkIndex, props.index)},
+        {type: "normal", label: "粘贴", disabled: !props.clipboardEnabled, click: () => props.onPasteClipboard(props.bookmarkIndex, props.index)},
         {type: "separator"},
         {type: "normal", label: "删除页面", backgroundColor: "danger", click: deletePage}
     ]
@@ -233,15 +224,15 @@ const PageItem = memo(function (props: PageItemProps) {
         <Col $shrink={0}>
             <Icon icon="file"/>
         </Col>
-        <Col $width="50%" $overflow="ellipsis">
+        <Col $width={hasInfo ? "50%" : "100%"} $overflow="ellipsis">
             {props.item.title}
             <FormattedText color="secondary"> ({props.item.url})</FormattedText>
         </Col>
-        <Col $width="50%" $overflow="ellipsis">
+        {hasInfo && <Col $width="50%" $overflow="ellipsis">
             {props.item.groups?.map(group => <GroupTag key={`${group[0]}-${group[1]}`} item={group} allGroups={props.allGroups} colored={!props.selected} bold/>)}
             {props.item.keywords?.map(keyword => `[${keyword}]`)}
             {description}
-        </Col>
+        </Col>}
         <Col $width="8.5em" $shrink={0} $textAlign="right">
             {props.item.lastCollect !== undefined && <>
                 <b>UpTo</b>
@@ -252,7 +243,7 @@ const PageItem = memo(function (props: PageItemProps) {
         <Col $width="5.25em" $shrink={0}>
             {props.item.lastCollectTime?.toLocaleDateString()}
         </Col>
-        <Col $width="7em" $shrink={0}>
+        <Col $width="7.5em" $shrink={0}>
             <Icon icon="calendar-day" mr={1} ml={3}/>
             {props.item.updateTime.toLocaleDateString()}
         </Col>

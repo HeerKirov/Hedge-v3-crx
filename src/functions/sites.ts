@@ -6,9 +6,9 @@ export const EHENTAI_CONSTANTS = {
         GALLERY_URL: (sourceId: number | string) => [`https://e-hentai.org/g/${sourceId}/*`, `https://exhentai.org/g/${sourceId}/*`]
     },
     REGEXES: {
-        GALLERY_PATHNAME: /^\/g\/(?<GID>\d+)\/(?<TOKEN>[a-zA-Z0-9]+)$/,
-        IMAGE_PATHNAME: /^\/s\/(?<PHASH>[a-zA-Z0-9]+)\/(?<GID>\d+)-(?<PAGE>\d+)$/,
-        TAG_PATHNAME: /^\/tag\/(?<TYPE>.*):(?<NAME>.+)$/,
+        GALLERY_PATHNAME: /^\/g\/(?<GID>\d+)\/(?<TOKEN>[a-zA-Z0-9]+)\/?$/,
+        IMAGE_PATHNAME: /^\/s\/(?<PHASH>[a-zA-Z0-9]+)\/(?<GID>\d+)-(?<PAGE>\d+)\/?$/,
+        TAG_PATHNAME: /^\/tag\/(?<TYPE>.*):(?<NAME>.+)\/?$/,
         HOMEPAGE_URL: /https:\/\/e[-x]hentai\.org\/$/,
         FULLIMG_URL: /https:\/\/e[-x]hentai\.org\/fullimg\.php\?gid=(?<GID>\d+)&page=(?<PAGE>\d+)/,
         IMAGE_URL: /https:\/\/e[-x]hentai\.org\/s\/(?<PHASH>[a-zA-Z0-9]+)\/(?<GID>\d+)-(?<PAGE>\d+)/
@@ -21,9 +21,9 @@ export const PIXIV_CONSTANTS = {
         ARTWORK_URL: (sourceId: number | string) => `https://www.pixiv.net/artworks/${sourceId}`
     },
     REGEXES: {
-        ARTWORK_PATHNAME: /^\/artworks\/(?<PID>\d+)$/,
-        USER_PATHNAME: /^\/users\/(?<UID>\d+)/,
-        USER_ABOUT_PATHNAME: /^\/users\/(?<UID>\d+)(\/(artworks|illustrations|manga))?$/,
+        ARTWORK_PATHNAME: /^\/artworks\/(?<PID>\d+)\/?$/,
+        USER_PATHNAME: /^\/users\/(?<UID>\d+)\/?/,
+        USER_ABOUT_PATHNAME: /^\/users\/(?<UID>\d+)(\/(artworks|illustrations|manga))?\/?$/,
         HOMEPAGE_URL: /https:\/\/www\.pixiv\.net\/$/
     }
 }
@@ -43,8 +43,8 @@ export const SANKAKUCOMPLEX_CONSTANTS = {
         BOOK_URL: (bookId: number | string) => `https://chan.sankakucomplex.com/pool/show/${bookId}`
     },
     REGEXES: {
-        POST_PATHNAME: /^\/(\S+\/)?(post\/show|posts|posts\/show)\/(?<MD5>\S+)$/,
-        SEARCH_PATHNAME: /^(\/|\/post|\/\S+\/post|\/posts|\/\S+\/posts)$/,
+        POST_PATHNAME: /^\/(\S+\/)?(post\/show|posts|posts\/show)\/(?<MD5>\S+)\/?$/,
+        SEARCH_PATHNAME: /^(\/|\/post|\/\S+\/post|\/posts|\/\S+\/posts)\/?$/,
         POST_URL: /https:\/\/chan\.sankakucomplex\.com\/(\S+\/)?(post\/show|posts|posts\/show)\/(?<MD5>\S+)/
     }
 }

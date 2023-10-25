@@ -99,9 +99,9 @@ interface AsyncLoadingProps<T> {
     call(): Promise<T>
 }
 
-export function useAsyncLoading<T>(props: AsyncLoadingProps<T>): [T, (t?: T) => void]
-export function useAsyncLoading<T>(call: () => Promise<T>): [T | null, (t?: T) => void]
-export function useAsyncLoading<T>(props: AsyncLoadingProps<T> | (() => Promise<T>)): [T | null, (t?: T) => void] {
+export function useAsyncLoading<T>(props: AsyncLoadingProps<T>): [T, (t?: T | ((t: T | null) => T)) => void]
+export function useAsyncLoading<T>(call: () => Promise<T>): [T | null, (t?: T | ((t: T | null) => T)) => void]
+export function useAsyncLoading<T>(props: AsyncLoadingProps<T> | (() => Promise<T>)): [T | null, (t?: T | ((t: T | null) => T)) => void] {
     const loading = useRef(false)
     const initialized = useRef(false)
     if(typeof props === "function") {
@@ -121,7 +121,7 @@ export function useAsyncLoading<T>(props: AsyncLoadingProps<T> | (() => Promise<
         }, [props])
 
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        const set = useCallback((newData?: T) => {
+        const set = useCallback((newData?: T | ((t: T | null) => T)) => {
             if(newData !== undefined) {
                 setData(newData)
             }else{
@@ -159,7 +159,7 @@ export function useAsyncLoading<T>(props: AsyncLoadingProps<T> | (() => Promise<
         }, [props.loading, props.call, props.failed])
 
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        const set = useCallback((newData?: T) => {
+        const set = useCallback((newData?: T | ((t: T | null) => T)) => {
             if(newData !== undefined) {
                 setData(newData)
             }else{

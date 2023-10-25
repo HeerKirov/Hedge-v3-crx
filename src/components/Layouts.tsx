@@ -11,7 +11,7 @@ interface StandardSideLayoutProps {
     bottomPadding?: number
 }
 
-interface MidddleLayoutProps {
+interface MiddleLayoutProps {
     left?: ReactNode
     middle?: ReactNode
     right?: ReactNode
@@ -34,7 +34,7 @@ export function StandardSideLayout(props: StandardSideLayoutProps) {
     </StandardSideLayoutRootDiv>
 }
 
-export function MiddleLayout(props: MidddleLayoutProps) {
+export function MiddleLayout(props: MiddleLayoutProps) {
     return <MiddleLayoutRootDiv>
         <MiddleLayoutContainer>
             {props.left}

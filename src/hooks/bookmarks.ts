@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { BookmarkModel, GroupModel, StoredQueryModel, Page } from "@/functions/database"
+import { GroupModel, StoredQueryModel } from "@/functions/database"
 import { BookmarkForm, PageForm, StoredQueryForm, QueryBookmarkFilter, bookmarks, groups, storedQueries } from "@/services/bookmarks"
 import { useAsyncLoading, useWatch } from "@/utils/reactivity"
 import { objects } from "@/utils/primitives"
 
 interface BookmarkListOptions {
     filter?: QueryBookmarkFilter | null
-    afterAddBookmark?(bookmark: BookmarkModel): void
-    afterAddPage?(index: number, pageIndex: number, page: Page): void
 }
 
 interface BookmarkSelectionOptions {
@@ -21,13 +19,18 @@ interface QueryAndFilterOptions {
 }
 
 export function useBookmarkList(options?: BookmarkListOptions) {
-    const [bookmarkList, setBookmarkList] = useAsyncLoading(async () => {
+    const [bookmarkList, setBookmarkList] = useAsyncLoading(useCallback(async () => {
         if(options?.filter !== undefined) {
-            return options.filter !== null ? await bookmarks.queryBookmarks(options.filter) : []
+            console.time("query")
+            try {
+                return options.filter !== null ? await bookmarks.queryBookmarks(options.filter) : []
+            }finally{
+                console.timeEnd("query")
+            }
         }else{
             return bookmarks.queryBookmarks({})
         }
-    })
+    }, [options?.filter]))
 
     const [errorMessage, setErrorMessage] = useState<{error: "URL_ALREADY_EXISTS"} | null>(null)
 
@@ -37,125 +40,139 @@ export function useBookmarkList(options?: BookmarkListOptions) {
 
     const clearErrorMessage = useCallback(() => setErrorMessage(null), [])
 
-    const addBookmark = async (form: BookmarkForm): Promise<boolean> => {
-        if(bookmarkList) {
-            const res = await bookmarks.addBookmark(form)
-            setBookmarkList([...bookmarkList, res])
-            options?.afterAddBookmark?.(res)
-            return true
-        }
-        return false
-    }
+    const addBookmark = useCallback(async (form: BookmarkForm): Promise<boolean> => {
+        const res = await bookmarks.addBookmark(form)
+        setBookmarkList(bookmarkList => [...(bookmarkList ?? []), res])
+        return true
+    }, [setBookmarkList])
 
-    const updateBookmark = async (index: number, form: BookmarkForm) => {
-        if(bookmarkList && index >= 0 && index < bookmarkList.length) {
-            const old = bookmarkList[index]
-            const res = await bookmarks.updateBookmark(old.bookmarkId, form)
-            if(res.ok) {
-                setBookmarkList([...bookmarkList.slice(0, index), res.value, ...bookmarkList.slice(index + 1)])
-            }
-        }
-    }
-
-    const deleteBookmark = async (index: number) => {
-        if(bookmarkList && index >= 0 && index < bookmarkList.length) {
-            const b = bookmarkList[index]
-            const res = await bookmarks.deleteBookmark(b.bookmarkId)
-            if(res.ok) {
-                setBookmarkList([...bookmarkList.slice(0, index), ...bookmarkList.slice(index + 1)])
-            }
-        }
-    }
-
-    const addPage = async (index: number, pageIndex: number | null, page: PageForm): Promise<boolean> => {
-        if(bookmarkList && index >= 0 && index < bookmarkList.length) {
-            const b = bookmarkList[index]
-            const res = await bookmarks.addPage(b.bookmarkId, pageIndex, page)
-            if(res.ok) {
-                setBookmarkList([
-                    ...bookmarkList.slice(0, index), 
-                    res.value.bookmark, 
-                    ...bookmarkList.slice(index + 1)
-                ])
-                if(errorMessage !== null) setErrorMessage(null)
-                options?.afterAddPage?.(index, pageIndex ?? res.value.bookmark.pages.length - 1, res.value.page)
-                return true
-            }else if(res.err === "URL_ALREADY_EXISTS") {
-                setErrorMessage({error: res.err})
-            }
-        }
-        return false
-    }
-
-    const updatePage = async (index: number, pageIndex: number, page: PageForm) => {
-        if(bookmarkList && index >= 0 && index < bookmarkList.length) {
-            const b = bookmarkList[index]
-            const p = b.pages[pageIndex]
-            const res = await bookmarks.updatePage(b.bookmarkId, p.pageId, page)
-            if(res.ok) {
-                setBookmarkList([
-                    ...bookmarkList.slice(0, index), 
-                    res.value.bookmark, 
-                    ...bookmarkList.slice(index + 1)
-                ])
-                if(errorMessage !== null) setErrorMessage(null)
-            }else if(res.err === "URL_ALREADY_EXISTS") {
-                setErrorMessage({error: res.err})
-            }
-        }
-    }
-
-    const movePage = async (index: number, pageIndex: number, moveToIndex: number, moveToPageIndex: number | null) => {
-        if((index !== moveToIndex || pageIndex !== moveToPageIndex) && bookmarkList && index >= 0 && index < bookmarkList.length && moveToIndex >= 0 && moveToIndex < bookmarkList.length) {
-            const b = bookmarkList[index]
-            const p = b.pages[pageIndex]
-            const toB = bookmarkList[moveToIndex]
-            const res = await bookmarks.movePage(b.bookmarkId, p.pageId, toB.bookmarkId, moveToPageIndex)
-            if(res.ok) {
-                if(moveToIndex > index) {
-                    setBookmarkList([
-                        ...bookmarkList.slice(0, index),
-                        res.value.origin,
-                        ...bookmarkList.slice(index + 1, moveToIndex),
-                        res.value.target,
-                        ...bookmarkList.slice(moveToIndex + 1)
-                    ])
-                }else if(moveToIndex < index) {
-                    setBookmarkList([
-                        ...bookmarkList.slice(0, moveToIndex),
-                        res.value.target,
-                        ...bookmarkList.slice(moveToIndex + 1, index),
-                        res.value.origin,
-                        ...bookmarkList.slice(index + 1)
-                    ])
-                }else{
-                    setBookmarkList([
-                        ...bookmarkList.slice(0, index),
-                        res.value.target,
-                        ...bookmarkList.slice(index + 1)
-                    ])
+    const updateBookmark = useCallback(async (bookmarkId: number, form: BookmarkForm) => {
+        const res = await bookmarks.updateBookmark(bookmarkId, form)
+        if(res.ok) {
+            setBookmarkList(bookmarkList => {
+                if(bookmarkList) {
+                    const index = bookmarkList?.findIndex(i => i.bookmarkId === bookmarkId) ?? -1
+                    return [...bookmarkList.slice(0, index), res.value, ...bookmarkList.slice(index + 1)]
                 }
-            }
+                return []
+            })
         }
-    }
+    }, [setBookmarkList])
 
-    const deletePage = async (index: number, pageIndex: number) => {
-        if(bookmarkList && index >= 0 && index < bookmarkList.length) {
-            const b = bookmarkList[index]
-            const p = b.pages[pageIndex]
-            const res = await bookmarks.deletePage(b.bookmarkId, p.pageId)
-            if(res.ok) {
-                setBookmarkList([
-                    ...bookmarkList.slice(0, index), 
-                    {
-                        ...b,
-                        pages: [...b.pages.slice(0, pageIndex), ...b.pages.slice(pageIndex + 1)]
-                    },
-                    ...bookmarkList.slice(index + 1)
-                ])
-            }
+    const deleteBookmark = useCallback(async (bookmarkId: number) => {
+        const res = await bookmarks.deleteBookmark(bookmarkId)
+        if(res.ok) {
+            setBookmarkList(bookmarkList => {
+                if(bookmarkList) {
+                    const index = bookmarkList?.findIndex(i => i.bookmarkId === bookmarkId) ?? -1
+                    return [...bookmarkList.slice(0, index), ...bookmarkList.slice(index + 1)]
+                }
+                return []
+            })
         }
-    }
+    }, [setBookmarkList])
+
+    const addPage = useCallback(async (bookmarkId: number, pageIndex: number | null, page: PageForm): Promise<boolean> => {
+        const res = await bookmarks.addPage(bookmarkId, pageIndex, page)
+        if(res.ok) {
+            setBookmarkList(bookmarkList => {
+                if(bookmarkList) {
+                    const index = bookmarkList.findIndex(i => i.bookmarkId === bookmarkId)
+                    return [
+                        ...bookmarkList.slice(0, index),
+                        res.value.bookmark,
+                        ...bookmarkList.slice(index + 1)
+                    ]
+                }
+                return []
+            })
+            setErrorMessage(null)
+            return true
+        }else if(res.err === "URL_ALREADY_EXISTS") {
+            setErrorMessage({error: res.err})
+        }
+        return false
+    }, [setBookmarkList])
+
+    const updatePage = useCallback(async (bookmarkId: number, pageId: number, page: PageForm) => {
+        const res = await bookmarks.updatePage(bookmarkId, pageId, page)
+        if(res.ok) {
+            setBookmarkList(bookmarkList => {
+                if(bookmarkList) {
+                    const index = bookmarkList.findIndex(i => i.bookmarkId === bookmarkId)
+                    return [
+                        ...bookmarkList.slice(0, index),
+                        res.value.bookmark,
+                        ...bookmarkList.slice(index + 1)
+                    ]
+                }
+                return []
+            })
+            setErrorMessage(null)
+            return true
+        }else if(res.err === "URL_ALREADY_EXISTS") {
+            setErrorMessage({error: res.err})
+        }
+        return false
+    }, [setBookmarkList])
+
+    const movePage = useCallback(async (bookmarkId: number, pageId: number, moveToBookmarkId: number, moveToPageIndex: number | null) => {
+        const res = await bookmarks.movePage(bookmarkId, pageId, moveToBookmarkId, moveToPageIndex)
+        if(res.ok) {
+            setBookmarkList(bookmarkList => {
+                if(bookmarkList) {
+                    const index = bookmarkList.findIndex(i => i.bookmarkId === bookmarkId)
+                    const moveToIndex = bookmarkList.findIndex(i => i.bookmarkId === moveToBookmarkId)
+                    if(moveToIndex > index) {
+                        return [
+                            ...bookmarkList.slice(0, index),
+                            res.value.origin,
+                            ...bookmarkList.slice(index + 1, moveToIndex),
+                            res.value.target,
+                            ...bookmarkList.slice(moveToIndex + 1)
+                        ]
+                    }else if(moveToIndex < index) {
+                        return [
+                            ...bookmarkList.slice(0, moveToIndex),
+                            res.value.target,
+                            ...bookmarkList.slice(moveToIndex + 1, index),
+                            res.value.origin,
+                            ...bookmarkList.slice(index + 1)
+                        ]
+                    }else{
+                        return [
+                            ...bookmarkList.slice(0, index),
+                            res.value.target,
+                            ...bookmarkList.slice(index + 1)
+                        ]
+                    }
+                }
+                return []
+            })
+        }
+    }, [setBookmarkList])
+
+    const deletePage = useCallback(async (bookmarkId: number, pageId: number) => {
+        const res = await bookmarks.deletePage(bookmarkId, pageId)
+        if(res.ok) {
+            setBookmarkList(bookmarkList => {
+                if(bookmarkList) {
+                    const index = bookmarkList.findIndex(i => i.bookmarkId === bookmarkId)
+                    const b = bookmarkList[index]
+                    const pageIndex = b.pages.findIndex(p => p.pageId === pageId)
+                    return [
+                        ...bookmarkList.slice(0, index),
+                        {
+                            ...b,
+                            pages: [...b.pages.slice(0, pageIndex), ...b.pages.slice(pageIndex + 1)]
+                        },
+                        ...bookmarkList.slice(index + 1)
+                    ]
+                }
+                return []
+            })
+        }
+    }, [setBookmarkList])
 
     return {bookmarkList, errorMessage, addBookmark, updateBookmark, deleteBookmark, addPage, updatePage, movePage, deletePage, clearErrorMessage}
 }
@@ -210,23 +227,27 @@ export function useGroupList() {
 }
 
 export function useBookmarkSelection(options?: BookmarkSelectionOptions) {
+    const { afterUpdate} = options ?? {}
+
     const [selectedIndex, privateSetSelectedIndex] = useState<[number, number | null] | null>(null)
 
     const [creatingIndex, privateSetCreatingIndex] = useState<[number, number | null] | null>(null)
 
     const setSelectedIndex = useCallback((idx: [number, number | null] | null) => {
+        // if((selectedIndex === null && idx !== null) || (idx === null && selectedIndex !== null) || (selectedIndex !== null && idx !== null && (selectedIndex[0] !== idx[0] || selectedIndex[1] !== idx[1]))) {
         privateSetSelectedIndex(idx)
         privateSetCreatingIndex(null)
-        options?.afterUpdate?.()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [options?.afterUpdate])
+        afterUpdate?.()
+        // }
+    }, [afterUpdate])
 
     const setCreatingIndex = useCallback((idx: [number, number | null]) => {
+        // if((creatingIndex === null && idx !== null) || (idx === null && creatingIndex !== null) || (creatingIndex !== null && idx !== null && (creatingIndex[0] !== idx[0] || creatingIndex[1] !== idx[1]))) {
         privateSetSelectedIndex(null)
         privateSetCreatingIndex(idx)
-        options?.afterUpdate?.()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [options?.afterUpdate])
+        afterUpdate?.()
+        // }
+    }, [afterUpdate])
 
     return {selectedIndex, creatingIndex, setSelectedIndex, setCreatingIndex}
 }

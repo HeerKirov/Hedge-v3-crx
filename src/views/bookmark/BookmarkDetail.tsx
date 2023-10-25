@@ -10,8 +10,8 @@ import { ELEMENT_HEIGHTS, FONT_SIZES, SPACINGS } from "@/styles"
 interface BookmarkDetailProps {
     bookmarkList: BookmarkModel[]
     index: [number, number | null]
-    updateBookmark(index: number, bookmark: BookmarkForm): void
-    updatePage(index: number, pageIndex: number, page: PageForm): void
+    updateBookmark(bookmarkId: number, bookmark: BookmarkForm): void
+    updatePage(bookmarkId: number, pageId: number, page: PageForm): void
     allGroups: GroupModel[]
     errorMessage: Extract<ReturnType<typeof useBookmarkList>["errorMessage"], object> | null
 }
@@ -20,7 +20,7 @@ interface BookmarkCreationProps {
     bookmarkList: BookmarkModel[]
     index: [number, number | null]
     addBookmark(bookmark: BookmarkForm): void
-    addPage(index: number, pageIndex: number, page: PageForm): void
+    addPage(bookmarkId: number, pageIndex: number | null, page: PageForm): void
     allGroups: GroupModel[]
     errorMessage: Extract<ReturnType<typeof useBookmarkList>["errorMessage"], object> | null
 }
@@ -45,12 +45,12 @@ export const BookmarkDetail = memo(function(props: BookmarkDetailProps) {
         if(pageIndex !== null) {
             const page = bookmark.pages[pageIndex]
             // eslint-disable-next-line react-hooks/rules-of-hooks,react-hooks/exhaustive-deps
-            const onUpdatePage = useCallback((page: PageForm) => props.updatePage(index, pageIndex, page), [updatePage, index, pageIndex])
+            const onUpdatePage = useCallback((form: PageForm) => props.updatePage(bookmark.bookmarkId, page.pageId, form), [updatePage, bookmark.bookmarkId, page.pageId])
 
             return page && <BookmarkDetailOfPage page={page} updatePage={onUpdatePage} allGroups={props.allGroups} errorMessage={props.errorMessage}/>
         }else{
             // eslint-disable-next-line react-hooks/rules-of-hooks,react-hooks/exhaustive-deps
-            const onUpdateBookmark = useCallback((bookmark: BookmarkForm) => props.updateBookmark(index, bookmark), [updateBookmark, index, null])
+            const onUpdateBookmark = useCallback((form: BookmarkForm) => updateBookmark(bookmark.bookmarkId, form), [updateBookmark, bookmark.bookmarkId, null])
 
             return <BookmarkDetailOfBookmark bookmark={bookmark} updateBookmark={onUpdateBookmark} allGroups={props.allGroups}/>
         }
@@ -61,18 +61,19 @@ export const BookmarkDetail = memo(function(props: BookmarkDetailProps) {
 
 export const BookmarkCreation = memo(function(props: BookmarkCreationProps) {
     const [index, pageIndex] = props.index
+    const bookmark = props.bookmarkList[index]
     if(pageIndex !== null) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const [form, setForm] = useState<PageDto>({url: "", title: "", groups: undefined, keywords: undefined, description: undefined, lastCollect: undefined, lastCollectTime: undefined})
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const once = useRef(true)
 
-        const updatePage = (page: PageForm) => {
-            const newForm = {...form, ...page}
+        const updatePage = (form: PageForm) => {
+            const newForm = {...form, ...form}
             setForm(newForm)
-            if(once.current && (page.url || page.title)) {
+            if(once.current && (form.url || form.title)) {
                 once.current = false
-                props.addPage(index, pageIndex, newForm)
+                props.addPage(bookmark.bookmarkId, pageIndex, newForm)
             }
         }
 
@@ -83,10 +84,10 @@ export const BookmarkCreation = memo(function(props: BookmarkCreationProps) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const once = useRef(true)
         
-        const updateBookmark = (bookmark: BookmarkForm) => {
-            const newForm = {...form, ...bookmark}
+        const updateBookmark = (form: BookmarkForm) => {
+            const newForm = {...form, ...form}
             setForm(newForm)
-            if(once.current && bookmark.name) {
+            if(once.current && form.name) {
                 once.current = false
                 props.addBookmark(newForm)
             }

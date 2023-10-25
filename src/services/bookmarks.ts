@@ -3,12 +3,32 @@ import { Result, numbers, objects } from "@/utils/primitives"
 
 export const bookmarks = {
     async queryBookmarks(filter?: QueryBookmarkFilter): Promise<BookmarkModel[]> {
+        const search = filter?.search ? analyseSearch(filter.search) : null
         const t = await databases.transaction("bookmark", "readonly")
         return await t.cursorBookmark()
             .filter(record => {
                 if(filter) {
-                    if(filter.search && !(record.name.includes(filter.search) || record.otherNames.some(n => n.includes(filter.search!)) || record.pages.some(p => p.title.includes(filter.search!)))) {
-                        return false
+                    if(search) {
+                        for(const name of search.name) {
+                            if(!(record.name.includes(name) || record.otherNames.some(n => n.includes(name)) || record.pages.some(p => p.title.includes(name)))) {
+                                return false
+                            }
+                        }
+                        for(const desc of search.description) {
+                            if(!(record.description.includes(desc) || record.pages.some(p => p.description?.includes(desc)))) {
+                                return false
+                            }
+                        }
+                        for(const keyword of search.keyword) {
+                            if(!(record.keywords.some(k => k.includes(keyword)) || record.pages.some(p => p.keywords?.some(k => k.includes(keyword))))) {
+                                return false
+                            }
+                        }
+                        for(const host of search.host) {
+                            if(!record.pages.some(p => p.host.includes(host))) {
+                                return false
+                            }
+                        }
                     }
                     if(filter.groups?.length) {
                         for(const [n, k] of filter.groups) {
@@ -360,6 +380,26 @@ async function internalGetPage(bookmarkId: number, pageId: number): Promise<Resu
     }
     const page = bookmarkModel.pages[pageIndex]
     return {ok: true, value: {t, bookmarkModel, page, pageIndex}}
+}
+
+/**
+ * 解析一段search文本，将其翻译为一个查询结构。
+ */
+function analyseSearch(search: string): {name: string[], keyword: string[], description: string[], host: string[]} {
+    const splits = search.split(" ").map(s => s.trim()).filter(s => !!s)
+    const name: string[] = [], keyword: string[] = [], description: string[] = [], host: string[] = []
+    for(const split of splits) {
+        if(split.endsWith(":")) {
+            host.push(split.substring(0, split.length - 1))
+        }else if(split.startsWith("[") && split.endsWith("]")) {
+            keyword.push(split.substring(1, split.length - 1))
+        }else if(split.startsWith("(") && split.endsWith(")")) {
+            description.push(split.substring(1, split.length - 1))
+        }else{
+            name.push(split)
+        }
+    }
+    return {name, keyword, description, host}
 }
 
 /**

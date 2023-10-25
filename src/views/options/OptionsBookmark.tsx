@@ -1,5 +1,5 @@
-import React, { memo } from "react"
-import { Button, FormattedText, Icon, Label, LayouttedDiv, Group } from "@/components"
+import React, { memo, useState } from "react"
+import { Button, FormattedText, Icon, Label, LayouttedDiv, Group, Input } from "@/components"
 import { useGroupList } from "@/hooks/bookmarks"
 import { JSON_TYPE, readFile, saveFile } from "@/utils/file-system"
 import { backups } from "@/services/bookmarks"
@@ -19,6 +19,7 @@ export function OptionsBookmarkPanel() {
         <HTMLImport allGroups={groupList}/>
         <Label>组配置</Label>
         <GroupList groupList={groupList} errorMessage={errorMessage} addGroup={addGroup} updateGroup={updateGroup} deleteGroup={deleteGroup} clearErrorMessage={clearErrorMessage}/>
+        {/*<Test/>*/}
     </>
 }
 
@@ -46,5 +47,26 @@ const Backup = memo(function () {
             <Button onClick={exportToBackup}><Icon icon="download" mr={2}/>生成备份数据</Button>
             <FormattedText color="secondary" size="small">将数据库生成为备份文件，或从已有的备份文件还原数据库。</FormattedText>
         </Group>
+    </LayouttedDiv>
+})
+
+const Test = memo(function () {
+    const [text, setText] = useState<string>()
+    const [result, setResult] = useState<{title: string, url: string | undefined, id: string}[]>([])
+
+    const search = async (newText: string) => {
+        setText(newText)
+        if(newText) {
+            const res = await chrome.bookmarks.search(newText)
+            setResult(res.map(b => ({title: b.title, url: b.url, id: b.id})))
+        }else{
+            setResult([])
+        }
+    }
+
+    return <LayouttedDiv border radius="std">
+        <Input value={text} onUpdateValue={search}/>
+        <p>{result.length}项</p>
+        {result.map(item => <p>[{item.id}] {item.title} ({item.url})</p>)}
     </LayouttedDiv>
 })
