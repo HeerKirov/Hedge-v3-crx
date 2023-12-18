@@ -49,7 +49,8 @@ function reportSourceData(_: Setting): Result<SourceDataUpdateForm, string> {
         if(!artistName) {
             return {ok: false, err: `Artist: artist name is empty.`}
         }
-        const match = artistAnchor.href.match(PIXIV_CONSTANTS.REGEXES.USER_PATHNAME)
+        const url = new URL(artistAnchor.href)
+        const match = url.pathname.match(PIXIV_CONSTANTS.REGEXES.USER_PATHNAME)
         if(match && match.groups) {
             const userId = match.groups["UID"]
             tags.push({code: userId, name: artistName, type: "artist"})

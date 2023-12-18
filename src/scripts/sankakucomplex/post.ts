@@ -161,7 +161,7 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, string
     //此处依然使用了legacy模式。好处是节省请求；坏处是能获得的children数量有限，只有5个。
     const parentPreviewDiv = document.querySelector("div#parent-preview")
     if(parentPreviewDiv) {
-        const spanList = parentPreviewDiv.getElementsByTagName("span")
+        const spanList = parentPreviewDiv.querySelectorAll<HTMLSpanElement>("span.thumb")
         for(const span of spanList) {
             const id = parseInt(span.id.slice(1))
             relations.push(id)
@@ -169,7 +169,7 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, string
     }
     const childPreviewDiv = document.querySelector("div#child-preview")
     if(childPreviewDiv) {
-        const spanList = childPreviewDiv.getElementsByTagName("span")
+        const spanList = childPreviewDiv.querySelectorAll<HTMLSpanElement>("span.thumb")
         for(const span of spanList) {
             const id = parseInt(span.id.slice(1))
             relations.push(id)
