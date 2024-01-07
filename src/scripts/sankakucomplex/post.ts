@@ -117,29 +117,19 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, string
     const tagLiList = document.querySelectorAll("#tag-sidebar li")
     for(let i = 0; i < tagLiList.length; ++i) {
         const tagLi = tagLiList[i]
-        const tag: SourceTagForm = {code: "", name: "", otherName: "", type: ""}
+        const tag: SourceTagForm = {code: "", name: undefined, otherName: undefined, type: ""}
         if(tagLi.className.startsWith("tag-type-")) {
             tag.type = tagLi.className.substring("tag-type-".length)
         }else{
             return {ok: false, err: `Tag[${i}]: cannot infer tag type from its class '${tagLi.className}'.`}
         }
-        const tagAnchor = tagLi.querySelector("div > a[itemprop=\"keywords\"]")
+        const tagAnchor = tagLi.querySelector<HTMLAnchorElement>("a[itemprop=\"keywords\"]")
         if(tagAnchor !== null && tagAnchor.textContent) {
-            tag.name = tagAnchor.textContent.replaceAll("_", " ")
-            tag.code = tag.name
+            tag.code = tagAnchor.textContent.replaceAll("_", " ")
         }else{
             return {ok: false, err: `Tag[${i}]: Cannot find its anchor.`}
         }
-        const childNodes = tagLi.querySelector("div > .tooltip > span")?.childNodes ?? []
-        for(const childNode of childNodes) {
-            if(childNode.textContent && childNode.nodeName === "#text" && childNode.textContent.startsWith("日本語:")) {
-                const otherName = childNode.textContent.substring("日本語:".length).trim()
-                if(otherName !== "N/A") {
-                    tag.otherName = otherName
-                }
-                break
-            }
-        }
+        //tips: 网站又改了，已经不能直接从DOM结构获取jp name等信息了，因此这里的代码暂时移除。
         tags.push(tag)
     }
 
