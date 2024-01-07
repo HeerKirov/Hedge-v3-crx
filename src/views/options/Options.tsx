@@ -8,12 +8,11 @@ import { OptionsServerPanel } from "./OptionsServer"
 import { OptionsToolPanel } from "./OptionsTool"
 import { OptionsDownloadPanel } from "./OptionsDownload"
 import { OptionsSourceDataPanel } from "./OptionsSourceData"
-import { OptionsBookmarkPanel } from "./OptionsBookmark"
 
 export function Options() {
     const { setting, saveSetting } = useSetting()
 
-    const [panel, setPanel] = useState<"server" | "tool" | "download" | "sourceData" | "bookmark">("server")
+    const [panel, setPanel] = useState<"server" | "tool" | "download" | "sourceData">("server")
 
     const setSettingPartial = usePartialSet(setting, saveSetting)
 
@@ -24,14 +23,12 @@ export function Options() {
         <SideButtonDiv><Button width="100%" type={panel === "tool" ? "primary" : undefined} onClick={() => setPanel("tool")}><Icon icon="toolbox" mr={2}/>扩展工具</Button></SideButtonDiv>
         <SideButtonDiv><Button width="100%" type={panel === "download" ? "primary" : undefined} onClick={() => setPanel("download")}><Icon icon="download" mr={2}/>下载建议</Button></SideButtonDiv>
         <SideButtonDiv><Button width="100%" type={panel === "sourceData" ? "primary" : undefined} onClick={() => setPanel("sourceData")}><Icon icon="cloud-arrow-down" mr={2}/>数据收集</Button></SideButtonDiv>
-        <SideButtonDiv><Button width="100%" type={panel === "bookmark" ? "primary" : undefined} onClick={() => setPanel("bookmark")}><Icon icon="bookmark" mr={2}/>书签管理</Button></SideButtonDiv>
     </>
 
     const content = panel === "server" ? <OptionsServerPanel server={setting?.server} onUpdateServer={v => setSettingPartial("server", v)}/> 
         : panel === "tool" ? <OptionsToolPanel tool={setting?.tool} onUpdateTool={v => setSettingPartial("tool", v)}/>
         : panel === "download" ? <OptionsDownloadPanel download={setting?.download} onUpdateDownload={v => setSettingPartial("download", v)}/>
-        : panel === "sourceData" ? <OptionsSourceDataPanel sourceData={setting?.sourceData} onUpdateSourceData={v => setSettingPartial("sourceData", v)}/>
-        : <OptionsBookmarkPanel/>
+        :  <OptionsSourceDataPanel sourceData={setting?.sourceData} onUpdateSourceData={v => setSettingPartial("sourceData", v)}/>
 
     return <StandardSideLayout left={left} content={content} contentPadding={4}/>
 }

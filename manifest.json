@@ -10,15 +10,6 @@
     "host_permissions": [
         "http://localhost/*"
     ],
-	"commands": {
-		"_execute_action": {
-			"suggested_key": "Ctrl+D"
-		},
-		"bookmark": {
-			"suggested_key": "Ctrl+Shift+D",
-			"description": "打开书签页"
-		}
-	},
     "action": {
         "default_popup": "popup.html"
     },

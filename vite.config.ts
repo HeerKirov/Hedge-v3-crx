@@ -20,13 +20,6 @@ export default defineConfig({
         clientPort: 5174
     }
   },
-  build: {
-    rollupOptions: {
-      input: {
-        welcome: 'bookmark.html',
-      },
-    },
-  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src')
