@@ -85,11 +85,13 @@ const FUNCTIONAL_COLOR_PICKS: Record<FunctionalColors, BasicColors | [GreyColors
 }
 
 //最终导出的颜色表
-export const LIGHT_MODE_COLORS: Record<FunctionalColors | ThemeColors, string> = maps.parse([
+export const LIGHT_MODE_COLORS: Record<FunctionalColors | ThemeColors | BasicColors, string> = maps.parse([
     ...Object.entries(FUNCTIONAL_COLOR_PICKS).map(([c, v]) => [c, typeof v === "string" ? BASIC_COLOR_DEFINITIONS[v] : GREY_COLOR_DEFINITIONS[v[0]]] as [FunctionalColors, string]),
-    ...Object.entries(THEME_COLOR_PICKS).map(([c, v]) => [c, typeof v === "string" ? BASIC_COLOR_DEFINITIONS[v] : GREY_COLOR_DEFINITIONS[v[0]]] as [ThemeColors, string])
+    ...Object.entries(THEME_COLOR_PICKS).map(([c, v]) => [c, typeof v === "string" ? BASIC_COLOR_DEFINITIONS[v] : GREY_COLOR_DEFINITIONS[v[0]]] as [ThemeColors, string]),
+    ...Object.entries(BASIC_COLOR_DEFINITIONS) as [BasicColors, string][]
 ])
-export const DARK_MODE_COLORS: Record<FunctionalColors | ThemeColors, string> = maps.parse([
+export const DARK_MODE_COLORS: Record<FunctionalColors | ThemeColors | BasicColors, string> = maps.parse([
     ...Object.entries(FUNCTIONAL_COLOR_PICKS).map(([c, v]) => [c, typeof v === "string" ? BASIC_COLOR_INVERTED_DEFINITIONS[`${v}-inverted`] : GREY_COLOR_DEFINITIONS[v[1]]] as [FunctionalColors, string]),
-    ...Object.entries(THEME_COLOR_PICKS).map(([c, v]) => [c, typeof v === "string" ? BASIC_COLOR_INVERTED_DEFINITIONS[`${v}-inverted`] : GREY_COLOR_DEFINITIONS[v[1]]] as [ThemeColors, string])
+    ...Object.entries(THEME_COLOR_PICKS).map(([c, v]) => [c, typeof v === "string" ? BASIC_COLOR_INVERTED_DEFINITIONS[`${v}-inverted`] : GREY_COLOR_DEFINITIONS[v[1]]] as [ThemeColors, string]),
+    ...Object.entries(BASIC_COLOR_DEFINITIONS).map(([c, _]) => [c, BASIC_COLOR_INVERTED_DEFINITIONS[`${c as BasicColors}-inverted`]] as [BasicColors, string])
 ])

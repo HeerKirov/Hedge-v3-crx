@@ -1,6 +1,6 @@
 import { styled, css } from "styled-components"
 import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, SPACINGS } from "@/styles"
-import { ReactNode } from "react"
+import React, { ReactNode } from "react"
 
 interface StandardSideLayoutProps {
     left?: ReactNode
@@ -17,6 +17,14 @@ interface MiddleLayoutProps {
     right?: ReactNode
 }
 
+interface AspectGridProps<T> {
+    items?: T[] | null
+    columnNum?: number
+    aspect?: number
+    spacing?: number
+    children?(item: T, index: number): ReactNode
+}
+
 export function StandardSideLayout(props: StandardSideLayoutProps) {
     return <StandardSideLayoutRootDiv>
         <StandardSideLayoutLeftDiv>
@@ -25,7 +33,7 @@ export function StandardSideLayout(props: StandardSideLayoutProps) {
         <StandardSideLayoutTopDiv>
             {props.top}
         </StandardSideLayoutTopDiv>
-        <StandardSideLayoutContentDiv $rightVisibie={!!props.bottom} $padding={props.contentPadding}>
+        <StandardSideLayoutContentDiv $rightVisible={!!props.bottom} $padding={props.contentPadding}>
             {props.content}
         </StandardSideLayoutContentDiv>
         {!!props.bottom && <StandardSideLayoutBottomDiv $padding={props.bottomPadding}>
@@ -46,6 +54,18 @@ export function MiddleLayout(props: MiddleLayoutProps) {
             {props.right}
         </MiddleLayoutContainer>
     </MiddleLayoutRootDiv>
+}
+
+export function AspectGrid<T>(props: AspectGridProps<T>) {
+    return <AspectGridRootDiv $spacing={props.spacing} $column={props.columnNum ?? 1} $aspect={props.aspect ?? 1}>
+        {props.items?.map((item, index) => (
+            <AspectGridItemDiv key={index}>
+                <div>
+                    {props.children?.(item, index)}
+                </div>
+            </AspectGridItemDiv>
+        ))}
+    </AspectGridRootDiv>
 }
 
 const StandardSideLayoutRootDiv = styled.div`
@@ -83,10 +103,10 @@ const StandardSideLayoutTopDiv = styled.div`
     }
 `
 
-const StandardSideLayoutContentDiv = styled.div<{ $rightVisibie: boolean, $padding?: number }>`
+const StandardSideLayoutContentDiv = styled.div<{ $rightVisible: boolean, $padding?: number }>`
     grid-column-start: 2;
     grid-row-start: 2;
-    grid-row-end: ${p => p.$rightVisibie ? 3 : 4};
+    grid-row-end: ${p => p.$rightVisible ? 3 : 4};
     overflow-y: auto;
     ${p => p.$padding && css`padding: ${SPACINGS[p.$padding]};` }
 `
@@ -130,5 +150,34 @@ const MiddleLayoutContainer = styled.div`
         justify-content: center;
         min-width: 50%;
         max-width: 75%
+    }
+`
+
+const AspectGridRootDiv = styled.div<{ $spacing?: number, $column: number, $aspect: number }>`
+    --var-column-num: ${p => p.$column};
+    --var-aspect: ${p => p.$aspect};
+    --var-gap: ${p => p.$spacing ? SPACINGS[p.$spacing] : "0px"};
+    display: flex;
+    flex-wrap: wrap;
+    ${p => p.$spacing && css`gap: ${SPACINGS[p.$spacing]};` }
+`
+
+const AspectGridItemDiv = styled.div`
+    position: relative;
+    height: 0;
+    width: calc((100% - (var(--var-column-num) - 1) * var(--var-gap)) / var(--var-column-num));
+    padding-bottom: calc((100% - (var(--var-column-num) - 1) * var(--var-gap)) / var(--var-column-num) / var(--var-aspect));
+    > div {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        > img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
     }
 `

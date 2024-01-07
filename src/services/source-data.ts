@@ -1,14 +1,11 @@
 import { sendMessageToTab } from "@/services/messages"
-import { server } from "@/functions/server"
 import { Setting } from "@/functions/setting"
-import {
-    EHENTAI_CONSTANTS,
-    PIXIV_CONSTANTS,
-    SANKAKUCOMPLEX_CONSTANTS,
-    SOURCE_DATA_COLLECT_SITES
-} from "@/functions/sites"
+import { SourceDataUpdateForm } from "@/functions/server/api-source-data"
+import { server } from "@/functions/server"
 import { sessions } from "@/functions/storage"
+import { EHENTAI_CONSTANTS, PIXIV_CONSTANTS, SANKAKUCOMPLEX_CONSTANTS, SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
 import { NOTIFICATIONS } from "@/services/notification"
+import { Result } from "@/utils/primitives"
 
 type CollectSourceDataOptions = ({sourceId: number, args?: undefined} | {args: Record<string, string>, sourceId?: undefined}) & {
     siteName: string
@@ -200,6 +197,20 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
     }
     console.log(`[collectSourceData] Source data ${sourceSite}-${sourceId} collected.`)
     return true
+}
+
+export async function getSourceData(siteName: string, sourceId: number): Promise<Result<SourceDataUpdateForm, string>> {
+    const generator = SOURCE_DATA_RULES[siteName]
+    const patternResult = generator.pattern(sourceId)
+    const pageURL = typeof patternResult === "string" ? patternResult : await patternResult
+    if(pageURL === null) {
+        return {ok: false, err: "Cannot generate pattern URL."}
+    }
+    const tabs = await chrome.tabs.query({currentWindow: true, url: pageURL})
+    if(tabs.length <= 0 || tabs[0].id === undefined) {
+        return {ok: false, err: `Page ${pageURL} not found.`}
+    }
+    return await sendMessageToTab(tabs[0].id, "REPORT_SOURCE_DATA", undefined)
 }
 
 /**

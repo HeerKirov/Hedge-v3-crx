@@ -60,7 +60,13 @@ export function useTabSourceInfo() {
         }
     }
 
-    return {sourceInfo, collectStatus, manualCollectSourceData}
+    const quickFind = () => {
+        if(sourceInfo !== null) {
+            sendMessageToTab(sourceInfo.tabId, "QUICK_FIND_SIMILAR", undefined)
+        }
+    }
+
+    return {sourceInfo, collectStatus, manualCollectSourceData, quickFind}
 }
 
 /**

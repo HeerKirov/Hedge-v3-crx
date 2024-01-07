@@ -7,7 +7,7 @@ import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, RADIUS_SIZES, SPACINGS } from "@/s
 
 
 export function SourceInfoNotice() {
-    const { sourceInfo, collectStatus, manualCollectSourceData } = useTabSourceInfo()
+    const { sourceInfo, collectStatus, manualCollectSourceData, quickFind } = useTabSourceInfo()
 
     return sourceInfo ? <TabInfoDiv>
         <FormattedText size="small">{sourceInfo.host}</FormattedText>
@@ -15,6 +15,7 @@ export function SourceInfoNotice() {
             <SourceDataPathNotice {...sourceInfo.sourceDataPath}/>
             {collectStatus !== null && <CollectStatusNotice {...collectStatus}/>}
             <Button size="small" onClick={manualCollectSourceData}><Icon icon="cloud-arrow-down" mr={1}/>{collectStatus?.collected ? "重新" : ""}收集来源数据</Button>
+            <Button size="small" onClick={quickFind}><Icon icon="grin-squint" mr={1}/>查找相似项</Button>
         </>}
     </TabInfoDiv> : undefined
 }

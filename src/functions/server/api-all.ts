@@ -1,4 +1,8 @@
 
+export interface IdResponse {
+    id: number
+}
+
 export interface ListResult<T> {
     total: number
     result: T[]
@@ -10,6 +14,37 @@ export interface LimitFilter {
 
 export interface LimitAndOffsetFilter extends LimitFilter {
     offset?: number
+}
+
+export interface SimpleBook {
+    id: number
+    title: string
+    filePath: FilePath | null
+}
+
+export interface SimpleIllust {
+    id: number
+    filePath: FilePath
+}
+
+export interface SimpleAuthor {
+    id: number
+    name: string
+    type: string
+    color: string | null
+}
+
+export interface SimpleTopic {
+    id: number
+    name: string
+    type: string
+    color: string | null
+}
+
+export interface SimpleTag {
+    id: number
+    name: string
+    color: string | null
 }
 
 export interface FilePath {
@@ -33,9 +68,10 @@ export interface SourceDataPath {
     sourcePartName: string | null
 }
 
-export interface SimpleIllust {
-    id: number
-    filePath: FilePath
+export interface SourceTagPath {
+    sourceSite: string
+    sourceTagType: string
+    sourceTagCode: string
 }
 
 type OrderPrefix = "" | "+" | "-"

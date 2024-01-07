@@ -3,13 +3,17 @@ import { SourceDataUpdateForm, SourceTagForm } from "@/functions/server/api-sour
 import { Setting, settings } from "@/functions/setting"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
 import { PIXIV_CONSTANTS } from "@/functions/sites"
+import { initializeUI, QuickFindController } from "@/scripts/utils"
 import { Result } from "@/utils/primitives"
 import { onDOMContentLoaded } from "@/utils/document"
+
+let ui: QuickFindController | undefined
 
 onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] pixiv/artworks script loaded.")
     const setting = await settings.get()
     loadActiveTabInfo(setting)
+    ui = initializeUI()
 })
 
 chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callback }) => {
@@ -23,6 +27,17 @@ chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callb
             callback(reportSourceDataPath(setting))
         })
         return true
+    }else if(type === "QUICK_FIND_SIMILAR") {
+        settings.get().then(setting => {
+            const sourceDataPath = reportSourceDataPath(setting)
+            const sourceData = reportSourceData(setting)
+            const files = [...document.querySelectorAll<HTMLImageElement>("div[role=presentation] > a > img")]
+            if(ui) {
+                Promise.all(files.map(f => ui!.getImageDataURL(f)))
+                    .then(files => ui!.openQuickFindModal(setting, files.length > 0 ? files[0] : undefined, sourceDataPath, sourceData))
+            }
+        })
+        return false
     }else{
         return false
     }

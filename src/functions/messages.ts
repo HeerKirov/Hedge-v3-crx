@@ -37,9 +37,9 @@ export type ContentScriptCallbackTypes = Extract<ContentScriptMessagesList, MsgT
 
 //== 联合消息列表 ==
 
-export type ServiceSenderMessagesList = Test | ReportSourceData | ReportSourceDataPath
+export type ServiceSenderMessagesList = Test | ReportSourceData | ReportSourceDataPath | QuickFindSimilar
 
-export type ContentScriptMessagesList = SetActiveTabBadge | DownloadURL
+export type ContentScriptMessagesList = SetActiveTabBadge | DownloadURL | CaptureVisibleTab | GetSourceData
 
 //== service worker发送至content script的消息类型定义 ==
 
@@ -49,8 +49,14 @@ type ReportSourceData = MsgTemplateWithCallback<"REPORT_SOURCE_DATA", undefined,
 
 type ReportSourceDataPath = MsgTemplateWithCallback<"REPORT_SOURCE_DATA_PATH", undefined, SourceDataPath>
 
+type QuickFindSimilar = MsgTemplate<"QUICK_FIND_SIMILAR", undefined>
+
 //== content script发送至service worker的消息类型定义
 
 type SetActiveTabBadge = MsgTemplate<"SET_ACTIVE_TAB_BADGE", {path: SourceDataPath}>
 
 type DownloadURL = MsgTemplate<"DOWNLOAD_URL", {url: string, referrer: string}>
+
+type CaptureVisibleTab = MsgTemplateWithCallback<"CAPTURE_VISIBLE_TAB", undefined, string>
+
+type GetSourceData = MsgTemplateWithCallback<"GET_SOURCE_DATA", {siteName: string, sourceId: number}, Result<SourceDataUpdateForm, string>>

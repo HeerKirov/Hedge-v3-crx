@@ -4,8 +4,11 @@ import { Setting, settings } from "@/functions/setting"
 import { sessions } from "@/functions/storage"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
 import { SANKAKUCOMPLEX_CONSTANTS, SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
+import { initializeUI, QuickFindController } from "@/scripts/utils"
 import { Result } from "@/utils/primitives"
 import { onDOMContentLoaded } from "@/utils/document"
+
+let ui: QuickFindController | undefined
 
 onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] sankakucomplex/post script loaded.")
@@ -15,6 +18,7 @@ onDOMContentLoaded(async () => {
     if(setting.tool.sankakucomplex.enableAddPostId) enableAddPostId(pid)
     if(setting.tool.sankakucomplex.enableBookNoticeEnhancement) enableBookEnhancement()
     if(setting.tool.sankakucomplex.enableImageLinkReplacement) enableImageLinkReplacement()
+    ui = initializeUI()
 })
 
 chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callback }) => {
@@ -28,6 +32,17 @@ chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callb
             callback(reportSourceDataPath(setting))
         })
         return true
+    }else if(type === "QUICK_FIND_SIMILAR") {
+        settings.get().then(async setting => {
+            const sourceDataPath = reportSourceDataPath(setting)
+            const sourceData = reportSourceData(setting)
+            const files = [...document.querySelectorAll<HTMLImageElement>("a#image-link img#image")]
+            if(ui) {
+                const f = await Promise.all(files.map(f => ui!.getImageDataURL(f)))
+                ui!.openQuickFindModal(setting, f.length > 0 ? f[0] : undefined, sourceDataPath, sourceData)
+            }
+        })
+        return false
     }else{
         return false
     }

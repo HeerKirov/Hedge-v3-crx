@@ -109,9 +109,9 @@ export interface SourceDataUpdateForm {
 
 export interface SourceTagForm {
     code: string
+    type: string
     name?: string
     otherName?: string | null
-    type?: string | null
 }
 
 export interface SourceBookForm {

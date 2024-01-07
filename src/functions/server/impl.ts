@@ -63,13 +63,16 @@ function request<R, E extends BasicException>(requestConfig: RequestConfig<R>): 
         if(requestConfig.query) {
             url.search = new URLSearchParams(requestConfig.query).toString()
         }
+
         fetch(url, {
             method: requestConfig.method,
-            headers: {
+            headers: (requestConfig.data instanceof FormData) ? {
+                "Authorization": `Bearer ${setting.server.token}`,
+            } : {
                 "Authorization": `Bearer ${setting.server.token}`,
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(requestConfig.data),
+            body: (requestConfig.data instanceof FormData) ? requestConfig.data : JSON.stringify(requestConfig.data),
         }).then(async res => {
             if(res.ok) {
                 resolve({

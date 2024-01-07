@@ -2,8 +2,11 @@ import { SourceDataPath } from "@/functions/server/api-all"
 import { Setting, settings } from "@/functions/setting"
 import { sessions } from "@/functions/storage"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
+import { EHENTAI_CONSTANTS } from "@/functions/sites"
+import { initializeUI, QuickFindController } from "@/scripts/utils"
 import { onDOMContentLoaded } from "@/utils/document"
-import { EHENTAI_CONSTANTS } from "@/functions/sites.ts"
+
+let ui: QuickFindController | undefined
 
 onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] ehentai/image script loaded.")
@@ -11,6 +14,7 @@ onDOMContentLoaded(async () => {
     loadActiveTabInfo(setting)
     loadGalleryPageHash()
     if(setting.tool.ehentai.enableUIOptimize) enableOptimizeUI()
+    ui = initializeUI()
 })
 
 chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callback }) => {
@@ -19,6 +23,17 @@ chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callb
             callback(reportSourceDataPath(setting))
         })
         return true
+    }else if(type === "QUICK_FIND_SIMILAR") {
+        settings.get().then(async setting => {
+            const sourceDataPath = reportSourceDataPath(setting)
+            const sourceData = await sendMessage("GET_SOURCE_DATA", {siteName: "ehentai", sourceId: sourceDataPath.sourceId})
+            const files = [...document.querySelectorAll<HTMLImageElement>("div#i3 img#img")]
+            if(ui) {
+                const f = await Promise.all(files.map(f => ui!.getImageDataURL(f)))
+                ui!.openQuickFindModal(setting, f.length > 0 ? f[0] : undefined, sourceDataPath, sourceData)
+            }
+        })
+        return false
     }else{
         return false
     }

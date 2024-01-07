@@ -6,9 +6,9 @@
     "icons": {
         "128": "public/favicon.png"
     },
-    "permissions": ["downloads", "contextMenus", "notifications", "tabs", "storage"],
+    "permissions": ["downloads", "contextMenus", "notifications", "tabs", "activeTab", "storage"],
     "host_permissions": [
-        "http://localhost/*"
+        "*://localhost/"
     ],
     "action": {
         "default_popup": "popup.html"
