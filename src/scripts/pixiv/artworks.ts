@@ -2,9 +2,9 @@ import { SourceDataPath } from "@/functions/server/api-all"
 import { SourceDataUpdateForm, SourceTagForm } from "@/functions/server/api-source-data"
 import { Setting, settings } from "@/functions/setting"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
+import { PIXIV_CONSTANTS } from "@/functions/sites"
 import { Result } from "@/utils/primitives"
 import { onDOMContentLoaded } from "@/utils/document"
-import { PIXIV_CONSTANTS } from "@/functions/sites.ts"
 
 onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] pixiv/artworks script loaded.")

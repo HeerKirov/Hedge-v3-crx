@@ -1,6 +1,5 @@
 import { version } from "@/../package.json"
 import { Migrate, migrate } from "@/utils/migrations"
-import { useAsyncLoading } from "@/utils/reactivity"
 
 /**
  * 所有的设置项。
@@ -69,9 +68,9 @@ interface Tool {
      */
     ehentai: {
         /**
-         * 启用图像下载链接功能。
+         * 启用UI优化。
          */
-        enableImageDownloadAnchor: boolean
+        enableUIOptimize: boolean
         /**
          * 启用评论区中文智能屏蔽。
          */
@@ -192,7 +191,7 @@ export function defaultSetting(): Setting {
                 enableBlockAds: true
             },
             ehentai: {
-                enableImageDownloadAnchor: true,
+                enableUIOptimize: true,
                 enableCommentCNBlock: true,
                 enableCommentVoteBlock: true,
                 enableCommentKeywordBlock: true,
@@ -228,6 +227,7 @@ export const settings = {
             if(changed) {
                 await chrome.storage.local.set({ "setting": setting })
             }
+            console.log(`[setting] version ${setting.version}.`)
         }else{
             await chrome.storage.local.set({ "setting": defaultSetting() })
         }
@@ -244,19 +244,12 @@ export const settings = {
     }
 }
 
-export function useSetting() {
-    const [setting, setSetting] = useAsyncLoading(settings.get)
-
-    const saveSetting = async (newSetting: Setting) => {
-        setSetting(newSetting)
-        await settings.set(newSetting)
-    }
-    
-    return { setting, saveSetting }
-}
-
 const migrations: {[version: string]: Migrate<MigrateContext>} = {
-    async "0.1.0"() {/*v0.1.0的占位符。只为将版本号升级到v0.1.0*/}
+    async "0.1.0"() {/*v0.1.0的占位符。只为将版本号升级到v0.1.0*/},
+    async "0.2.0"(ctx) {
+        const oldVal = (ctx.setting.tool.ehentai as any)["enableImageDownloadAnchor"] as boolean
+        ctx.setting.tool.ehentai.enableUIOptimize = ctx.setting.tool.ehentai.enableUIOptimize ?? oldVal
+    }
 }
 
 export interface MigrateContext {

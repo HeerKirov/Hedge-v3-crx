@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { styled } from "styled-components"
 import { Button, Icon, StandardSideLayout } from "@/components"
-import { useSetting } from "@/functions/setting"
+import { useSetting } from "@/hooks/setting"
 import { usePartialSet } from "@/utils/reactivity"
 import { SPACINGS } from "@/styles"
 import { OptionsServerPanel } from "./OptionsServer"

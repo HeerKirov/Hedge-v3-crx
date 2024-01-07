@@ -1,5 +1,5 @@
 import { styled } from "styled-components"
-import { useServerHealth } from "@/functions/server"
+import { useServerHealth } from "@/hooks/server"
 import { SourceInfoNotice } from "@/views/popup/SourceInfo"
 import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, FONT_SIZES, SPACINGS } from "@/styles"
 
@@ -24,6 +24,7 @@ const RootDiv = styled.div`
     max-height: 720px;
     user-select: none;
     overflow-y: auto;
+    padding-bottom: 8px;
     &::-webkit-scrollbar {
         display: none;
     }

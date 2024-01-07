@@ -1,7 +1,7 @@
 import { styled } from "styled-components"
 import { Button, Icon, Input, Label, SecondaryText } from "@/components"
 import { Setting } from "@/functions/setting"
-import { useServerHealth } from "@/functions/server"
+import { useServerHealth } from "@/hooks/server"
 import { useEditor } from "@/utils/reactivity"
 import { DARK_MODE_COLORS, LIGHT_MODE_COLORS, FONT_SIZES, SPACINGS } from "@/styles"
 

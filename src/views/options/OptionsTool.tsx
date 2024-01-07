@@ -81,9 +81,10 @@ export function OptionsToolPanel(props: OptionsToolPanelProps) {
         </StyledDiv>
         <Label>E-Hentai</Label>
         <StyledDiv>
-            <CheckBox checked={editor.ehentai.enableImageDownloadAnchor} onUpdateChecked={v => setEHentaiProperty("enableImageDownloadAnchor", v)}>添加图像下载链接。</CheckBox>
-            <SecondaryText>没有original的图像不会在下方显示下载链接。为了统一操作，在这些图像下方也增加一个链接。</SecondaryText>
-            <SecondaryText>此下载链接使用Extension API实现，与原链接的性状并不完全一致。</SecondaryText>
+            <CheckBox checked={editor.ehentai.enableUIOptimize} onUpdateChecked={v => setEHentaiProperty("enableUIOptimize", v)}>优化图像页面的UI显示</CheckBox>
+            <SecondaryText>顶部标题栏和底部工具栏将始终保持在一行内，不会随宽度的不同而挪动位置。</SecondaryText>
+            <SecondaryText>将下载链接的实现方式替换为使用Extension API实现，与原链接的性状不完全一致，它总是能触发下载操作。</SecondaryText>
+            <SecondaryText>没有original的图像，也增加一个链接，因此可以统一操作模式。</SecondaryText>
         </StyledDiv>
         <StyledDiv>
             <CheckBox checked={editor.ehentai.enableCommentCNBlock} onUpdateChecked={v => setEHentaiProperty("enableCommentCNBlock", v)}>针对评论区的中文用户</CheckBox>
