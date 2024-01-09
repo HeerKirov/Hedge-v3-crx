@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react"
 import ReactDOM from "react-dom/client"
-import { styled } from "styled-components"
+import { styled, StyleSheetManager } from "styled-components"
 import { AspectGrid, Button, FormattedText, Icon, LayouttedDiv } from "@/components"
 import { Setting } from "@/functions/setting"
 import { sendMessage } from "@/functions/messages"
@@ -11,6 +11,10 @@ import { server } from "@/functions/server"
 import { createEventTrigger, EventTrigger } from "@/utils/emitter"
 import { Result } from "@/utils/primitives"
 import { GlobalStyle, SPACINGS, ThemeColors } from "@/styles"
+import { config } from "@fortawesome/fontawesome-svg-core"
+import fontAwesomeCSS from "@fortawesome/fontawesome-svg-core/styles.css?inline"
+
+config.autoAddCss = false
 
 export interface QuickFindController {
     openQuickFindModal(setting: Setting, dataURL: string | undefined, sourcePath: SourceDataPath, sourceData: Result<SourceDataUpdateForm, string>): void
@@ -51,6 +55,7 @@ export function initializeUI(): QuickFindController {
     }
 
     function openQuickFindModal(setting: Setting, dataURL: string | undefined, sourcePath: SourceDataPath, sourceData: Result<SourceDataUpdateForm, string>) {
+        console.log("openQuickFindModal")
         if(!sourceData.ok) {
             chrome.notifications.create({
                 type: "basic",
@@ -78,19 +83,25 @@ export function initializeUI(): QuickFindController {
     }
 
     function createReactUI(port: number) {
-        const div = document.createElement("div")
-        div.id = "hedge-inject-div"
-        div.style.position = "fixed"
-        div.style.zIndex = "1000"
-        div.style.textAlign = "initial"
-        div.style.padding = "initial"
-        div.style.margin = "initial"
-        div.style.fontSize = "initial"
-        document.body.appendChild(div)
-        ReactDOM.createRoot(div).render(
+        const rootElement = document.createElement("div")
+        rootElement.id = "hedge-inject-div"
+        rootElement.style.position = "fixed"
+        rootElement.style.zIndex = "1000"
+        const shadowRoot = rootElement.attachShadow({ mode: "open" })
+        document.body.appendChild(rootElement)
+        const styleSlot = document.createElement("section")
+        shadowRoot.appendChild(styleSlot)
+        const body = document.createElement("div")
+        body.id = "body"
+        shadowRoot.appendChild(body)
+
+        ReactDOM.createRoot(body).render(
             <React.StrictMode>
-                <GlobalStyle/>
-                <QuickFindComponent port={port} trigger={trigger}/>
+                <StyleSheetManager target={styleSlot}>
+                    <style>{fontAwesomeCSS}</style>
+                    <GlobalStyle/>
+                    <QuickFindComponent port={port} trigger={trigger}/>
+                </StyleSheetManager>
             </React.StrictMode>
         )
     }
@@ -170,10 +181,10 @@ export function QuickFindComponent({ trigger, port }: {port: number, trigger: Ev
         <DialogDiv border padding={1} radius="std" backgroundColor="background">
             <div>
                 <LayouttedDiv size="large" margin={[2, 0, 0, 0]} padding={[0, 0, 0, 1]}>快速查找</LayouttedDiv>
-                <LayouttedDiv margin={[1, 0]} padding={[0, 0, 0, 1]}>{description}</LayouttedDiv>
-                <LayouttedDiv margin={[1, 0, 2, 0]} padding={[0, 0, 0, 1]}>适用的标签: {tags.map(t => <FormattedText key={t.metaTag.id} mr={1} bold color={t.metaTag.color as ThemeColors}>{t.metaTag.name}</FormattedText>)}</LayouttedDiv>
+                <LayouttedDiv margin={[1, 0, 0, 0]} padding={[0, 0, 0, 1]}>{description}</LayouttedDiv>
+                <LayouttedDiv padding={[0, 0, 0, 1]}>适用的标签: {tags.map(t => <FormattedText key={t.metaTag.id} mr={1} bold color={t.metaTag.color as ThemeColors}>{t.metaTag.name}</FormattedText>)}</LayouttedDiv>
                 <ScrollDiv>
-                    <AspectGrid spacing={1} columnNum={10} items={result} children={(item) => (<img src={assetsUrl(item.filePath.sample)} alt={`${item.id}`}/>)}/>
+                    <AspectGrid spacing={1} columnNum={8} items={result} children={(item) => (<img src={assetsUrl(item.filePath.sample)} alt={`${item.id}`}/>)}/>
                 </ScrollDiv>
                 <LayouttedDiv margin={[2, 0, 0, 0]} textAlign="right">
                     <Button mode="filled" type="primary" disabled={findId === null || status !== "SUCCEED" || result.length <= 0} onClick={openInApp}><Icon icon="up-right-from-square" mr={1}/>在Hedge App中打开</Button>
@@ -253,5 +264,6 @@ const ScrollDiv = styled.div`
     max-height: 60vh;
     min-height: 30px;
     height: 100%;
+    margin-top: ${SPACINGS[1]};
     padding: 0 ${SPACINGS[1]};
 `

@@ -1,3 +1,6 @@
+## Bug Fixes
+* 调整content script中的DOM注入方式，将DOM和CSS放置在shadowRoot中，以防止注入的CSS污染原网页。
+
 # v0.2.0
 ## Bug Fixes
 * 修复各处存在的replace字符串替换问题。该问题多发于将下划线替换为空格的场景。
