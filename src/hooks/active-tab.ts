@@ -63,6 +63,8 @@ export function useTabSourceInfo() {
     const quickFind = () => {
         if(sourceInfo !== null) {
             sendMessageToTab(sourceInfo.tabId, "QUICK_FIND_SIMILAR", undefined)
+            //关闭popup窗口
+            window.close()
         }
     }
 

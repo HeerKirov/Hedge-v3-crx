@@ -9,8 +9,8 @@ import {
 import { autoCollectSourceData } from "@/services/source-data"
 
 export async function downloadURL(options: {url: string, referrer?: string}) {
-    const downloadId = await chrome.downloads.download({url: options.url})
-    await sessions.cache.downloadItemInfo.set(downloadId, {url: options.url, referrer: options.referrer ?? ""})
+    await sessions.cache.downloadItemInfo.set(options.url, {referrer: options.referrer ?? ""})
+    await chrome.downloads.download({url: options.url})
 }
 
 /**
@@ -26,8 +26,9 @@ export function determiningFilename(downloadItem: chrome.downloads.DownloadItem,
             return
         }
 
-        const info = await sessions.cache.downloadItemInfo.get(downloadItem.id)
-        const { referrer, url } = info ?? downloadItem
+        const url = downloadItem.url
+        const info = await sessions.cache.downloadItemInfo.get(url)
+        const referrer = info?.referrer ?? downloadItem.referrer
 
         const result = matchRulesAndArgs(referrer, url, filenameWithoutExt, setting)
         if(result === null) {

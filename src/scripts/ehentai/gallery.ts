@@ -91,11 +91,14 @@ function enableCommentFilter(blockCN: boolean, blockVote: boolean, blockKeywords
     let cnBanned: "MARK" | "FORBIDDEN" | undefined
     if(blockCN) {
         //当gallery包含以下任意tag，且parody tag数量不超过4时，将评论区标记为"特别关照"
+        //或者，当包含屏蔽词/屏蔽用户的评论超过5时，也做此标记
         const warnTags = ["genshin impact", "honkai star rail"]
         const tags = [...document.querySelectorAll<HTMLAnchorElement>("#taglist a")]
         const parodyCount = tags.filter(a => a.id.startsWith("ta_parody")).length
         const warning = tags.some(a => a.textContent && warnTags.includes(a.textContent)) && parodyCount < 4
-        if(warning) {
+        if(keywordBanned.filter(i => i).length + userBanned.filter(i => i).length >= 5) {
+            cnBanned = "FORBIDDEN"
+        }else if(warning) {
             if((lowVote.some((_, i) => chinese[i]) || keywordBanned.some((_, i) => chinese[i]) || userBanned.some((_, i) => chinese[i])) && highVote.some((_, i) => chinese[i])) {
                 cnBanned = "FORBIDDEN"
             }

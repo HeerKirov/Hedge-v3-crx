@@ -57,7 +57,7 @@ function enableBlockAds() {
  * 然而，legacy的查询内容是根据next参数而不是page参数决定的，这意味着可以伪造页码，从而继续浏览下去，只不过必须手动翻页罢了。 
  */
 function enablePaginationEnhancement() {
-    if(document.location.pathname !== "/" && document.location.pathname !== "/post" && !/^\/.*\/post/.test(document.location.pathname)) {
+    if(!(document.location.pathname === "/" || /^\/.*\/$/.test(document.location.pathname))) {
         //页码增强仅发生在"/"，也就是浏览搜索页面
         return
     }

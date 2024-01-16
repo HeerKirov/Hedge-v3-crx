@@ -52,7 +52,7 @@ function loadActiveTabInfo(setting: Setting) {
  */
 function loadGalleryPageHash() {
     const { gid, page, imageHash } = getIdentityInfo()
-    sessions.reflect.ehentaiGalleryImageHash.set({gid: gid.toString(), page: page.toString()}, {imageHash})
+    sessions.reflect.ehentaiGalleryImageHash.set({gid: gid.toString(), page: page.toString()}, {imageHash}).finally()
 }
 
 /**
@@ -92,7 +92,9 @@ function enableOptimizeUI() {
         }
 
         const url = anchor.href
-        anchor.onclick = () => {
+        anchor.onclick = (e: MouseEvent) => {
+            console.log(e, url, document.URL);
+            (e.target as HTMLAnchorElement).style.color = "burlywood"
             sendMessage("DOWNLOAD_URL", {url, referrer: document.URL})
             return false
         }
@@ -111,7 +113,8 @@ function enableOptimizeUI() {
         const anchor = document.createElement("a")
         anchor.textContent = "(Download original from img link)"
         anchor.style.cursor = "pointer"
-        anchor.onclick = () => {
+        anchor.onclick = (e: MouseEvent) => {
+            (e.target as HTMLAnchorElement).style.color = "burlywood"
             sendMessage("DOWNLOAD_URL", {url: img.src, referrer: document.URL})
             return false
         }
