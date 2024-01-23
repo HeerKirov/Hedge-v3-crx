@@ -117,11 +117,11 @@ function enableCommentFilter(blockCN: boolean, blockVote: boolean, blockKeywords
             c3.style.color = "black"
             c3.style.backgroundColor = "black"
         }
-        if(cnBanned === "FORBIDDEN" && chinese[i]) {
-            //处于特别关注的CN遮蔽下，直接移除评论内容
+        if(keywordBanned[i] || userBanned[i] || (cnBanned === "FORBIDDEN" && chinese[i])) {
+            //关键字屏蔽、用户屏蔽、处于特别关注的CN遮蔽下，直接移除评论内容
             div.querySelector<HTMLDivElement>("div.c6")?.remove()
-        }else if(keywordBanned[i] || userBanned[i] || (blockVote && lowVote[i])) {
-            //关键字屏蔽、用户屏蔽、低分屏蔽，将其评论内容遮蔽为黑色
+        }else if(blockVote && lowVote[i]) {
+            //低分屏蔽，将其评论内容遮蔽为黑色
             const c6 = div.querySelector<HTMLDivElement>("div.c6")
             if(c6) {
                 c6.style.color = "black"
