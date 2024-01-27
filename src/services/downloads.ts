@@ -3,7 +3,7 @@ import { sessions } from "@/functions/storage"
 import {
     DOWNLOAD_EXTENSIONS,
     DOWNLOAD_RENAME_SITES,
-    EHENTAI_CONSTANTS, GELBOORU_CONSTANTS, IDOL_SANKAKUCOMPLEX_CONSTANTS, PIXIV_CONSTANTS,
+    EHENTAI_CONSTANTS, GELBOORU_CONSTANTS, IDOL_SANKAKUCOMPLEX_CONSTANTS, KEMONO_CONSTANTS, PIXIV_CONSTANTS,
     SANKAKUCOMPLEX_CONSTANTS
 } from "@/functions/sites"
 import { autoCollectSourceData } from "@/services/source-data"
@@ -249,6 +249,10 @@ const DOWNLOAD_RENAME_RULES: Readonly<MatchRule[]> = [
     {
         siteName: "idolcomplex",
         referrer: IDOL_SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_URL
+    },
+    {
+        siteName: "kemono",
+        referrer: KEMONO_CONSTANTS.REGEXES.POST_URL
     },
 ]
 

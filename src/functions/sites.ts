@@ -63,6 +63,13 @@ export const GELBOORU_CONSTANTS = {
     }
 }
 
+export const KEMONO_CONSTANTS = {
+    HOSTS: ["kemono.su"],
+    REGEXES: {
+        POST_URL: /https:\/\/kemono.su\/(?<SITE>\S+)\/user\/(?<UID>\d+)\/post\/(?<PID>\d+)\/?(#part=(?<PAGE>\d+))?/
+    }
+}
+
 /**
  * 在Download Rename功能中受支持的网站。此处只包含了网站的总定义(即默认设置)，一些细节都在download模块。
  */
@@ -86,6 +93,10 @@ export const DOWNLOAD_RENAME_SITES: {[siteName: string]: DownloadRenameRule} = {
     "idolcomplex": {
         args: ["PID"],
         rename: "idolcomplex_$<PID>"
+    },
+    "kemono": {
+        args: ["SITE", "PID", "PAGE"],
+        rename: "$<SITE>_$<PID>_$<PAGE>"
     }
 }
 

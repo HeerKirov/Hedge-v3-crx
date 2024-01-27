@@ -54,6 +54,11 @@
 			"matches": ["https://www.fanbox.cc/*/posts/*"],
 			"js": ["src/scripts/fanbox/post.ts"],
 			"run_at": "document_start"
+		},
+		{
+			"matches": ["https://kemono.su/*/user/*/post/*"],
+			"js": ["src/scripts/kemono/post.ts"],
+			"run_at": "document_start"
 		}
     ],
     "options_page": "options.html"
