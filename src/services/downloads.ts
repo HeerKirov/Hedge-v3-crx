@@ -29,6 +29,7 @@ export function determiningFilename(downloadItem: chrome.downloads.DownloadItem,
         const url = downloadItem.url
         const info = await sessions.cache.downloadItemInfo.get(url)
         const referrer = info?.referrer ?? downloadItem.referrer
+        console.log(`[determiningFilename] url=[${url}], referrer=[${referrer}], filename=[${filenameWithoutExt}]`)
 
         const result = matchRulesAndArgs(referrer, url, filenameWithoutExt, setting)
         if(result === null) {

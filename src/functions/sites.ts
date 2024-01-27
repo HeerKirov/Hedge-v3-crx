@@ -43,16 +43,9 @@ export const SANKAKUCOMPLEX_CONSTANTS = {
         BOOK_URL: (bookId: number | string) => `https://chan.sankakucomplex.com/pool/show/${bookId}`
     },
     REGEXES: {
-        POST_PATHNAME: /^\/(\S+\/)?(post\/show|posts|posts\/show)\/(?<MD5>\S+)\/?$/,
+        POST_PATHNAME: /^\/(\S+\/)?(post\/show|posts|posts\/show)\/(?<MD5>[A-Za-z0-9]+)\/?$/,
         SEARCH_PATHNAME: /^(\/|\/post|\/\S+\/post|\/posts|\/\S+\/posts)\/?$/,
-        POST_URL: /https:\/\/chan\.sankakucomplex\.com\/(\S+\/)?(post\/show|posts|posts\/show)\/(?<MD5>\S+)/
-    }
-}
-
-export const BETA_SANKAKUCOMPLEX_CONSTANTS = {
-    HOSTS: ["beta.sankakucomplex.com"],
-    REGEXES: {
-        SEARCH_PATHNAME: /^(\/|\/books|\/posts)$/,
+        POST_URL: /https:\/\/chan\.sankakucomplex\.com\/(\S+\/)?(post\/show|posts|posts\/show)\/(?<MD5>[A-Za-z0-9]+)/
     }
 }
 

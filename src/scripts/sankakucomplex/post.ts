@@ -18,6 +18,7 @@ onDOMContentLoaded(async () => {
     if(setting.tool.sankakucomplex.enableAddPostId) enableAddPostId(pid)
     if(setting.tool.sankakucomplex.enableBookNoticeEnhancement) enableBookEnhancement()
     if(setting.tool.sankakucomplex.enableImageLinkReplacement) enableImageLinkReplacement()
+    enableOptimizeUI()
     ui = initializeUI()
 })
 
@@ -78,6 +79,50 @@ function loadActiveTabInfo(setting: Setting) {
  */
 function enableAddPostId(pid: number) {
     document.location.hash = `PID=${pid}`
+}
+
+/**
+ * 功能：进行UI增强。
+ */
+function enableOptimizeUI() {
+    const postContent = document.querySelector("#post-content")
+    if(!postContent) {
+        console.warn("[enableOptimizeUI] Cannot find #post-content.")
+        return
+    }
+
+    const imageLink = postContent.querySelector<HTMLAnchorElement>("#image-link")
+    let url: string
+    if(imageLink) {
+       url = imageLink.href
+    }else{
+        const video = postContent.querySelector<HTMLVideoElement>("video#image")
+        if(video) {
+            url = video.src
+        }else{
+            console.warn("[enableOptimizeUI] Cannot find #image-link or video#image.")
+            return
+        }
+    }
+
+    //添加下载链接
+    const downloadAnchor = document.createElement("a")
+    downloadAnchor.textContent = "Download Post Img"
+    downloadAnchor.href = "#"
+    downloadAnchor.onclick = (e: MouseEvent) => {
+        (e.target as HTMLAnchorElement).style.color = "burlywood"
+        sendMessage("DOWNLOAD_URL", {url, referrer: document.URL})
+        return false
+    }
+    const downloadNotice = document.createElement("div")
+    downloadNotice.className = "status-notice"
+    downloadNotice.append(downloadAnchor)
+    postContent.before(downloadNotice)
+
+
+    //移除resized notice
+    const resizedNotice = document.querySelector("#resized_notice")
+    if(resizedNotice) resizedNotice.remove()
 }
 
 /**
