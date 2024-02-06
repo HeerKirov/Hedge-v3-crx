@@ -5,6 +5,7 @@
 ## Optimizes
 * 调整EHentai评论屏蔽机制，增强屏蔽条件。
 * 点击“查找相似项”时，将关闭popup页面。
+* 在Tool-EHentai的屏蔽列表中，新增将下划线转义为空格的处理方式。
 
 # v0.2.0
 ## Bug Fixes

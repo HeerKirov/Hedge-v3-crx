@@ -17,16 +17,16 @@ export function OptionsToolPanel(props: OptionsToolPanelProps) {
             sankakucomplex: v.sankakucomplex,
             ehentai: {
                 ...v.ehentai,
-                commentBlockKeywords: v.ehentai.commentBlockKeywords?.join(" "),
-                commentBlockUsers: v.ehentai.commentBlockUsers?.join(" ")
+                commentBlockKeywords: v.ehentai.commentBlockKeywords?.map(s => s.includes(" ") ? s.replaceAll(" ", "_") : s).join(" "),
+                commentBlockUsers: v.ehentai.commentBlockUsers?.map(s => s.includes(" ") ? s.replaceAll(" ", "_") : s).join(" ")
             }
         }),
         to: f => ({
             sankakucomplex: f.sankakucomplex,
             ehentai: {
                 ...f.ehentai,
-                commentBlockKeywords: f.ehentai.commentBlockKeywords?.split(" ").filter(s => !!s),
-                commentBlockUsers: f.ehentai.commentBlockUsers?.split(" ").filter(s => !!s)
+                commentBlockKeywords: f.ehentai.commentBlockKeywords?.split(" ").filter(s => !!s).map(s => s.includes("_") ? s.replaceAll("_", " ") : s),
+                commentBlockUsers: f.ehentai.commentBlockUsers?.split(" ").filter(s => !!s).map(s => s.includes("_") ? s.replaceAll("_", " ") : s)
             }
         }),
         default: () => {
@@ -35,8 +35,8 @@ export function OptionsToolPanel(props: OptionsToolPanelProps) {
                 sankakucomplex: d.tool.sankakucomplex,
                 ehentai: {
                     ...d.tool.ehentai,
-                    commentBlockKeywords: d.tool.ehentai.commentBlockKeywords?.join(" "),
-                    commentBlockUsers: d.tool.ehentai.commentBlockUsers?.join(" ")
+                    commentBlockKeywords: d.tool.ehentai.commentBlockKeywords?.map(s => s.includes(" ") ? s.replaceAll(" ", "_") : s).join(" "),
+                    commentBlockUsers: d.tool.ehentai.commentBlockUsers?.map(s => s.includes(" ") ? s.replaceAll(" ", "_") : s).join(" ")
                 }
             }
         }
