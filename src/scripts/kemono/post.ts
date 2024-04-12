@@ -22,6 +22,10 @@ function enablePostContentEnhancement() {
             sendMessage("DOWNLOAD_URL", {url, referrer})
             return false
         }
+        const label = document.createElement("label")
+        label.textContent = i.toString()
+        label.style.color = "white"
+        imageLink.appendChild(label)
     }
 
     console.log(`[enablePostContentEnhancement] ${imageLinks.length} post files enhanced.`)
