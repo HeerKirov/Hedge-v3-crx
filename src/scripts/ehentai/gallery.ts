@@ -10,6 +10,7 @@ onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] ehentai/gallery script loaded.")
     const setting = await settings.get()
     loadActiveTabInfo(setting)
+    enableRenameFile()
     if(setting.tool.ehentai.enableCommentCNBlock || setting.tool.ehentai.enableCommentVoteBlock || setting.tool.ehentai.enableCommentKeywordBlock || setting.tool.ehentai.enableCommentUserBlock) {
         enableCommentFilter(
             setting.tool.ehentai.enableCommentCNBlock, 
@@ -133,6 +134,62 @@ function enableCommentFilter(blockCN: boolean, blockVote: boolean, blockKeywords
             if(c6) {
                 c6.style.color = "grey"
                 c6.style.backgroundColor = "grey"
+            }
+        }
+    }
+}
+
+/**
+ * 功能：添加“重命名文件下载”功能。
+ */
+function enableRenameFile() {
+    const gd5 = document.querySelector<HTMLDivElement>("#gd5")
+    if(gd5) {
+        const p = document.createElement("p")
+        p.classList.add("g2")
+        p.classList.add("gsp")
+        const img = document.createElement("img")
+        img.src = "https://ehgt.org/g/mr.gif"
+        p.append(img)
+        const a = document.createElement("a")
+        a.textContent = "Rename Script"
+        a.href = "#"
+        p.append(a)
+        gd5.childNodes[1].after(p)
+        a.onclick = (e: MouseEvent) => {
+            (e.target as HTMLAnchorElement).style.color = "burlywood"
+            const anchors = document.querySelectorAll<HTMLAnchorElement>(".gdtl > a")
+            const hrefs = [...anchors.values()]
+                .map(a => {
+                    const img = a.querySelector("img")
+                    const m = a.href.match(EHENTAI_CONSTANTS.REGEXES.IMAGE_URL)
+                    if(m && m.groups && img) {
+                        const page = img.alt
+                        const pHash = m.groups["PHASH"]
+                        const gid = m.groups["GID"]
+                        return [pHash, gid, page] as const
+                    }else{
+                        return null
+                    }
+                })
+                .filter(tuple => tuple !== null) as [string, string, string][]
+            const scripts = hrefs.map(([pHash, gid, page]) => `rename $@ 's/(.*)(\\..*)/$1_${pHash}$2/' ehentai_${gid}_${page}.*`).join("\n")
+            const blob = new Blob([scripts])
+            const filename = `RenameScript-${hrefs[0][1]}-${hrefs[0][2]}.sh`
+            const url = window.URL.createObjectURL(blob)
+            const tempAnchor = document.createElement("a")
+            tempAnchor.href = url
+            tempAnchor.download = filename
+            tempAnchor.click()
+            if(parseInt(hrefs[0][2]) === 1) {
+                const scripts = `rename $@ 's/(\\d+).*(\\..*)/ehentai_${hrefs[0][1]}_$1$2/' *.*\nchmod +x *.sh`
+                const blob = new Blob([scripts])
+                const filename = `RenameScript-${hrefs[0][1]}.sh`
+                const url = window.URL.createObjectURL(blob)
+                const tempAnchor = document.createElement("a")
+                tempAnchor.href = url
+                tempAnchor.download = filename
+                tempAnchor.click()
             }
         }
     }
