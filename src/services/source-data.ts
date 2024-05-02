@@ -7,7 +7,7 @@ import { EHENTAI_CONSTANTS, PIXIV_CONSTANTS, SANKAKUCOMPLEX_CONSTANTS, SOURCE_DA
 import { NOTIFICATIONS } from "@/services/notification"
 import { Result } from "@/utils/primitives"
 
-type CollectSourceDataOptions = ({sourceId: number, args?: undefined} | {args: Record<string, string>, sourceId?: undefined}) & {
+type CollectSourceDataOptions = ({sourceId: string, args?: undefined} | {args: Record<string, string>, sourceId?: undefined}) & {
     siteName: string
     setting: Setting
     autoCollect?: boolean
@@ -41,12 +41,12 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
     const generator = SOURCE_DATA_RULES[siteName]
 
     const sourceSite = (overrideRule ?? rule).sourceSite
-    let sourceId: number
+    let sourceId: string
     if(options.sourceId !== undefined) {
         sourceId = options.sourceId
     }else{
-        sourceId = parseInt(options.args[generator.sourceId])
-        if(isNaN(sourceId)) {
+        sourceId = options.args[generator.sourceId]
+        if(!sourceId) {
             console.error(`[collectSourceData] ${sourceSite}-${options.args[generator.sourceId]} source id analyse failed.`)
             return false
         }
@@ -199,7 +199,7 @@ export async function collectSourceData({ siteName, setting, ...options }: Colle
     return true
 }
 
-export async function getSourceData(siteName: string, sourceId: number): Promise<Result<SourceDataUpdateForm, string>> {
+export async function getSourceData(siteName: string, sourceId: string): Promise<Result<SourceDataUpdateForm, string>> {
     const generator = SOURCE_DATA_RULES[siteName]
     const patternResult = generator.pattern(sourceId)
     const pageURL = typeof patternResult === "string" ? patternResult : await patternResult
@@ -219,10 +219,7 @@ export async function getSourceData(siteName: string, sourceId: number): Promise
 const SOURCE_DATA_RULES: Record<string, SourceDataRule> = {
     "sankakucomplex": {
         sourceId: "PID",
-        pattern: async sourceId => {
-            const md5 = await sessions.reflect.sankakuPostMD5.get({pid: sourceId.toString()})
-            return md5 ? SANKAKUCOMPLEX_CONSTANTS.PATTERNS.POST_URL(md5.md5) : null
-        }
+        pattern: SANKAKUCOMPLEX_CONSTANTS.PATTERNS.POST_URL
     },
     "ehentai": {
         sourceId: "GID",
@@ -236,5 +233,5 @@ const SOURCE_DATA_RULES: Record<string, SourceDataRule> = {
 
 interface SourceDataRule {
     sourceId: string
-    pattern(sourceId: number): string | string[] | null | Promise<string | string[] | null>
+    pattern(sourceId: string): string | string[] | null | Promise<string | string[] | null>
 }

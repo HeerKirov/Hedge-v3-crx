@@ -59,4 +59,4 @@ type DownloadURL = MsgTemplate<"DOWNLOAD_URL", {url: string, referrer: string}>
 
 type CaptureVisibleTab = MsgTemplateWithCallback<"CAPTURE_VISIBLE_TAB", undefined, string>
 
-type GetSourceData = MsgTemplateWithCallback<"GET_SOURCE_DATA", {siteName: string, sourceId: number}, Result<SourceDataUpdateForm, string>>
+type GetSourceData = MsgTemplateWithCallback<"GET_SOURCE_DATA", {siteName: string, sourceId: string}, Result<SourceDataUpdateForm, string>>

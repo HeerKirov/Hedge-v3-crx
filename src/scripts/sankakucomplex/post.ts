@@ -1,9 +1,9 @@
+import { tz } from "moment-timezone"
 import { SourceDataPath } from "@/functions/server/api-all"
-import { SourceAdditionalInfoForm, SourceBookForm, SourceDataUpdateForm, SourceTagForm } from "@/functions/server/api-source-data"
+import { SourceBookForm, SourceDataUpdateForm, SourceTagForm } from "@/functions/server/api-source-data"
 import { Setting, settings } from "@/functions/setting"
-import { sessions } from "@/functions/storage"
 import { receiveMessageForTab, sendMessage } from "@/functions/messages"
-import { SANKAKUCOMPLEX_CONSTANTS, SOURCE_DATA_COLLECT_SITES } from "@/functions/sites"
+import { SANKAKUCOMPLEX_CONSTANTS } from "@/functions/sites"
 import { initializeUI, QuickFindController } from "@/scripts/utils"
 import { Result } from "@/utils/primitives"
 import { onDOMContentLoaded } from "@/utils/document"
@@ -12,10 +12,8 @@ let ui: QuickFindController | undefined
 
 onDOMContentLoaded(async () => {
     console.log("[Hedge v3 Helper] sankakucomplex/post script loaded.")
-    const pid = loadPostMD5()
     const setting = await settings.get()
     loadActiveTabInfo(setting)
-    if(setting.tool.sankakucomplex.enableAddPostId) enableAddPostId(pid)
     if(setting.tool.sankakucomplex.enableBookNoticeEnhancement) enableBookEnhancement()
     if(setting.tool.sankakucomplex.enableImageLinkReplacement) enableImageLinkReplacement()
     enableOptimizeUI()
@@ -50,35 +48,11 @@ chrome.runtime.onMessage.addListener(receiveMessageForTab(({ type, msg: _, callb
 }))
 
 /**
- * 加载post image数据。将post MD5信息保存到session。
- */
-function loadPostMD5(): number {
-    const pid = getPID()
-    const res = SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_PATHNAME.exec(document.location.pathname)
-    if(res && res.groups) {
-        const md5 = res.groups["MD5"]
-        sessions.reflect.sankakuPostId.set({md5}, {pid: pid.toString()})
-        sessions.reflect.sankakuPostMD5.set({pid: pid.toString()}, {md5})
-    }else{
-        console.warn("[loadPostMD5] MD5 value not matched.")
-    }
-    return pid
-}
-
-/**
  * 加载active tab在action badge上的标示信息。
  */
 function loadActiveTabInfo(setting: Setting) {
     const sourceDataPath = reportSourceDataPath(setting)
     sendMessage("SET_ACTIVE_TAB_BADGE", {path: sourceDataPath})
-}
-
-/**
- * 在URL添加PID，并将PID信息保存到session。
- * legacy的post页面的PID已经被换成了MD5。这真的很难用。把PID添加回去能方便一点，尽管是添加到hash。
- */
-function enableAddPostId(pid: number) {
-    document.location.hash = `PID=${pid}`
 }
 
 /**
@@ -107,7 +81,7 @@ function enableOptimizeUI() {
 
     //添加下载链接
     const downloadAnchor = document.createElement("a")
-    downloadAnchor.textContent = "Download Post Img"
+    downloadAnchor.textContent = "[Hedge] Download Post Img"
     downloadAnchor.href = "#"
     downloadAnchor.onclick = (e: MouseEvent) => {
         (e.target as HTMLAnchorElement).style.color = "burlywood"
@@ -115,7 +89,7 @@ function enableOptimizeUI() {
         return false
     }
     const downloadNotice = document.createElement("div")
-    downloadNotice.className = "status-notice"
+    downloadNotice.className = "carousel"
     downloadNotice.append(downloadAnchor)
     postContent.before(downloadNotice)
 
@@ -170,9 +144,7 @@ function enableImageLinkReplacement() {
 /**
  * 事件：收集来源数据。
  */
-function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, string> {
-    const rule = setting.sourceData.overrideRules["sankakucomplex"] ?? SOURCE_DATA_COLLECT_SITES["sankakucomplex"]
-
+function reportSourceData(_: Setting): Result<SourceDataUpdateForm, string> {
     const tags: SourceTagForm[] = []
     const tagLiList = document.querySelectorAll("#tag-sidebar li")
     for(let i = 0; i < tagLiList.length; ++i) {
@@ -226,17 +198,21 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, string
         }
     }
 
-    const additionalInfo: SourceAdditionalInfoForm[] = []
-    const res = SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_PATHNAME.exec(document.location.pathname)
-    if(res && res.groups) {
-        const value = res.groups["MD5"]
-        const field = rule.additionalInfo["md5"]
-        additionalInfo.push({field, value})
+    let publishTime: string | undefined
+    //这里的选取器并不稳固，它将stats下的第一个anchor当作posted发布时间
+    const publishAnchor = document.querySelector<HTMLAnchorElement>("#stats > a")
+    if(publishAnchor) {
+        //anchor的title是发布时间，但它的时区有点怪，似乎固定使用美国东部时区America/New_York
+        try {
+            publishTime = tz(publishAnchor.title, "America/New_York").toDate().toISOString()
+        }catch(e){
+            console.error(`Cannot analysis publish time [${publishAnchor.title}]`, e)
+        }
     }
 
     return {
         ok: true,
-        value: {tags, books, relations, additionalInfo}
+        value: {tags, books, relations, publishTime}
     }
 }
 
@@ -253,11 +229,11 @@ function reportSourceDataPath(setting: Setting): SourceDataPath {
 /**
  * 获得PID。
  */
-function getPID(): number {
-    const meta = document.querySelector("meta[property=\"og:title\"]")
-    if(meta && (meta as HTMLMetaElement).content.startsWith("Post")) {
-        return parseInt((meta as HTMLMetaElement).content.substring("Post".length))
+function getPID(): string {
+    const res = SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_PATHNAME.exec(document.location.pathname)
+    if(res && res.groups) {
+        return res.groups["PID"]
     }else{
-        throw new Error("Cannot find meta[property=\"og:title\"].")
+        throw new Error("Cannot analyse pathname.")
     }
 }

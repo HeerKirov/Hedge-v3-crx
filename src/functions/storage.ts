@@ -11,15 +11,7 @@ export const sessions = {
         /**
          * E-Hentai: gallery id + page映射到image hash。
          */
-        ehentaiGalleryImageHash: createDictEndpoint<{gid: string, page: string}, {imageHash: string}>("session", "reflect/ehentai/gallery/image-hash",p => `${p.gid}-${p.page}`),
-        /**
-         * Sankaku: post MD5映射到post id。
-         */
-        sankakuPostId: createDictEndpoint<{md5: string}, {pid: string}>("session", "reflect/sankaku/post-id", p => p.md5),
-        /**
-         * Sankaku: post id映射到post MD5。
-         */
-        sankakuPostMD5: createDictEndpoint<{pid: string}, {md5: string}>("session", "reflect/sankaku/post-md5", p => p.pid)
+        ehentaiGalleryImageHash: createDictEndpoint<{gid: string, page: string}, {imageHash: string}>("session", "reflect/ehentai/gallery/image-hash",p => `${p.gid}-${p.page}`)
     },
     /**
      * 临时存储。
@@ -33,7 +25,7 @@ export const sessions = {
          * 最近收集的source data identity。
          * 在downloaded created时被用于节流，避免重复下载同一个identity的来源数据。
          */
-        sourceDataCollected: createSetEndpoint<{site: string, sourceId: number}>("session", "cache/source-data/collected", p => `${p.site}-${p.sourceId}`),
+        sourceDataCollected: createSetEndpoint<{site: string, sourceId: string}>("session", "cache/source-data/collected", p => `${p.site}-${p.sourceId}`),
         /**
          * 最近手动下载的文件的一些附加信息。
          * 这些附加信息在手动下载时被写入，并在determining过程中被提取出来，代替从下载项获得的信息来使用。

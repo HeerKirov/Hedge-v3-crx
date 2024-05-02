@@ -63,7 +63,7 @@ export interface NullableFilePath {
 
 export interface SourceDataPath {
     sourceSite: string
-    sourceId: number
+    sourceId: string
     sourcePart: number | null
     sourcePartName: string | null
 }

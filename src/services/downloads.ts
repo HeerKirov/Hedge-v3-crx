@@ -117,44 +117,6 @@ function getFinalExtensions(setting: Setting): string[] {
 }
 
 const MATCH_PROCESSORS: Readonly<Record<string, (args: Record<string, string>) => Promise<Record<string, string> | null>>> = {
-    async "sankakucomplex"(args) {
-        //在Post页面保存文件。其referrer可解析，能从中获得md5值。
-        //保存时需要使用pid，因此还需要获取pid。
-        const md5 = args["MD5"]
-        //首先尝试从session缓存中获取数据
-        const data = await sessions.reflect.sankakuPostId.get({md5})
-        if(data !== undefined) {
-            return {
-                "MD5": md5,
-                "PID": data.pid
-            }
-        }else{
-            //如果session缓存没有数据，则自行尝试在tabs中搜索
-            const tabs = await chrome.tabs.query({currentWindow: true, url: SANKAKUCOMPLEX_CONSTANTS.PATTERNS.ANY_URL})
-            for(const tab of tabs) {
-                if(tab.url) {
-                    const url = new URL(tab.url)
-                    const res = SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_PATHNAME.exec(url.pathname)
-                    if(res && res.groups && res.groups["MD5"] === md5) {
-                        const query = new URLSearchParams(url.hash)
-                        const pid = query.get("PID")
-                        if(pid !== null) {
-                            return {
-                                "MD5": md5,
-                                "PID": pid
-                            }
-                        }else{
-                            console.log(`[sankakucomplexProcessor] Found Chan Sankakucomplex post ${md5} tab, but PID not exist in hash.`)
-                            return null
-                        }
-                    }
-                }
-            }
-
-            console.log(`[sankakucomplexProcessor] Cannot find Chan Sankakucomplex post ${md5} tab.`)
-            return null
-        }
-    },
     async "ehentai-original"(args) {
         //点击“下载原始文件”时的下载项。其url可解析，能从中获得galleryId, pageNum。
         //为了补全信息，还需要获取imageHash。
@@ -220,8 +182,7 @@ const MATCH_PROCESSORS: Readonly<Record<string, (args: Record<string, string>) =
 const DOWNLOAD_RENAME_RULES: Readonly<MatchRule[]> = [
     {
         siteName: "sankakucomplex",
-        referrer: SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_URL,
-        processor: "sankakucomplex"
+        referrer: SANKAKUCOMPLEX_CONSTANTS.REGEXES.POST_URL
     },
     {
         siteName: "ehentai",

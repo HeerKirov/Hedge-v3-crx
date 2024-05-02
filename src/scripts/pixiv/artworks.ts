@@ -118,9 +118,15 @@ function reportSourceData(_: Setting): Result<SourceDataUpdateForm, string> {
         title = titleHeading.textContent
     }
 
+    let publishTime: string | undefined
+    const publishTimeDiv = document.querySelector<HTMLTimeElement>("time")
+    if(publishTimeDiv) {
+        publishTime = publishTimeDiv.dateTime
+    }
+
     return {
         ok: true,
-        value: {tags, title, description}
+        value: {tags, title, description, publishTime}
     }
 }
 
@@ -137,10 +143,10 @@ function reportSourceDataPath(setting: Setting): SourceDataPath {
 /**
  * 获得PID。
  */
-function getPID(): number {
+function getPID(): string {
     const match = document.location.pathname.match(PIXIV_CONSTANTS.REGEXES.ARTWORK_PATHNAME)
     if(match && match.groups) {
-        return parseInt(match.groups["PID"])
+        return match.groups["PID"]
     }else{
         throw new Error("Cannot analyse pathname.")
     }

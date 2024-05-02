@@ -55,10 +55,6 @@ interface Tool {
          */
         enableImageLinkReplacement: boolean
         /**
-         * 在URL添加PID标识。
-         */
-        enableAddPostId: boolean,
-        /**
          * 屏蔽广告和烦人的窗口。
          */
         enableBlockAds: boolean
@@ -187,7 +183,6 @@ export function defaultSetting(): Setting {
                 enablePaginationEnhancement: true,
                 enableBookNoticeEnhancement: true,
                 enableImageLinkReplacement: true,
-                enableAddPostId: true,
                 enableBlockAds: true
             },
             ehentai: {

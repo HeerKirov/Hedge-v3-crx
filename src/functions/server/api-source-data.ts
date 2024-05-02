@@ -12,8 +12,6 @@ export const sourceData = {
     update: createPathDataRequest<SourceDataIdentity, SourceDataUpdateForm, null, NotFound>(({ sourceSite, sourceId }) => `/api/source-data/${encodeURIComponent(sourceSite)}/${encodeURIComponent(sourceId)}`, "PATCH"),
     delete: createPathRequest<SourceDataIdentity, null, NotFound>(({ sourceSite, sourceId }) => `/api/source-data/${encodeURIComponent(sourceSite)}/${encodeURIComponent(sourceId)}`, "DELETE"),
     getRelatedImages: createPathRequest<SourceDataIdentity, SimpleIllust[], NotFound>(({ sourceSite, sourceId }) => `/api/source-data/${encodeURIComponent(sourceSite)}/${encodeURIComponent(sourceId)}/related-images`),
-    getSourceMarks: createPathRequest<SourceDataIdentity, SourceMark[], NotFound>(({ sourceSite, sourceId }) => `/api/source-data/${encodeURIComponent(sourceSite)}/${encodeURIComponent(sourceId)}/source-marks`, "GET"),
-    updateSourceMarks: createPathDataRequest<SourceDataIdentity, SourceMarkPartialForm, null, NotFound | ResourceNotExist<"related", number>>(({ sourceSite, sourceId }) => `/api/source-data/${encodeURIComponent(sourceSite)}/${encodeURIComponent(sourceId)}/source-marks`, "PATCH"),
     getCollectStatus: createDataRequest<SourceDataPath[], SourceDataCollectStatus[], never>("/api/source-data/collect-status", "POST")
 }
 
@@ -24,18 +22,17 @@ function mapFromSourceDataFilter(filter: SourceDataFilter): any {
     }
 }
 
-export interface SourceDataIdentity { sourceSite: string, sourceId: number }
-
-export type SourceMarkType = "SAME" | "SIMILAR" | "RELATED" | "UNKNOWN"
+export interface SourceDataIdentity { sourceSite: string, sourceId: string }
 
 export type SourceEditStatus = "NOT_EDITED" | "EDITED" | "ERROR" | "IGNORED"
 
 interface BasicSourceData {
     sourceSite: string
     sourceSiteName: string
-    sourceId: number
+    sourceId: string
     empty: boolean
     status: SourceEditStatus
+    publishTime: string
     createTime: string
     updateTime: string
 }
@@ -75,13 +72,6 @@ export interface SourceAdditionalInfo {
     value: string
 }
 
-export interface SourceMark {
-    sourceSite: string
-    sourceSiteName: string
-    sourceId: number
-    markType: SourceMarkType
-}
-
 export interface SourceDataCollectStatus {
     source: SourceDataPath
     imageCount: number
@@ -93,7 +83,7 @@ export interface SourceDataCollectStatus {
 
 export interface SourceDataCreateForm extends SourceDataUpdateForm {
     sourceSite: string
-    sourceId: number
+    sourceId: string
 }
 
 export interface SourceDataUpdateForm {
@@ -105,6 +95,7 @@ export interface SourceDataUpdateForm {
     relations?: number[]
     links?: string[]
     additionalInfo?: SourceAdditionalInfoForm[]
+    publishTime?: string
 }
 
 export interface SourceTagForm {
@@ -123,13 +114,6 @@ export interface SourceBookForm {
 export interface SourceAdditionalInfoForm {
     field: string
     value: string
-}
-
-export interface SourceMarkPartialForm {
-    action: "UPSERT" | "REMOVE"
-    sourceSite: string
-    sourceId: number
-    markType?: SourceMarkType
 }
 
 export interface BulkResult<I, E extends BasicException> {

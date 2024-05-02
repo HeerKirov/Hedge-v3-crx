@@ -75,10 +75,6 @@ export function OptionsToolPanel(props: OptionsToolPanelProps) {
             <CheckBox checked={editor.sankakucomplex.enableImageLinkReplacement} onUpdateChecked={v => setSankakucomplexProperty("enableImageLinkReplacement", v)}>替换图像链接</CheckBox>
             <SecondaryText>将所有图像的<code>https://v</code>链接替换为<code>https://s</code>链接。此举可能减少无法访问的文件数量。</SecondaryText>
         </StyledDiv>
-        <StyledDiv>
-            <CheckBox checked={editor.sankakucomplex.enableAddPostId} onUpdateChecked={v => setSankakucomplexProperty("enableAddPostId", v)}>在URL添加PID显示</CheckBox>
-            <SecondaryText>在URL后面以<code>#PID=XXX</code>的形式追加Post ID。</SecondaryText>
-        </StyledDiv>
         <Label>E-Hentai</Label>
         <StyledDiv>
             <CheckBox checked={editor.ehentai.enableUIOptimize} onUpdateChecked={v => setEHentaiProperty("enableUIOptimize", v)}>优化图像页面的UI显示</CheckBox>

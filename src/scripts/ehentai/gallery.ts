@@ -1,3 +1,4 @@
+import { tz } from "moment-timezone"
 import { SourceDataPath } from "@/functions/server/api-all"
 import { SourceAdditionalInfoForm, SourceDataUpdateForm, SourceTagForm } from "@/functions/server/api-source-data"
 import { Setting, settings } from "@/functions/setting"
@@ -145,17 +146,11 @@ function enableCommentFilter(blockCN: boolean, blockVote: boolean, blockKeywords
 function enableRenameFile() {
     const gd5 = document.querySelector<HTMLDivElement>("#gd5")
     if(gd5) {
-        const p = document.createElement("p")
-        p.classList.add("g2")
-        p.classList.add("gsp")
-        const img = document.createElement("img")
-        img.src = "https://ehgt.org/g/mr.gif"
-        p.append(img)
         const a = document.createElement("a")
-        a.textContent = "Rename Script"
+        a.textContent = "Rename Script Download"
         a.href = "#"
-        p.append(a)
-        gd5.childNodes[1].after(p)
+        gd5.childNodes[1].appendChild(document.createTextNode(" / "))
+        gd5.childNodes[1].appendChild(a)
         a.onclick = (e: MouseEvent) => {
             (e.target as HTMLAnchorElement).style.color = "burlywood"
             const anchors = document.querySelectorAll<HTMLAnchorElement>(".gdtl > a")
@@ -235,6 +230,17 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, string
         return {ok: false, err: `Category: cannot find '.cs'.`}
     }
 
+    //发布时间。同样没有确定选择器，选择的是第一个
+    let publishTime: string | undefined
+    const publishTimeDiv = document.querySelector<HTMLTableRowElement>(".gm #gdd tr > td:first-child + td")
+    if(publishTimeDiv) {
+        try {
+            publishTime = tz(publishTimeDiv.textContent, "UTC").toDate().toISOString()
+        }catch(e) {
+            console.error(`Publish time analysis failed.`, e)
+        }
+    }
+
     const additionalInfo: SourceAdditionalInfoForm[] = []
     const pathnameMatch = document.location.pathname.match(EHENTAI_CONSTANTS.REGEXES.GALLERY_PATHNAME)
     if(pathnameMatch && pathnameMatch.groups) {
@@ -268,7 +274,7 @@ function reportSourceData(setting: Setting): Result<SourceDataUpdateForm, string
 
     return {
         ok: true,
-        value: {tags, title, description, additionalInfo}
+        value: {tags, title, description, additionalInfo, publishTime}
     }
 }
 
@@ -285,10 +291,10 @@ function reportSourceDataPath(setting: Setting): SourceDataPath {
 /**
  * 获得GalleryId。
  */
-function getGalleryId(): number {
+function getGalleryId(): string {
     const match = document.location.pathname.match(EHENTAI_CONSTANTS.REGEXES.GALLERY_PATHNAME)
     if(match && match.groups) {
-        return parseInt(match.groups["GID"])
+        return match.groups["GID"]
     }else{
         throw new Error("Cannot analyse pathname.")
     }

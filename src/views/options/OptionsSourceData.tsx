@@ -127,10 +127,6 @@ const RULE_ITEM_DESCRIPTION: Record<string, ReactNode> = {
                 <td><i>Children</i>&<i>Parent</i></td><td><Icon icon="arrow-right"/></td>
                 <td>来源关联项</td><td>(<i>PostId</i> <Icon icon="arrow-right"/> 关联项)</td>
             </tr>
-            <tr>
-                <td><i>MD5</i></td><td><Icon icon="arrow-right"/></td>
-                <td>附加信息</td><td>(md5)</td>
-            </tr>
         </tbody>
     </table>,
     "pixiv": <table>

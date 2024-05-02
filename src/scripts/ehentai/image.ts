@@ -143,11 +143,11 @@ function reportSourceDataPath(setting: Setting): SourceDataPath {
 /**
  * 获得GalleryId、Page和ImageHash。
  */
-function getIdentityInfo(): {gid: number, page: number, imageHash: string} {
+function getIdentityInfo(): {gid: string, page: number, imageHash: string} {
     const re = EHENTAI_CONSTANTS.REGEXES.IMAGE_PATHNAME
     const match = document.location.pathname.match(re)
     if(match && match.groups) {
-        const gid = parseInt(match.groups["GID"])
+        const gid = match.groups["GID"]
         const page = parseInt(match.groups["PAGE"])
         const imageHash = match.groups["PHASH"]
         return {gid, page, imageHash}
