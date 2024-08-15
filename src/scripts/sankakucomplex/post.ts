@@ -68,7 +68,18 @@ function enableOptimizeUI() {
     const imageLink = postContent.querySelector<HTMLAnchorElement>("#image-link")
     let url: string
     if(imageLink) {
-       url = imageLink.href
+        if(imageLink.classList.contains("sample") && imageLink.href) {
+            url = imageLink.href
+        }else if(imageLink.classList.contains("full")) {
+            const img = imageLink.querySelector("img")
+            if(img) {
+                url = img.src
+            }else{
+                console.warn("[enableOptimizeUI] Cannot find #image-link > img.")
+            }
+        }else{
+            console.warn("[enableOptimizeUI] Cannot find #image-link with class 'full' or 'sample'.")
+        }
     }else{
         const video = postContent.querySelector<HTMLVideoElement>("video#image")
         if(video) {
