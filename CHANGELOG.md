@@ -1,3 +1,4 @@
+# v0.3.0
 ## Bug Fixes
 * 调整content script中的DOM注入方式，将DOM和CSS放置在shadowRoot中，以防止注入的CSS污染原网页。
 * 修复EHentai点击链接下载时有概率不携带referrer从而导致文件命名失败的问题。
