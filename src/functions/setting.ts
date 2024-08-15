@@ -17,9 +17,9 @@ export interface Setting {
  */
 interface Server {
     /**
-     * 要连接到的后端端口。
+     * 要连接到的后端地址。
      */
-    port: number
+    host: string
     /**
      * 连接到后端时使用的token。需要在后端设置项里配置一个常驻token。
      */
@@ -173,7 +173,7 @@ export function defaultSetting(): Setting {
     return {
         version,
         server: {
-            port: 9000,
+            host: "localhost:9000",
             token: "dev"
         },
         tool: {
@@ -244,6 +244,10 @@ const migrations: {[version: string]: Migrate<MigrateContext>} = {
     async "0.2.0"(ctx) {
         const oldVal = (ctx.setting.tool.ehentai as any)["enableImageDownloadAnchor"] as boolean
         ctx.setting.tool.ehentai.enableUIOptimize = ctx.setting.tool.ehentai.enableUIOptimize ?? oldVal
+    },
+    async "0.3.0"(ctx) {
+        const oldVal = (ctx.setting.server as any)["port"] as number
+        ctx.setting.server.host = ctx.setting.server.host ?? `localhost:${oldVal}`
     }
 }
 

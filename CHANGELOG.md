@@ -2,6 +2,9 @@
 * 调整content script中的DOM注入方式，将DOM和CSS放置在shadowRoot中，以防止注入的CSS污染原网页。
 * 修复EHentai点击链接下载时有概率不携带referrer从而导致文件命名失败的问题。
 * 修复SankakuComplex的pagination增强功能的判定条件，不会再在错误的页面上启用此功能。
+* 修复SankakuComplex的链接增强功能在图像为full类型时无法获得链接的问题。
+## Features
+* 通信连接方式修改为Host，以适配远程模式。
 ## Optimizes
 * 调整EHentai评论屏蔽机制，增强屏蔽条件。
 * 点击“查找相似项”时，将关闭popup页面。

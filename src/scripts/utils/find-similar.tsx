@@ -76,13 +76,13 @@ export function initializeUI(): QuickFindController {
             return
         }
         if(!initialized) {
-            createReactUI(setting.server.port)
+            createReactUI(setting.server.host)
             initialized = true
         }
         trigger.emit({dataURL, sourcePath, sourceData: sourceData.value})
     }
 
-    function createReactUI(port: number) {
+    function createReactUI(host: string) {
         const rootElement = document.createElement("div")
         rootElement.id = "hedge-inject-div"
         rootElement.style.position = "fixed"
@@ -100,7 +100,7 @@ export function initializeUI(): QuickFindController {
                 <StyleSheetManager target={styleSlot}>
                     <style>{fontAwesomeCSS}</style>
                     <GlobalStyle/>
-                    <QuickFindComponent port={port} trigger={trigger}/>
+                    <QuickFindComponent host={host} trigger={trigger}/>
                 </StyleSheetManager>
             </React.StrictMode>
         )
@@ -109,7 +109,7 @@ export function initializeUI(): QuickFindController {
     return {openQuickFindModal, getImageDataURL}
 }
 
-export function QuickFindComponent({ trigger, port }: {port: number, trigger: EventTrigger<{dataURL: string, sourcePath: SourceDataPath, sourceData: SourceDataUpdateForm}>}) {
+export function QuickFindComponent({ trigger, host }: {host: string, trigger: EventTrigger<{dataURL: string, sourcePath: SourceDataPath, sourceData: SourceDataUpdateForm}>}) {
     const [visible, setVisible] = useState(true)
     const [example, setExample] = useState<string>()
     const [tags, setTags] = useState<({ metaType: "AUTHOR", metaTag: SimpleAuthor } | { metaType: "TOPIC", metaTag: SimpleTopic })[]>([])
@@ -117,7 +117,7 @@ export function QuickFindComponent({ trigger, port }: {port: number, trigger: Ev
     const [result, setResult] = useState<FindSimilarResultDetailImage[]>([])
     const [status, setStatus] = useState<"LOADING" | "SUCCEED" | "ERR_NO_CONDITION" | "ERR_FILE_REQUEST_FAILED">("LOADING")
 
-    const assetsUrl = (filepath: string) => `http://localhost:${port}/archives/${filepath}`
+    const assetsUrl = (filepath: string) => `http://${host}/archives/${filepath}`
 
     const openInApp = () => {
         window.open(`hedge://hedge/new-tab?routeName=QuickFindDetail&path=${encodeURIComponent(window.btoa(JSON.stringify(findId!)))}`)

@@ -59,7 +59,7 @@ export function createPathDataRequest<P, D, R, E extends BasicException>(url: UR
 function request<R, E extends BasicException>(requestConfig: RequestConfig<R>): Promise<Response<R, E>> {    
     return new Promise(async resolve => {
         const setting = await settings.get()
-        const url = new URL(requestConfig.url, `http://localhost:${setting.server.port}`)
+        const url = new URL(requestConfig.url, `http://${setting.server.host}`)
         if(requestConfig.query) {
             url.search = new URLSearchParams(requestConfig.query).toString()
         }

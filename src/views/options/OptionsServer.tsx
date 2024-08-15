@@ -17,15 +17,15 @@ export function OptionsServerPanel(props: OptionsServerPanelProps) {
         value: props.server,
         updateValue: props.onUpdateServer,
         from: v => ({
-            port: v.port.toString(),
+            host: v.host,
             token: v.token
         }),
         to: f => ({
-            port: parseInt(f.port),
+            host: f.host,
             token: f.token
         }),
         default: () => ({
-            port: "",
+            host: "",
             token: ""
         }),
         afterChange() {
@@ -45,8 +45,8 @@ export function OptionsServerPanel(props: OptionsServerPanelProps) {
         </StyledHealthDiv>
         <Label>通信端口</Label>
         <div>
-            <Input placeholder="通信端口" value={editor.port} onUpdateValue={v => setProperty("port", v)}/>
-            <SecondaryText>连接到后台服务的端口。为了确保稳定连接，建议在「核心服务」设置中设定固定的端口号。</SecondaryText>
+            <Input placeholder="连接Host" value={editor.host} onUpdateValue={v => setProperty("host", v)}/>
+            <SecondaryText>连接到后台服务的地址。为了确保稳定连接，建议在「核心服务」设置中设定固定的端口号。</SecondaryText>
         </div>
         <Label>通信Token</Label>
         <div>
@@ -90,6 +90,6 @@ const STATUS_TO_DESCRIPTION = {
     "INITIALIZING": "后台服务正在初始化……",
     "LOADING": "后台服务正在启动……",
     "READY": "后台服务已连接。",
-    "DISCONNECTED": "后台服务未连接。请检查后台服务是否开启，以及端口、Token是否正确。",
+    "DISCONNECTED": "后台服务未连接。请检查后台服务是否开启，以及Host、Token是否正确配置。",
     "UNKNOWN": "后台服务状态未知。",
 }
