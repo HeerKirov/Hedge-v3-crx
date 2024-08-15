@@ -43,14 +43,14 @@ export function OptionsServerPanel(props: OptionsServerPanelProps) {
             <Button size="small" onClick={() => refreshHealth()}>刷新</Button>
             <SecondaryText>{STATUS_TO_DESCRIPTION[health]}</SecondaryText>
         </StyledHealthDiv>
-        <Label>通信端口</Label>
+        <Label>连接Host</Label>
         <div>
             <Input placeholder="连接Host" value={editor.host} onUpdateValue={v => setProperty("host", v)}/>
             <SecondaryText>连接到后台服务的地址。为了确保稳定连接，建议在「核心服务」设置中设定固定的端口号。</SecondaryText>
         </div>
-        <Label>通信Token</Label>
+        <Label>连接Token</Label>
         <div>
-            <Input placeholder="通信Token" value={editor.token} onUpdateValue={v => setProperty("token", v)}/>
+            <Input placeholder="连接Token" value={editor.token} onUpdateValue={v => setProperty("token", v)}/>
             <SecondaryText>连接到后台服务的Token。建议在「核心服务」设置中设定固定的Token。</SecondaryText>
         </div>
         {changed && <StyledSaveButton mode="filled" width="10em" type="primary" onClick={save}><Icon icon="save" mr={2}/>保存</StyledSaveButton>}
