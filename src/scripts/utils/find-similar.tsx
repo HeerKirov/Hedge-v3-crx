@@ -7,7 +7,6 @@ import { sendMessage } from "@/functions/messages"
 import { SimpleAuthor, SimpleTopic, SourceDataPath } from "@/functions/server/api-all"
 import { SourceDataUpdateForm } from "@/functions/server/api-source-data"
 import { FindSimilarResultDetailImage } from "@/functions/server/api-find-similar"
-import { server } from "@/functions/server"
 import { createEventTrigger, EventTrigger } from "@/utils/emitter"
 import { Result } from "@/utils/primitives"
 import { GlobalStyle, SPACINGS, ThemeColors } from "@/styles"
@@ -55,7 +54,6 @@ export function initializeUI(): QuickFindController {
     }
 
     function openQuickFindModal(setting: Setting, dataURL: string | undefined, sourcePath: SourceDataPath, sourceData: Result<SourceDataUpdateForm, string>) {
-        console.log("openQuickFindModal")
         if(!sourceData.ok) {
             chrome.notifications.create({
                 type: "basic",
@@ -109,15 +107,13 @@ export function initializeUI(): QuickFindController {
     return {openQuickFindModal, getImageDataURL}
 }
 
-export function QuickFindComponent({ trigger, host }: {host: string, trigger: EventTrigger<{dataURL: string, sourcePath: SourceDataPath, sourceData: SourceDataUpdateForm}>}) {
+export function QuickFindComponent({ trigger }: {host: string, trigger: EventTrigger<{dataURL: string, sourcePath: SourceDataPath, sourceData: SourceDataUpdateForm}>}) {
     const [visible, setVisible] = useState(true)
     const [example, setExample] = useState<string>()
     const [tags, setTags] = useState<({ metaType: "AUTHOR", metaTag: SimpleAuthor } | { metaType: "TOPIC", metaTag: SimpleTopic })[]>([])
     const [findId, setFindId] = useState<number | null>(null)
     const [result, setResult] = useState<FindSimilarResultDetailImage[]>([])
     const [status, setStatus] = useState<"LOADING" | "SUCCEED" | "ERR_NO_CONDITION" | "ERR_FILE_REQUEST_FAILED">("LOADING")
-
-    const assetsUrl = (filepath: string) => `http://${host}/archives/${filepath}`
 
     const openInApp = () => {
         window.open(`hedge://hedge/new-tab?routeName=QuickFindDetail&path=${encodeURIComponent(window.btoa(JSON.stringify(findId!)))}`)
@@ -128,7 +124,7 @@ export function QuickFindComponent({ trigger, host }: {host: string, trigger: Ev
     useEffect(() => {
         if(findId !== null) {
             const callback = async () => {
-                const res = await server.quickFind.get(findId)
+                const res = await sendMessage("QUICK_FIND_GET", {id: findId})
                 if(res.ok && res.data.succeed) {
                     setResult(res.data.result)
                     setStatus("SUCCEED")
@@ -149,8 +145,7 @@ export function QuickFindComponent({ trigger, host }: {host: string, trigger: Ev
             setStatus("LOADING")
             setExample(dataURL)
 
-            const file = dataURLtoFile(dataURL, "tmp.jpg")
-            const tagResult = await Promise.all(sourceData.tags?.map(tag => server.sourceTagMapping.get({sourceSite: sourcePath.sourceSite, sourceTagType: tag.type, sourceTagCode: tag.code})) ?? [])
+            const tagResult = await Promise.all(sourceData.tags?.map(tag => sendMessage("SOURCE_TAG_MAPPING_GET", {sourceSite: sourcePath.sourceSite, sourceTagType: tag.type, sourceTagCode: tag.code})) ?? [])
             const conditionTags = tagResult.map(r => r.ok ? r.data : []).flat(1).filter(r => r.metaType !== "TAG") as ({ metaType: "AUTHOR", metaTag: SimpleAuthor } | { metaType: "TOPIC", metaTag: SimpleTopic })[]
 
             setTags(conditionTags)
@@ -161,7 +156,7 @@ export function QuickFindComponent({ trigger, host }: {host: string, trigger: Ev
 
             const topics = conditionTags.filter(r => r.metaType === "TOPIC").map(r => r.metaTag.id)
             const authors = conditionTags.filter(r => r.metaType === "AUTHOR").map(r => r.metaTag.id)
-            const res = await server.quickFind.upload({file, topics, authors})
+            const res = await sendMessage("QUICK_FIND_UPLOAD", {file: dataURL as any, topics, authors})
             if(res.ok) {
                 setFindId(res.data.id)
             }
@@ -184,7 +179,7 @@ export function QuickFindComponent({ trigger, host }: {host: string, trigger: Ev
                 <LayouttedDiv margin={[1, 0, 0, 0]} padding={[0, 0, 0, 1]}>{description}</LayouttedDiv>
                 <LayouttedDiv padding={[0, 0, 0, 1]}>适用的标签: {tags.map(t => <FormattedText key={t.metaTag.id} mr={1} bold color={t.metaTag.color as ThemeColors}>{t.metaTag.name}</FormattedText>)}</LayouttedDiv>
                 <ScrollDiv>
-                    <AspectGrid spacing={1} columnNum={8} items={result} children={(item) => (<img src={assetsUrl(item.filePath.sample)} alt={`${item.id}`}/>)}/>
+                    <AspectGrid spacing={1} columnNum={8} items={result} children={(item) => (<Img filepath={item.filePath.sample} alt={`${item.id}`}/>)}/>
                 </ScrollDiv>
                 <LayouttedDiv margin={[2, 0, 0, 0]} textAlign="right">
                     <Button mode="filled" type="primary" disabled={findId === null || status !== "SUCCEED" || result.length <= 0} onClick={openInApp}><Icon icon="up-right-from-square" mr={1}/>在Hedge App中打开</Button>
@@ -196,6 +191,22 @@ export function QuickFindComponent({ trigger, host }: {host: string, trigger: Ev
             </div>
         </DialogDiv>
     </> : undefined)
+}
+
+function Img(props: {filepath: string, alt: string}) {
+    const [dataURL, setDataURL] = useState<string>()
+
+    useEffect(() => {
+        sendMessage("ARCHIVE_GET", {filepath: props.filepath}).then(res => {
+            if(res.ok) {
+                setDataURL(res.data)
+            }else{
+                setDataURL(props.filepath)
+            }
+        })
+    }, [props.filepath])
+
+    return <img src={dataURL} alt={props.alt}/>
 }
 
 function captureImage(dataURL: string, img: HTMLImageElement): Promise<string> {
@@ -213,15 +224,6 @@ function captureImage(dataURL: string, img: HTMLImageElement): Promise<string> {
         }
         tempImg.src = dataURL
     })
-}
-
-function dataURLtoFile(dataURL: string, fileName: string): File {
-    const arr = dataURL.split(','), mime = arr[0].match(/:(.*?);/)![1], bstr = atob(arr[1])
-    let n = bstr.length, u8arr = new Uint8Array(n)
-    while(n--){
-        u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new File([u8arr], fileName, {type:mime})
 }
 
 const BackgroundDiv = styled.div`
